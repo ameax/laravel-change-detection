@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Ameax\LaravelChangeDetection\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelChangeDetectionCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-change-detection';
 
     public $description = 'My command';
 

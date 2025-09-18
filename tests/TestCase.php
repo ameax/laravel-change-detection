@@ -1,10 +1,10 @@
 <?php
 
-namespace VendorName\Skeleton\Tests;
+namespace Ameax\LaravelChangeDetection\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use VendorName\Skeleton\SkeletonServiceProvider;
+use Ameax\LaravelChangeDetection\LaravelChangeDetectionServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -13,20 +13,34 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Ameax\\LaravelChangeDetection\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            SkeletonServiceProvider::class,
+            LaravelChangeDetectionServiceProvider::class,
         ];
     }
 
     public function getEnvironmentSetUp($app)
     {
-        config()->set('database.default', 'testing');
+        config()->set('database.default', 'mysql');
+        config()->set('database.connections.mysql', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'port' => '3306',
+            'database' => 'laravel-change-detection',
+            'username' => 'root',
+            'password' => '',
+            'unix_socket' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
 
         /*
          foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/database/migrations') as $migration) {

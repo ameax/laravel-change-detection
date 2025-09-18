@@ -1,24 +1,24 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "ameax/laravel-change-detection",
+    "description": "This is my package laravel-change-detection",
     "keywords": [
-        ":vendor_name",
+        "ameax",
         "laravel",
-        ":package_slug"
+        "laravel-change-detection"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/ameax/laravel-change-detection",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Michael Schmidt",
+            "email": "69188126+ms-aranes@users.noreply.github.com",
             "role": "Developer"
         }
     ],
     "require": {
-        "php": "^8.4",
+        "php": "^8.3",
         "spatie/laravel-package-tools": "^1.16",
-        "illuminate/contracts": "^11.0||^12.0"
+        "illuminate/contracts": "^12.0"
     },
     "require-dev": {
         "laravel/pint": "^1.14",
@@ -35,13 +35,13 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "Ameax\\LaravelChangeDetection\\": "src/",
+            "Ameax\\LaravelChangeDetection\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/",
+            "Ameax\\LaravelChangeDetection\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -63,10 +63,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "Ameax\\LaravelChangeDetection\\LaravelChangeDetectionServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "LaravelChangeDetection": "Ameax\\LaravelChangeDetection\\Facades\\LaravelChangeDetection"
             }
         }
     },

@@ -2,6 +2,8 @@
 composer.lock
 /vendor
 
+/import
+
 # Frontend Assets
 /node_modules
 
