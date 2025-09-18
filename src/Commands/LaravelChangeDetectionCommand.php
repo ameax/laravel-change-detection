@@ -153,6 +153,9 @@ class LaravelChangeDetectionCommand extends Command
                !$reflection->isAbstract();
     }
 
+    /**
+     * @param \Illuminate\Support\Collection<int, array{model: class-string, changed_count: int}> $results
+     */
     private function showDetailedReport(\Illuminate\Support\Collection $results): void
     {
         $this->line('');
@@ -170,6 +173,9 @@ class LaravelChangeDetectionCommand extends Command
         $this->table(['Model', 'Full Class', 'Changed Records', 'Status'], $table->toArray());
     }
 
+    /**
+     * @param \Illuminate\Support\Collection<int, class-string> $models
+     */
     private function cleanupOrphanedHashes(\Illuminate\Support\Collection $models): void
     {
         $this->line('');
@@ -193,6 +199,9 @@ class LaravelChangeDetectionCommand extends Command
         }
     }
 
+    /**
+     * @param \Illuminate\Support\Collection<int, class-string> $models
+     */
     private function updateChangedHashes(\Illuminate\Support\Collection $models): int
     {
         $this->line('');

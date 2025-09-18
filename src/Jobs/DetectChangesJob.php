@@ -18,14 +18,18 @@ class DetectChangesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 300; // 5 minutes
-    public $tries = 3;
+    public int $timeout = 300; // 5 minutes
+    public int $tries = 3;
 
+    /** @var class-string */
     private string $modelClass;
     private bool $updateHashes;
     private bool $cleanupOrphaned;
     private int $limit;
 
+    /**
+     * @param class-string $modelClass
+     */
     public function __construct(
         string $modelClass,
         bool $updateHashes = false,

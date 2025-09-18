@@ -21,8 +21,13 @@ class OrphanedHashDetector
         $this->connection = DB::connection($connectionName ?? config('change-detection.database_connection'));
     }
 
+    /**
+     * @param class-string $modelClass
+     * @return array<int, array{hash_id: int, model_id: int}>
+     */
     public function detectOrphanedHashes(string $modelClass, int $limit = null): array
     {
+        /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
         $model = new $modelClass;
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();
@@ -56,8 +61,13 @@ class OrphanedHashDetector
         }, $results);
     }
 
+    /**
+     * @param class-string $modelClass
+     * @return array<int, array{hash_id: int, model_id: int, model_deleted_at: string}>
+     */
     public function detectSoftDeletedModelHashes(string $modelClass, int $limit = null): array
     {
+        /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
         $model = new $modelClass;
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();
@@ -97,6 +107,9 @@ class OrphanedHashDetector
         }, $results);
     }
 
+    /**
+     * @param array<int> $hashIds
+     */
     public function markHashesAsDeleted(array $hashIds, ?string $deletedAt = null): int
     {
         if (empty($hashIds)) {
@@ -121,6 +134,7 @@ class OrphanedHashDetector
 
     public function countOrphanedHashes(string $modelClass): int
     {
+        /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
         $model = new $modelClass;
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();
@@ -146,6 +160,9 @@ class OrphanedHashDetector
         return (int) $result[0]->orphaned_count;
     }
 
+    /**
+     * @param class-string $modelClass
+     */
     public function cleanupOrphanedHashes(string $modelClass, int $limit = null): int
     {
         $orphanedHashes = $this->detectOrphanedHashes($modelClass, $limit);
@@ -159,6 +176,9 @@ class OrphanedHashDetector
         return $this->markHashesAsDeleted($hashIds);
     }
 
+    /**
+     * @param class-string $modelClass
+     */
     public function cleanupSoftDeletedModelHashes(string $modelClass, int $limit = null): int
     {
         $softDeletedHashes = $this->detectSoftDeletedModelHashes($modelClass, $limit);

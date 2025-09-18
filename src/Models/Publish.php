@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property int $attempts
  * @property string|null $last_error
  * @property \Illuminate\Support\Carbon|null $next_try
- * @property array|null $metadata
+ * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read \Ameax\LaravelChangeDetection\Models\Hash|null $hash
