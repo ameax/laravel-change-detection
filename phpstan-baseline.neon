@@ -1,0 +1,385 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\HashDependent\:\:hash\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/HashDependent.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publish\:\:hash\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publish\:\:publisher\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publish\:\:scopePendingOrDeferred\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publish\:\:scopePendingOrDeferred\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''next_try'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''status'' given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Class Ameax\\LaravelChangeDetection\\Models\\Publisher has PHPDoc tag @property for property \$config with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Class Ameax\\LaravelChangeDetection\\Models\\Publisher uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publisher\:\:publishes\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publisher\:\:scopeActive\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publisher\:\:scopeActive\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publisher\:\:scopeForModel\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publisher\:\:scopeForModel\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''model_type'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''status'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Models/Publisher.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getFillable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getHashableAttributes\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getKeyName\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method object\:\:hasColumn\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:updateHashesChunk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:updateHashesForIds\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Parameter \#2 \$length of function array_chunk expects int\<1, max\>, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Property Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:\$hashCalculator is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Services/BulkHashProcessor.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getConnectionName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getHashableAttributes\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getKeyName\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\ChangeDetector\:\:detectChangedModelIds\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\ChangeDetector\:\:detectChangedModels\(\) return type with generic class Illuminate\\Support\\Collection does not specify its types\: TKey, TValue$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CompositeHashCalculator\:\:calculateBulk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CompositeHashCalculator.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CompositeHashCalculator\:\:calculateBulk\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CompositeHashCalculator.php
+
+		-
+			message: '#^Parameter \#1 \$model of method Ameax\\LaravelChangeDetection\\Services\\MySQLHashCalculator\:\:calculateAttributeHash\(\) expects Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model, Ameax\\LaravelChangeDetection\\Contracts\\Hashable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/CompositeHashCalculator.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\MySQLHashCalculator\:\:calculateAttributeHashBulk\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/CompositeHashCalculator.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getConnection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CrossDatabaseQueryBuilder\:\:buildJoinCondition\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CrossDatabaseQueryBuilder\:\:executeCrossDatabaseQuery\(\) has parameter \$bindings with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CrossDatabaseQueryBuilder\:\:executeCrossDatabaseQuery\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CrossDatabaseQueryBuilder\:\:executeCrossDatabaseStatement\(\) has parameter \$bindings with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\CrossDatabaseQueryBuilder\:\:executeCrossDatabaseUpdate\(\) has parameter \$bindings with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/CrossDatabaseQueryBuilder.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/DependencyHashCalculator.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/DependencyHashCalculator.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/DependencyHashCalculator.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\DependencyHashCalculator\:\:calculateBulk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/DependencyHashCalculator.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\DependencyHashCalculator\:\:calculateBulk\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/DependencyHashCalculator.php
+
+		-
+			message: '#^Access to an undefined property Ameax\\LaravelChangeDetection\\Models\\HashDependent\:\:\$dependent_model_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Access to an undefined property Ameax\\LaravelChangeDetection\\Models\\HashDependent\:\:\$dependent_model_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\HashUpdater\:\:markAsDeletedBulk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\HashUpdater\:\:updateDependentModelsBulk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\HashUpdater\:\:updateHashesBulk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\HashUpdater\:\:updateHashesBulk\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel of Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, ''hashable_id'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel of Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, ''hashable_type'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Parameter \#1 \$model of method Ameax\\LaravelChangeDetection\\Services\\MySQLHashCalculator\:\:calculateAttributeHash\(\) expects Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model, Ameax\\LaravelChangeDetection\\Contracts\\Hashable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\MySQLHashCalculator\:\:calculateAttributeHashBulk\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Trait Ameax\\LaravelChangeDetection\\Traits\\InteractsWithHashes is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Traits/InteractsWithHashes.php
