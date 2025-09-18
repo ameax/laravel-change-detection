@@ -38,7 +38,11 @@ it('can check if hash has changed after save', function () {
     $article->update(['title' => 'Updated Title']);
     expect($article->hasHashChanged())->toBeFalse(); // Should be false because hash was auto-updated
 
-    // Manually change attribute without saving to test detection
-    $article->title = 'Manually Changed Title';
+    // Manually change attribute and save to create a hash mismatch
+    TestArticle::withoutEvents(function () use ($article) {
+        $article->update(['title' => 'Manually Changed Title']);
+    });
+
+    // Now there should be a mismatch between the calculated hash and stored hash
     expect($article->hasHashChanged())->toBeTrue();
 });
