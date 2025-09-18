@@ -2,12 +2,9 @@
 
 use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
-use Ameax\LaravelChangeDetection\Models\Publish;
-use Ameax\LaravelChangeDetection\Models\Publisher;
-use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
         'test_article' => TestArticle::class,
@@ -21,7 +18,7 @@ it('can publish hash changes to log', function () {
         'author' => 'Test Author',
     ]);
 
-    $logPublisher = new LogPublisher();
+    $logPublisher = new LogPublisher;
     $data = $logPublisher->getData($article);
     $result = $logPublisher->publish($article, $data);
 
@@ -38,7 +35,7 @@ it('can be configured with custom settings', function () {
 });
 
 it('can update settings fluently', function () {
-    $publisher = new LogPublisher();
+    $publisher = new LogPublisher;
 
     $updated = $publisher
         ->setLogChannel('test-channel')
@@ -73,7 +70,7 @@ it('can get data from hashable models', function () {
         'author' => 'Test Author',
     ]);
 
-    $logPublisher = new LogPublisher();
+    $logPublisher = new LogPublisher;
     $data = $logPublisher->getData($article);
 
     expect($data)->toHaveKey('model_type')
@@ -83,8 +80,8 @@ it('can get data from hashable models', function () {
 });
 
 it('does not retry on failures', function () {
-    $publisher = new LogPublisher();
+    $publisher = new LogPublisher;
 
-    expect($publisher->shouldPublish(new TestArticle()))->toBeTrue()
+    expect($publisher->shouldPublish(new TestArticle))->toBeTrue()
         ->and($publisher->getMaxAttempts())->toBe(1);
 });

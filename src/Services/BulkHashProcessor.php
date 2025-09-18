@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Services;
 
-use Ameax\LaravelChangeDetection\Contracts\Hashable;
-use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
 
 class BulkHashProcessor
 {
     private CompositeHashCalculator $hashCalculator;
+
     private Connection $connection;
+
     private int $batchSize;
 
     public function __construct(
@@ -70,7 +69,7 @@ class BulkHashProcessor
         foreach ($attributes as $attribute) {
             $concatParts[] = "IFNULL(CAST(m.`{$attribute}` AS CHAR), '')";
         }
-        $attributeHashExpr = 'MD5(CONCAT(' . implode(", '|', ", $concatParts) . '))';
+        $attributeHashExpr = 'MD5(CONCAT('.implode(", '|', ", $concatParts).'))';
 
         $dependencyHashExpr = "
             (SELECT MD5(GROUP_CONCAT(
@@ -93,7 +92,7 @@ class BulkHashProcessor
             END
         ";
 
-        $idsPlaceholder = str_repeat('?,', count($modelIds) - 1) . '?';
+        $idsPlaceholder = str_repeat('?,', count($modelIds) - 1).'?';
 
         $sql = "
             INSERT INTO `{$hashesTable}` (hashable_type, hashable_id, attribute_hash, composite_hash, created_at, updated_at)
@@ -127,7 +126,7 @@ class BulkHashProcessor
         $morphClass = $model->getMorphClass();
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
-        if (!in_array('deleted_at', $model->getFillable()) && !$model->hasColumn('deleted_at')) {
+        if (! in_array('deleted_at', $model->getFillable()) && ! $model->hasColumn('deleted_at')) {
             return 0;
         }
 

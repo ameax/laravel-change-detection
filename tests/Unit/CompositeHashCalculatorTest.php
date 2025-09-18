@@ -4,7 +4,7 @@ use Ameax\LaravelChangeDetection\Services\CompositeHashCalculator;
 use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
 
 beforeEach(function () {
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
         'test_article' => TestArticle::class,

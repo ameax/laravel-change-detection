@@ -9,7 +9,9 @@ use Ameax\LaravelChangeDetection\Contracts\Hashable;
 class CompositeHashCalculator
 {
     private MySQLHashCalculator $attributeCalculator;
+
     private DependencyHashCalculator $dependencyCalculator;
+
     private string $hashAlgorithm;
 
     public function __construct(
@@ -30,9 +32,9 @@ class CompositeHashCalculator
             return $attributeHash;
         }
 
-        $combinedData = $attributeHash . '|' . $dependencyHash;
+        $combinedData = $attributeHash.'|'.$dependencyHash;
 
-        return match($this->hashAlgorithm) {
+        return match ($this->hashAlgorithm) {
             'sha256' => hash('sha256', $combinedData),
             default => md5($combinedData)
         };
@@ -51,16 +53,18 @@ class CompositeHashCalculator
 
             if ($attributeHash === null) {
                 $compositeHashes[$modelId] = null;
+
                 continue;
             }
 
             if ($dependencyHash === null) {
                 $compositeHashes[$modelId] = $attributeHash;
+
                 continue;
             }
 
-            $combinedData = $attributeHash . '|' . $dependencyHash;
-            $compositeHashes[$modelId] = match($this->hashAlgorithm) {
+            $combinedData = $attributeHash.'|'.$dependencyHash;
+            $compositeHashes[$modelId] = match ($this->hashAlgorithm) {
                 'sha256' => hash('sha256', $combinedData),
                 default => md5($combinedData)
             };

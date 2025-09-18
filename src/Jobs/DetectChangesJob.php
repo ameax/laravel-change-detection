@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Jobs;
 
-use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,16 +19,20 @@ class DetectChangesJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 300; // 5 minutes
+
     public int $tries = 3;
 
     /** @var class-string */
     private string $modelClass;
+
     private bool $updateHashes;
+
     private bool $cleanupOrphaned;
+
     private int $limit;
 
     /**
-     * @param class-string $modelClass
+     * @param  class-string  $modelClass
      */
     public function __construct(
         string $modelClass,

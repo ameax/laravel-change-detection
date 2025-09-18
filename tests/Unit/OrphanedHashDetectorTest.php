@@ -1,11 +1,11 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
-use Ameax\LaravelChangeDetection\Models\Hash;
 
 beforeEach(function () {
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
         'test_article' => TestArticle::class,
@@ -85,8 +85,8 @@ it('can cleanup orphaned hashes', function () {
 
     // Verify hash is marked as deleted
     $hash = Hash::where('hashable_type', 'test_article')
-               ->where('hashable_id', $article->id)
-               ->first();
+        ->where('hashable_id', $article->id)
+        ->first();
 
     expect($hash->deleted_at)->not()->toBeNull();
 });

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Traits;
 
-use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait InteractsWithHashes
@@ -73,7 +73,7 @@ trait InteractsWithHashes
     public function getHashDependents(): \Illuminate\Database\Eloquent\Collection
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return collect();
         }
 
@@ -83,7 +83,7 @@ trait InteractsWithHashes
     public function getHashPublishes(): \Illuminate\Database\Eloquent\Collection
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return collect();
         }
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @property int $id
@@ -133,6 +133,7 @@ class Publish extends Model
 
         if ($this->attempts > count($retryIntervals)) {
             $this->markAsFailed($error);
+
             return;
         }
 

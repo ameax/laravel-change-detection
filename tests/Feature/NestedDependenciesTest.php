@@ -20,7 +20,7 @@ class NestedDependenciesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../migrations');
         $this->setUpMorphMap();
         $this->artisan('migrate:fresh');
     }
@@ -286,8 +286,8 @@ class NestedDependenciesTest extends TestCase
 
         // Verify all hashes were created
         $hashCount = Hash::where('hashable_type', 'test_article')
-                        ->whereIn('hashable_id', $articleIds)
-                        ->count();
+            ->whereIn('hashable_id', $articleIds)
+            ->count();
 
         $this->assertEquals(100, $hashCount);
     }

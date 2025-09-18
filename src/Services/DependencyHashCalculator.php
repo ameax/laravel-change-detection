@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 class DependencyHashCalculator
 {
     private Connection $connection;
+
     private string $hashAlgorithm;
 
     public function __construct(?string $connectionName = null)
@@ -43,11 +44,11 @@ class DependencyHashCalculator
 
         $result = $this->connection->selectOne($sql, [$modelClass, $modelId]);
 
-        if (!$result || !$result->dependency_hash) {
+        if (! $result || ! $result->dependency_hash) {
             return null;
         }
 
-        return match($this->hashAlgorithm) {
+        return match ($this->hashAlgorithm) {
             'sha256' => hash('sha256', $result->dependency_hash),
             default => md5($result->dependency_hash)
         };
@@ -59,7 +60,7 @@ class DependencyHashCalculator
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
         $morphClass = (new $modelClass)->getMorphClass();
 
-        $placeholders = str_repeat('?,', count($modelIds) - 1) . '?';
+        $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
 
         $sql = "
             SELECT
@@ -83,7 +84,7 @@ class DependencyHashCalculator
         $hashes = [];
         foreach ($results as $result) {
             if ($result->dependency_hash) {
-                $hashes[$result->dependent_model_id] = match($this->hashAlgorithm) {
+                $hashes[$result->dependent_model_id] = match ($this->hashAlgorithm) {
                     'sha256' => hash('sha256', $result->dependency_hash),
                     default => md5($result->dependency_hash)
                 };
@@ -94,7 +95,7 @@ class DependencyHashCalculator
 
         // Fill in nulls for models with no dependencies
         foreach ($modelIds as $modelId) {
-            if (!isset($hashes[$modelId])) {
+            if (! isset($hashes[$modelId])) {
                 $hashes[$modelId] = null;
             }
         }

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Services;
 
-use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
 class OrphanedHashDetector
 {
     private CrossDatabaseQueryBuilder $crossDbBuilder;
+
     private Connection $connection;
 
     public function __construct(
-        CrossDatabaseQueryBuilder $crossDbBuilder = null,
+        ?CrossDatabaseQueryBuilder $crossDbBuilder = null,
         ?string $connectionName = null
     ) {
         $this->crossDbBuilder = $crossDbBuilder ?? new CrossDatabaseQueryBuilder($connectionName);
@@ -22,10 +22,10 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param class-string $modelClass
+     * @param  class-string  $modelClass
      * @return array<int, array{hash_id: int, model_id: int}>
      */
-    public function detectOrphanedHashes(string $modelClass, int $limit = null): array
+    public function detectOrphanedHashes(string $modelClass, ?int $limit = null): array
     {
         /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
         $model = new $modelClass;
@@ -62,10 +62,10 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param class-string $modelClass
+     * @param  class-string  $modelClass
      * @return array<int, array{hash_id: int, model_id: int, model_deleted_at: string}>
      */
-    public function detectSoftDeletedModelHashes(string $modelClass, int $limit = null): array
+    public function detectSoftDeletedModelHashes(string $modelClass, ?int $limit = null): array
     {
         /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
         $model = new $modelClass;
@@ -75,7 +75,7 @@ class OrphanedHashDetector
         $modelConnectionName = $model->getConnectionName();
 
         // Check if model supports soft deletes
-        if (!in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive($modelClass))) {
+        if (! in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive($modelClass))) {
             return [];
         }
 
@@ -108,7 +108,7 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param array<int> $hashIds
+     * @param  array<int>  $hashIds
      */
     public function markHashesAsDeleted(array $hashIds, ?string $deletedAt = null): int
     {
@@ -119,7 +119,7 @@ class OrphanedHashDetector
         $deletedAt = $deletedAt ?? now()->toDateTimeString();
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
-        $idsPlaceholder = str_repeat('?,', count($hashIds) - 1) . '?';
+        $idsPlaceholder = str_repeat('?,', count($hashIds) - 1).'?';
         $bindings = array_merge($hashIds, [$deletedAt]);
 
         $sql = "
@@ -161,9 +161,9 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param class-string $modelClass
+     * @param  class-string  $modelClass
      */
-    public function cleanupOrphanedHashes(string $modelClass, int $limit = null): int
+    public function cleanupOrphanedHashes(string $modelClass, ?int $limit = null): int
     {
         $orphanedHashes = $this->detectOrphanedHashes($modelClass, $limit);
 
@@ -177,9 +177,9 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param class-string $modelClass
+     * @param  class-string  $modelClass
      */
-    public function cleanupSoftDeletedModelHashes(string $modelClass, int $limit = null): int
+    public function cleanupSoftDeletedModelHashes(string $modelClass, ?int $limit = null): int
     {
         $softDeletedHashes = $this->detectSoftDeletedModelHashes($modelClass, $limit);
 

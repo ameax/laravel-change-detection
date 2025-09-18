@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Publishers;
 
-use Ameax\LaravelChangeDetection\Contracts\Publisher;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Contracts\Publisher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 class LogPublisher implements Publisher
 {
     private string $logChannel;
+
     private string $logLevel;
+
     private bool $includeHashData;
 
     public function __construct(
@@ -67,7 +69,7 @@ class LogPublisher implements Publisher
                 'hash_id' => $currentHash?->id,
                 'attribute_hash' => $currentHash?->attribute_hash,
                 'composite_hash' => $currentHash?->composite_hash,
-                'has_dependencies' => !empty($model->getHashCompositeDependencies()),
+                'has_dependencies' => ! empty($model->getHashCompositeDependencies()),
             ];
 
             // Include sample model data for debugging
@@ -94,7 +96,6 @@ class LogPublisher implements Publisher
         return 1;
     }
 
-
     public function getLogChannel(): string
     {
         return $this->logChannel;
@@ -113,18 +114,21 @@ class LogPublisher implements Publisher
     public function setLogChannel(string $channel): self
     {
         $this->logChannel = $channel;
+
         return $this;
     }
 
     public function setLogLevel(string $level): self
     {
         $this->logLevel = $level;
+
         return $this;
     }
 
     public function setIncludeHashData(bool $include): self
     {
         $this->includeHashData = $include;
+
         return $this;
     }
 }

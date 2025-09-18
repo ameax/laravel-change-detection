@@ -2,9 +2,9 @@
 
 namespace Ameax\LaravelChangeDetection;
 
+use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
 
 class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
 {

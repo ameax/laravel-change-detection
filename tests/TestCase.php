@@ -2,9 +2,9 @@
 
 namespace Ameax\LaravelChangeDetection\Tests;
 
+use Ameax\LaravelChangeDetection\LaravelChangeDetectionServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Ameax\LaravelChangeDetection\LaravelChangeDetectionServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -45,6 +45,6 @@ class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations()
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 }

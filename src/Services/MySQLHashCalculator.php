@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 class MySQLHashCalculator
 {
     private Connection $connection;
+
     private string $hashAlgorithm;
 
     public function __construct(?string $connectionName = null)
@@ -33,9 +34,9 @@ class MySQLHashCalculator
         foreach ($attributes as $attribute) {
             $concatParts[] = "IFNULL(CAST(`{$attribute}` AS CHAR), '')";
         }
-        $concatExpression = 'CONCAT(' . implode(", '|', ", $concatParts) . ')';
+        $concatExpression = 'CONCAT('.implode(", '|', ", $concatParts).')';
 
-        $hashExpression = match($this->hashAlgorithm) {
+        $hashExpression = match ($this->hashAlgorithm) {
             'sha256' => "SHA2({$concatExpression}, 256)",
             default => "MD5({$concatExpression})"
         };
@@ -52,8 +53,8 @@ class MySQLHashCalculator
     }
 
     /**
-     * @param class-string<Hashable&Model> $modelClass
-     * @param array<int> $modelIds
+     * @param  class-string<Hashable&Model>  $modelClass
+     * @param  array<int>  $modelIds
      * @return array<int, string>
      */
     public function calculateAttributeHashBulk(string $modelClass, array $modelIds): array
@@ -70,14 +71,14 @@ class MySQLHashCalculator
         foreach ($attributes as $attribute) {
             $concatParts[] = "IFNULL(CAST(`{$attribute}` AS CHAR), '')";
         }
-        $concatExpression = 'CONCAT(' . implode(", '|', ", $concatParts) . ')';
+        $concatExpression = 'CONCAT('.implode(", '|', ", $concatParts).')';
 
-        $hashExpression = match($this->hashAlgorithm) {
+        $hashExpression = match ($this->hashAlgorithm) {
             'sha256' => "SHA2({$concatExpression}, 256)",
             default => "MD5({$concatExpression})"
         };
 
-        $placeholders = str_repeat('?,', count($modelIds) - 1) . '?';
+        $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
 
         $sql = "
             SELECT

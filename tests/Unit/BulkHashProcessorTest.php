@@ -1,11 +1,11 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
 use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
-use Ameax\LaravelChangeDetection\Models\Hash;
 
 beforeEach(function () {
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
         'test_article' => TestArticle::class,
@@ -26,7 +26,7 @@ it('can process changed models in bulk', function () {
     // Manually modify them without updating hashes
     foreach ($articles as $article) {
         TestArticle::withoutEvents(function () use ($article) {
-            $article->update(['title' => 'Bulk Updated: ' . $article->title]);
+            $article->update(['title' => 'Bulk Updated: '.$article->title]);
         });
     }
 
@@ -57,7 +57,7 @@ it('can update hashes for specific model IDs', function () {
     // Manually modify all articles without updating hashes
     foreach ($articles as $article) {
         TestArticle::withoutEvents(function () use ($article) {
-            $article->update(['title' => 'Modified: ' . $article->title]);
+            $article->update(['title' => 'Modified: '.$article->title]);
         });
     }
 

@@ -13,7 +13,6 @@ interface Hashable
      */
     public function getHashableAttributes(): array;
 
-
     /**
      * Get the relations that should be included in the composite hash.
      * Can include nested relations using dot notation (e.g., 'posts.comments').

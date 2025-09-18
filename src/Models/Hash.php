@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @property int $id
@@ -72,7 +72,7 @@ class Hash extends Model
     }
 
     /**
-     * @param Builder<Hash> $query
+     * @param  Builder<Hash>  $query
      * @return Builder<Hash>
      */
     public function scopeActive(Builder $query): Builder
@@ -81,7 +81,7 @@ class Hash extends Model
     }
 
     /**
-     * @param Builder<Hash> $query
+     * @param  Builder<Hash>  $query
      * @return Builder<Hash>
      */
     public function scopeDeleted(Builder $query): Builder
@@ -101,7 +101,7 @@ class Hash extends Model
 
     public function isDeleted(): bool
     {
-        return !is_null($this->deleted_at);
+        return ! is_null($this->deleted_at);
     }
 
     public function hasDependents(): bool

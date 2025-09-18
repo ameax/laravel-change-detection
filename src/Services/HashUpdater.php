@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 class HashUpdater
 {
     private CompositeHashCalculator $hashCalculator;
+
     private Connection $connection;
 
     public function __construct(CompositeHashCalculator $hashCalculator, ?string $connectionName = null)
@@ -113,7 +114,7 @@ class HashUpdater
         // Find all models that depend on this one
         $dependents = HashDependent::whereHas('hash', function ($query) use ($model) {
             $query->where('hashable_type', $model->getMorphClass())
-                  ->where('hashable_id', $model->getKey());
+                ->where('hashable_id', $model->getKey());
         })->get();
 
         foreach ($dependents as $dependent) {
@@ -137,7 +138,7 @@ class HashUpdater
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
 
         // Get all dependent models in one query
-        $placeholders = str_repeat('?,', count($modelIds) - 1) . '?';
+        $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
         $sql = "
             SELECT DISTINCT hd.dependent_model_type, hd.dependent_model_id
             FROM `{$hashDependentsTable}` hd

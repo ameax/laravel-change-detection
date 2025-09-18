@@ -5,7 +5,7 @@ use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
 
 beforeEach(function () {
     // Load test migrations
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     // Set up morph map
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([

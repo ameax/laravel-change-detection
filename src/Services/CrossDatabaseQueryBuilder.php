@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 class CrossDatabaseQueryBuilder
 {
     private Connection $hashConnection;
+
     private ?string $hashConnectionName;
 
     public function __construct(?string $hashConnectionName = null)
@@ -18,7 +19,7 @@ class CrossDatabaseQueryBuilder
         $this->hashConnection = DB::connection($this->hashConnectionName);
     }
 
-    public function buildCrossDatabaseTableName(string $modelTable, string $modelConnectionName = null): string
+    public function buildCrossDatabaseTableName(string $modelTable, ?string $modelConnectionName = null): string
     {
         if ($this->hashConnectionName === $modelConnectionName || $this->hashConnectionName === null) {
             return "`{$modelTable}`";
@@ -44,6 +45,7 @@ class CrossDatabaseQueryBuilder
     public function getModelConnection(string $modelClass): Connection
     {
         $model = new $modelClass;
+
         return $model->getConnection();
     }
 
@@ -62,7 +64,7 @@ class CrossDatabaseQueryBuilder
         string $modelPrimaryKey,
         string $hashTable,
         string $morphClass,
-        string $modelConnectionName = null
+        ?string $modelConnectionName = null
     ): array {
         $modelTableName = $this->buildCrossDatabaseTableName($modelTable, $modelConnectionName);
         $hashTableName = $this->buildHashTableName($hashTable);

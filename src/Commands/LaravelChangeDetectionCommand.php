@@ -2,10 +2,10 @@
 
 namespace Ameax\LaravelChangeDetection\Commands;
 
-use Ameax\LaravelChangeDetection\Services\ChangeDetector;
-use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
-use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\ChangeDetector;
+use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
@@ -29,6 +29,7 @@ class LaravelChangeDetectionCommand extends Command
 
         if ($models->isEmpty()) {
             $this->error('No hashable models found. Use --auto-discover or specify --models.');
+
             return self::FAILURE;
         }
 
@@ -52,7 +53,7 @@ class LaravelChangeDetectionCommand extends Command
             if ($changedCount > 0) {
                 $this->warn("  Found {$changedCount} changed records");
             } else {
-                $this->info("  No changes detected");
+                $this->info('  No changes detected');
             }
         }
 
@@ -86,12 +87,14 @@ class LaravelChangeDetectionCommand extends Command
     {
         $specifiedModels = $this->option('models');
 
-        if (!empty($specifiedModels) && is_array($specifiedModels)) {
+        if (! empty($specifiedModels) && is_array($specifiedModels)) {
             return collect($specifiedModels)->filter(function ($model) {
-                if (!class_exists($model)) {
+                if (! class_exists($model)) {
                     $this->error("Model class {$model} does not exist");
+
                     return false;
                 }
+
                 return $this->implementsHashable($model);
             });
         }
@@ -111,7 +114,7 @@ class LaravelChangeDetectionCommand extends Command
         $models = collect();
         $appPath = app_path('Models');
 
-        if (!File::exists($appPath)) {
+        if (! File::exists($appPath)) {
             $appPath = app_path();
         }
 
@@ -134,7 +137,7 @@ class LaravelChangeDetectionCommand extends Command
 
         if (preg_match('/namespace\s+([^;]+);/', $content, $namespaceMatches) &&
             preg_match('/class\s+(\w+)/', $content, $classMatches)) {
-            return $namespaceMatches[1] . '\\' . $classMatches[1];
+            return $namespaceMatches[1].'\\'.$classMatches[1];
         }
 
         return null;
@@ -142,7 +145,7 @@ class LaravelChangeDetectionCommand extends Command
 
     private function implementsHashable(string $className): bool
     {
-        if (!class_exists($className)) {
+        if (! class_exists($className)) {
             return false;
         }
 
@@ -150,11 +153,11 @@ class LaravelChangeDetectionCommand extends Command
 
         return $reflection->implementsInterface(Hashable::class) &&
                $reflection->isSubclassOf(Model::class) &&
-               !$reflection->isAbstract();
+               ! $reflection->isAbstract();
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, array{model: class-string, changed_count: int}> $results
+     * @param  \Illuminate\Support\Collection<int, array{model: class-string, changed_count: int}>  $results
      */
     private function showDetailedReport(\Illuminate\Support\Collection $results): void
     {
@@ -174,7 +177,7 @@ class LaravelChangeDetectionCommand extends Command
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, class-string> $models
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function cleanupOrphanedHashes(\Illuminate\Support\Collection $models): void
     {
@@ -200,7 +203,7 @@ class LaravelChangeDetectionCommand extends Command
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, class-string> $models
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function updateChangedHashes(\Illuminate\Support\Collection $models): int
     {
@@ -222,6 +225,7 @@ class LaravelChangeDetectionCommand extends Command
         }
 
         $this->info("Total hash records updated: {$totalUpdated}");
+
         return self::SUCCESS;
     }
 }

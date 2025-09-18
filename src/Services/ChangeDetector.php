@@ -7,18 +7,20 @@ namespace Ameax\LaravelChangeDetection\Services;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ChangeDetector
 {
     private CompositeHashCalculator $hashCalculator;
+
     private Connection $connection;
+
     private CrossDatabaseQueryBuilder $crossDbBuilder;
 
     public function __construct(
         CompositeHashCalculator $hashCalculator,
-        CrossDatabaseQueryBuilder $crossDbBuilder = null,
+        ?CrossDatabaseQueryBuilder $crossDbBuilder = null,
         ?string $connectionName = null
     ) {
         $this->hashCalculator = $hashCalculator;
@@ -34,7 +36,7 @@ class ChangeDetector
         return $currentHash !== $calculatedHash;
     }
 
-    public function detectChangedModelIds(string $modelClass, int $limit = null): array
+    public function detectChangedModelIds(string $modelClass, ?int $limit = null): array
     {
         $model = new $modelClass;
         $table = $model->getTable();
@@ -58,7 +60,7 @@ class ChangeDetector
         foreach ($attributes as $attribute) {
             $concatParts[] = "IFNULL(CAST(m.`{$attribute}` AS CHAR), '')";
         }
-        $attributeHashExpr = 'MD5(CONCAT(' . implode(", '|', ", $concatParts) . '))';
+        $attributeHashExpr = 'MD5(CONCAT('.implode(", '|', ", $concatParts).'))';
 
         // Build dependency hash subquery
         $dependencyHashExpr = "
@@ -102,7 +104,7 @@ class ChangeDetector
         return array_column($results, 'model_id');
     }
 
-    public function detectChangedModels(string $modelClass, int $limit = null): Collection
+    public function detectChangedModels(string $modelClass, ?int $limit = null): Collection
     {
         $changedIds = $this->detectChangedModelIds($modelClass, $limit);
 
@@ -129,7 +131,7 @@ class ChangeDetector
         foreach ($attributes as $attribute) {
             $concatParts[] = "IFNULL(CAST(m.`{$attribute}` AS CHAR), '')";
         }
-        $attributeHashExpr = 'MD5(CONCAT(' . implode(", '|', ", $concatParts) . '))';
+        $attributeHashExpr = 'MD5(CONCAT('.implode(", '|', ", $concatParts).'))';
 
         $dependencyHashExpr = "
             (SELECT MD5(GROUP_CONCAT(
@@ -171,9 +173,9 @@ class ChangeDetector
     private function getCurrentHash(Hashable $model): ?string
     {
         $hash = Hash::where('hashable_type', $model->getMorphClass())
-                   ->where('hashable_id', $model->getKey())
-                   ->active()
-                   ->first();
+            ->where('hashable_id', $model->getKey())
+            ->active()
+            ->first();
 
         return $hash?->composite_hash;
     }

@@ -1,11 +1,11 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Tests\Models\TestArticle;
-use Ameax\LaravelChangeDetection\Models\Hash;
 
 beforeEach(function () {
-    $this->loadMigrationsFrom(__DIR__ . '/../migrations');
+    $this->loadMigrationsFrom(__DIR__.'/../migrations');
 
     \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
         'test_article' => TestArticle::class,
