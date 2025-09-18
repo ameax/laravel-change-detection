@@ -64,4 +64,44 @@ trait InteractsWithHashes
     {
         return app(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class)->calculate($this);
     }
+
+    public function hasHashChanged(): bool
+    {
+        return app(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class)->hasChanged($this);
+    }
+
+    public function getHashDependents(): \Illuminate\Database\Eloquent\Collection
+    {
+        $currentHash = $this->getCurrentHash();
+        if (!$currentHash) {
+            return collect();
+        }
+
+        return $currentHash->dependents;
+    }
+
+    public function getHashPublishes(): \Illuminate\Database\Eloquent\Collection
+    {
+        $currentHash = $this->getCurrentHash();
+        if (!$currentHash) {
+            return collect();
+        }
+
+        return $currentHash->publishes;
+    }
+
+    public function forceHashUpdate(): Hash
+    {
+        return app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->updateHash($this);
+    }
+
+    public function getHashLastUpdated(): ?\Illuminate\Support\Carbon
+    {
+        return $this->getCurrentHash()?->updated_at;
+    }
+
+    public function isHashDeleted(): bool
+    {
+        return $this->getCurrentHash()?->isDeleted() ?? false;
+    }
 }

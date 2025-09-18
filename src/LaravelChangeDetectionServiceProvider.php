@@ -22,4 +22,13 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
             ->hasMigration('create_change_detection_tables')
             ->hasCommand(LaravelChangeDetectionCommand::class);
     }
+
+    public function packageRegistered(): void
+    {
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\MySQLHashCalculator::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\DependencyHashCalculator::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\HashUpdater::class);
+    }
 }
