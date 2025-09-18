@@ -14,11 +14,16 @@ class ChangeDetector
 {
     private CompositeHashCalculator $hashCalculator;
     private Connection $connection;
+    private CrossDatabaseQueryBuilder $crossDbBuilder;
 
-    public function __construct(CompositeHashCalculator $hashCalculator, ?string $connectionName = null)
-    {
+    public function __construct(
+        CompositeHashCalculator $hashCalculator,
+        CrossDatabaseQueryBuilder $crossDbBuilder = null,
+        ?string $connectionName = null
+    ) {
         $this->hashCalculator = $hashCalculator;
         $this->connection = DB::connection($connectionName ?? config('change-detection.database_connection'));
+        $this->crossDbBuilder = $crossDbBuilder ?? new CrossDatabaseQueryBuilder($connectionName);
     }
 
     public function hasChanged(Hashable $model): bool
@@ -36,10 +41,17 @@ class ChangeDetector
         $primaryKey = $model->getKeyName();
         $morphClass = $model->getMorphClass();
         $attributes = $model->getHashableAttributes();
+        $modelConnectionName = $model->getConnectionName();
+
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
 
         sort($attributes);
+
+        // Build cross-database table names
+        $modelTableName = $this->crossDbBuilder->buildCrossDatabaseTableName($table, $modelConnectionName);
+        $hashesTableName = $this->crossDbBuilder->buildHashTableName($hashesTable);
+        $hashDependentsTableName = $this->crossDbBuilder->buildHashTableName($hashDependentsTable);
 
         // Build attribute hash expression
         $concatParts = [];
@@ -55,27 +67,28 @@ class ChangeDetector
                 ORDER BY dhd.id, dh.hashable_type, dh.hashable_id
                 SEPARATOR '|'
             ))
-            FROM `{$hashDependentsTable}` dhd
-            INNER JOIN `{$hashesTable}` dh
+            FROM {$hashDependentsTableName} dhd
+            INNER JOIN {$hashesTableName} dh
                 ON dh.id = dhd.hash_id
                 AND dh.deleted_at IS NULL
-            WHERE dhd.dependent_model_type = ?
+            WHERE dhd.dependent_model_type = '{$morphClass}'
               AND dhd.dependent_model_id = m.`{$primaryKey}`)
         ";
 
-        // Build composite hash expression
-        $compositeHashExpr = "MD5(CONCAT(
-            {$attributeHashExpr},
-            '|',
-            IFNULL({$dependencyHashExpr}, '')
-        ))";
+        // Build composite hash expression (same logic as CompositeHashCalculator)
+        $compositeHashExpr = "
+            CASE
+                WHEN {$dependencyHashExpr} IS NULL THEN {$attributeHashExpr}
+                ELSE MD5(CONCAT({$attributeHashExpr}, '|', {$dependencyHashExpr}))
+            END
+        ";
 
         $limitClause = $limit ? "LIMIT {$limit}" : '';
 
         $sql = "
             SELECT m.`{$primaryKey}` as model_id
-            FROM `{$table}` m
-            LEFT JOIN `{$hashesTable}` h
+            FROM {$modelTableName} m
+            LEFT JOIN {$hashesTableName} h
                 ON h.hashable_type = ?
                 AND h.hashable_id = m.`{$primaryKey}`
                 AND h.deleted_at IS NULL
@@ -84,7 +97,7 @@ class ChangeDetector
             {$limitClause}
         ";
 
-        $results = $this->connection->select($sql, [$morphClass, $morphClass]);
+        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, [$morphClass]);
 
         return array_column($results, 'model_id');
     }
@@ -128,15 +141,16 @@ class ChangeDetector
             INNER JOIN `{$hashesTable}` dh
                 ON dh.id = dhd.hash_id
                 AND dh.deleted_at IS NULL
-            WHERE dhd.dependent_model_type = ?
+            WHERE dhd.dependent_model_type = '{$morphClass}'
               AND dhd.dependent_model_id = m.`{$primaryKey}`)
         ";
 
-        $compositeHashExpr = "MD5(CONCAT(
-            {$attributeHashExpr},
-            '|',
-            IFNULL({$dependencyHashExpr}, '')
-        ))";
+        $compositeHashExpr = "
+            CASE
+                WHEN {$dependencyHashExpr} IS NULL THEN {$attributeHashExpr}
+                ELSE MD5(CONCAT({$attributeHashExpr}, '|', {$dependencyHashExpr}))
+            END
+        ";
 
         $sql = "
             SELECT COUNT(*) as changed_count
@@ -149,7 +163,7 @@ class ChangeDetector
                OR h.composite_hash != {$compositeHashExpr}
         ";
 
-        $result = $this->connection->selectOne($sql, [$morphClass, $morphClass]);
+        $result = $this->connection->selectOne($sql, [$morphClass]);
 
         return (int) $result->changed_count;
     }

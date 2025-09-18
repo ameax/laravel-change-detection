@@ -6,6 +6,7 @@ namespace Ameax\LaravelChangeDetection\Services;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class MySQLHashCalculator
@@ -19,7 +20,7 @@ class MySQLHashCalculator
         $this->hashAlgorithm = config('change-detection.hash_algorithm', 'md5');
     }
 
-    public function calculateAttributeHash(Hashable $model): string
+    public function calculateAttributeHash(Hashable&Model $model): string
     {
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();
@@ -50,8 +51,14 @@ class MySQLHashCalculator
         return $result->attribute_hash;
     }
 
+    /**
+     * @param class-string<Hashable&Model> $modelClass
+     * @param array<int> $modelIds
+     * @return array<int, string>
+     */
     public function calculateAttributeHashBulk(string $modelClass, array $modelIds): array
     {
+        /** @var Hashable&Model $model */
         $model = new $modelClass;
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();

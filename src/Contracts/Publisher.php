@@ -12,7 +12,7 @@ interface Publisher
      * Publish the model data to the external system.
      *
      * @param  Model  $model  The model to publish
-     * @param  array  $data  The prepared data to publish
+     * @param  array<string, mixed>  $data  The prepared data to publish
      * @return bool True if successful, false otherwise
      */
     public function publish(Model $model, array $data): bool;
@@ -23,7 +23,7 @@ interface Publisher
      * and its relations that need to be sent to the external system.
      *
      * @param  Model  $model  The model to prepare data for
-     * @return array The prepared data
+     * @return array<string, mixed> The prepared data
      */
     public function getData(Model $model): array;
 

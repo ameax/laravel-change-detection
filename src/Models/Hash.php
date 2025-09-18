@@ -47,26 +47,43 @@ class Hash extends Model
         }
     }
 
+    /**
+     * @return MorphTo<\Illuminate\Database\Eloquent\Model, $this>
+     */
     public function hashable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * @return HasMany<HashDependent, $this>
+     */
     public function dependents(): HasMany
     {
         return $this->hasMany(HashDependent::class, 'hash_id');
     }
 
+    /**
+     * @return HasMany<Publish, $this>
+     */
     public function publishes(): HasMany
     {
         return $this->hasMany(Publish::class);
     }
 
+    /**
+     * @param Builder<Hash> $query
+     * @return Builder<Hash>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereNull('deleted_at');
     }
 
+    /**
+     * @param Builder<Hash> $query
+     * @return Builder<Hash>
+     */
     public function scopeDeleted(Builder $query): Builder
     {
         return $query->whereNotNull('deleted_at');

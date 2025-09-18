@@ -25,10 +25,13 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CrossDatabaseQueryBuilder::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\MySQLHashCalculator::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\DependencyHashCalculator::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\HashUpdater::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\BulkHashProcessor::class);
+        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\OrphanedHashDetector::class);
     }
 }

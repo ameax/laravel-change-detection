@@ -22,6 +22,7 @@ class NestedDependenciesTest extends TestCase
         parent::setUp();
         $this->loadMigrationsFrom(__DIR__ . '/../migrations');
         $this->setUpMorphMap();
+        $this->artisan('migrate:fresh');
     }
 
     private function setUpMorphMap(): void
