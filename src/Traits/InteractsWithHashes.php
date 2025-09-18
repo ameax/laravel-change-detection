@@ -37,13 +37,12 @@ trait InteractsWithHashes
 
     public function updateHash(): void
     {
-        // Will be implemented by services in Phase 3
-        // app(HashUpdateService::class)->updateHash($this);
+        app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->updateHash($this);
     }
 
     public function markHashAsDeleted(): void
     {
-        $this->hash()?->markAsDeleted();
+        app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->markAsDeleted($this);
     }
 
     public function getHashableScope(): ?\Closure
@@ -54,5 +53,15 @@ trait InteractsWithHashes
     public function getHashRelationsToNotifyOnChange(): array
     {
         return [];
+    }
+
+    public function calculateAttributeHash(): string
+    {
+        return app(\Ameax\LaravelChangeDetection\Services\MySQLHashCalculator::class)->calculateAttributeHash($this);
+    }
+
+    public function calculateCompositeHash(): string
+    {
+        return app(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class)->calculate($this);
     }
 }
