@@ -303,6 +303,92 @@ return [
 ],
 ```
 
+## Publishing System
+
+### Publisher Configuration
+
+Publishers can define their own rate limiting and batch processing settings:
+
+```php
+use Ameax\LaravelChangeDetection\Contracts\Publisher;
+
+class CustomPublisher implements Publisher
+{
+    public function getBatchSize(): int
+    {
+        return 1000; // Process 1000 records per batch
+    }
+
+    public function getDelayMs(): int
+    {
+        return 0; // No delay between records (e.g., for SFTP exports)
+    }
+
+    public function getMaxAttempts(): int
+    {
+        return 3; // Retry failed publishes 3 times
+    }
+
+    // ... other required methods
+}
+```
+
+### Processing Publishes
+
+The publishing system uses publisher-specific settings for optimal performance:
+
+```bash
+# Process all pending publishes using each publisher's configuration
+php artisan change-detection:process-publishes
+
+# Process synchronously with progress feedback
+php artisan change-detection:process-publishes --sync
+
+# Force processing even if another job is running
+php artisan change-detection:process-publishes --force
+```
+
+### Publisher Examples
+
+**API Publisher (with rate limiting)**:
+```php
+public function getBatchSize(): int { return 50; }   // Small batches for API
+public function getDelayMs(): int { return 200; }    // 200ms delay for rate limits
+```
+
+**SFTP Export Publisher (no limits)**:
+```php
+public function getBatchSize(): int { return 0; }    // Unlimited batch size
+public function getDelayMs(): int { return 0; }      // No delay between records
+```
+
+**Log Publisher (moderate batching)**:
+```php
+public function getBatchSize(): int { return 10; }   // Small batches to avoid log spam
+public function getDelayMs(): int { return 100; }    // 100ms delay between logs
+```
+
+### Immediate Publishing
+
+For urgent records that need immediate publishing:
+
+```php
+// Publish a single record immediately (synchronously)
+$publishRecord->publishNow();
+
+// Smart publishing - immediate if no bulk job is running
+$publishRecord->publishImmediatelyOrQueue();
+```
+
+### Bulk Processing
+
+The `BulkPublishJob` automatically:
+- Groups records by publisher type
+- Uses each publisher's `getBatchSize()` and `getDelayMs()` settings
+- Processes only one instance at a time (unique job)
+- Chains to next batch if more records exist
+- Logs detailed progress per publisher
+
 ## Development & Debugging
 
 ### LogPublisher for Development

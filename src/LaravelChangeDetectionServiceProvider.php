@@ -4,6 +4,7 @@ namespace Ameax\LaravelChangeDetection;
 
 use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
 use Ameax\LaravelChangeDetection\Commands\BuildDependencyRelationshipsCommand;
+use Ameax\LaravelChangeDetection\Commands\ProcessPublishesCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -21,7 +22,8 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_change_detection_tables')
-            ->hasCommand(LaravelChangeDetectionCommand::class);
+            ->hasCommand(LaravelChangeDetectionCommand::class)
+            ->hasCommand(ProcessPublishesCommand::class);
     }
 
     public function packageRegistered(): void

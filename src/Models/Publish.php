@@ -34,6 +34,8 @@ class Publish extends Model
         'status',
         'attempts',
         'last_error',
+        'last_response_code',
+        'error_type',
         'next_try',
         'metadata',
     ];
@@ -42,6 +44,7 @@ class Publish extends Model
         'published_at' => 'datetime',
         'next_try' => 'datetime',
         'attempts' => 'integer',
+        'last_response_code' => 'integer',
         'status' => 'string',
         'metadata' => 'array',
     ];
@@ -114,27 +117,16 @@ class Publish extends Model
         ]);
     }
 
-    public function markAsFailed(string $error): void
-    {
-        $this->update([
-            'status' => 'failed',
-            'last_error' => $error,
-        ]);
-    }
 
-    public function markAsDeferred(string $error): void
+    public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
         $this->attempts++;
 
-        $retryIntervals = config('change-detection.retry_intervals', [
-            1 => 30,
-            2 => 300,
-            3 => 21600,
-        ]);
+        // Get retry intervals from publisher if available, otherwise use config
+        $retryIntervals = $this->getPublisherRetryIntervals();
 
         if ($this->attempts > count($retryIntervals)) {
-            $this->markAsFailed($error);
-
+            $this->markAsFailed($error, $responseCode, $errorType);
             return;
         }
 
@@ -142,8 +134,51 @@ class Publish extends Model
             'status' => 'deferred',
             'attempts' => $this->attempts,
             'last_error' => $error,
+            'last_response_code' => $responseCode,
+            'error_type' => $errorType,
             'next_try' => now()->addSeconds($retryIntervals[$this->attempts]),
         ]);
+    }
+
+    public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
+    {
+        $this->update([
+            'status' => 'failed',
+            'last_error' => $error,
+            'last_response_code' => $responseCode,
+            'error_type' => $errorType,
+        ]);
+    }
+
+    private function getPublisherRetryIntervals(): array
+    {
+        try {
+            if (!$this->publisher || !$this->publisher->publisher_class) {
+                return config('change-detection.retry_intervals', [
+                    1 => 30,
+                    2 => 300,
+                    3 => 21600,
+                ]);
+            }
+
+            $publisherClass = $this->publisher->publisher_class;
+            if (!class_exists($publisherClass)) {
+                return config('change-detection.retry_intervals', [
+                    1 => 30,
+                    2 => 300,
+                    3 => 21600,
+                ]);
+            }
+
+            $publisher = app($publisherClass);
+            return $publisher->getRetryIntervals();
+        } catch (\Exception $e) {
+            return config('change-detection.retry_intervals', [
+                1 => 30,
+                2 => 300,
+                3 => 21600,
+            ]);
+        }
     }
 
     public function scopePendingOrDeferred(Builder $query): Builder
@@ -155,5 +190,78 @@ class Publish extends Model
                         ->where('next_try', '<=', now());
                 });
         });
+    }
+
+    /**
+     * Publish this record immediately (synchronously)
+     */
+    public function publishNow(): bool
+    {
+        if (!$this->isPending() && !$this->shouldRetry()) {
+            return false;
+        }
+
+        if (!$this->hash) {
+            $this->markAsFailed('No hash found', null);
+            return false;
+        }
+
+        $this->markAsDispatched();
+
+        try {
+            $publisherClass = $this->publisher->publisher_class;
+
+            if (!class_exists($publisherClass)) {
+                throw new \Exception("Publisher class {$publisherClass} not found");
+            }
+
+            $publisher = app($publisherClass);
+
+            // Load hashable relation if not already loaded
+            if (!$this->relationLoaded('hash') || !$this->hash->relationLoaded('hashable')) {
+                $this->load('hash.hashable');
+            }
+
+            $hashableModel = $this->hash->hashable;
+
+            if (!$hashableModel) {
+                throw new \Exception('Hashable model not found');
+            }
+
+            if (!$publisher->shouldPublish($hashableModel)) {
+                $this->markAsPublished();
+                return true;
+            }
+
+            $data = $publisher->getData($hashableModel);
+            $success = $publisher->publish($hashableModel, $data);
+
+            if ($success) {
+                $this->markAsPublished();
+                return true;
+            } else {
+                $this->markAsDeferred('Publisher returned false', null);
+                return false;
+            }
+
+        } catch (\Exception $e) {
+            $this->markAsDeferred($e->getMessage(), null);
+            return false;
+        }
+    }
+
+    /**
+     * Publish immediately if no bulk job is running, otherwise let bulk job handle it
+     */
+    public function publishImmediatelyOrQueue(): bool
+    {
+        // Check if bulk job is running
+        if (\Illuminate\Support\Facades\Cache::has('bulk_publish_job_running')) {
+            // Bulk job is running, let it handle this record
+            return true;
+        }
+
+        // No bulk job running, publish immediately
+        return $this->publishNow();
     }
 }

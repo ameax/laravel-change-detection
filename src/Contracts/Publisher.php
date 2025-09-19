@@ -40,4 +40,44 @@ interface Publisher
      * Get the maximum number of retry attempts for this publisher.
      */
     public function getMaxAttempts(): int;
+
+    /**
+     * Get the batch size for bulk processing.
+     * Return 0 for unlimited batch size.
+     */
+    public function getBatchSize(): int;
+
+    /**
+     * Get the delay in milliseconds between individual publishes.
+     * Return 0 for no delay.
+     */
+    public function getDelayMs(): int;
+
+    /**
+     * Get retry intervals in seconds for this publisher.
+     * Array with attempt number as key and delay in seconds as value.
+     * Example: [1 => 30, 2 => 300, 3 => 1800]
+     */
+    public function getRetryIntervals(): array;
+
+    /**
+     * Determine if an exception should stop the entire job or just defer this record.
+     *
+     * @param \Throwable $exception The exception that occurred
+     * @return string 'stop_job', 'defer_record', or 'fail_record'
+     */
+    public function handlePublishException(\Throwable $exception): string;
+
+    /**
+     * Get the maximum number of validation errors before stopping the job.
+     * Return 0 for unlimited.
+     */
+    public function getMaxValidationErrors(): int;
+
+    /**
+     * Get the maximum number of infrastructure/system errors before stopping the job.
+     * These are errors that affect the entire publishing system (API timeouts, permissions, etc.).
+     * Return 0 for unlimited.
+     */
+    public function getMaxInfrastructureErrors(): int;
 }

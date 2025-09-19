@@ -96,6 +96,59 @@ class LogPublisher implements Publisher
         return 1;
     }
 
+    public function getBatchSize(): int
+    {
+        // Small batches for logging to avoid overwhelming logs
+        return 10;
+    }
+
+    public function getDelayMs(): int
+    {
+        // 100ms delay for logging to prevent log spam
+        return 100;
+    }
+
+    public function getRetryIntervals(): array
+    {
+        // Simple retry for logging: 30s, 5min, 30min
+        return [
+            1 => 30,
+            2 => 300,
+            3 => 1800,
+        ];
+    }
+
+    public function handlePublishException(\Throwable $exception): string
+    {
+        // Infrastructure problems (permissions, config) should stop the job
+        // Individual data problems can be deferred
+
+        $message = $exception->getMessage();
+
+        // File permission errors, disk space, configuration issues
+        if (str_contains($message, 'Permission denied') ||
+            str_contains($message, 'No space left') ||
+            str_contains($message, 'Unable to create configured logger') ||
+            str_contains($message, 'Failed to open stream')) {
+            return 'stop_job';
+        }
+
+        // Individual data/validation issues
+        return 'defer_record';
+    }
+
+    public function getMaxValidationErrors(): int
+    {
+        // Allow some validation errors for individual records
+        return 50;
+    }
+
+    public function getMaxInfrastructureErrors(): int
+    {
+        // Log infrastructure problems should stop after 1 error
+        return 1;
+    }
+
     public function getLogChannel(): string
     {
         return $this->logChannel;
