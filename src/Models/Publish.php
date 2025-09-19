@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int|null $hash_id
  * @property int $publisher_id
- * @property string $published_hash
+ * @property string|null $published_hash
  * @property \Illuminate\Support\Carbon|null $published_at
  * @property string $status
  * @property int $attempts
@@ -108,6 +108,7 @@ class Publish extends Model
     {
         $this->update([
             'status' => 'published',
+            'published_hash' => $this->hash->composite_hash,
             'published_at' => now(),
             'last_error' => null,
         ]);

@@ -270,7 +270,7 @@ class HashUpdater
                 Publish::create([
                     'hash_id' => $hash->id,
                     'publisher_id' => $publisher->id,
-                    'published_hash' => $hash->composite_hash,
+                    'published_hash' => null, // Initially null, will be set when publishing is successful
                     'status' => 'pending',
                     'attempts' => 0,
                     'metadata' => [

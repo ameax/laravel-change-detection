@@ -50,7 +50,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('hash_id')->nullable()->constrained($hashesTable)->cascadeOnDelete();
             $table->foreignId('publisher_id')->constrained($publishersTable)->cascadeOnDelete();
-            $table->string('published_hash', 32);
+            $table->string('published_hash', 32)->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->enum('status', ['pending', 'dispatched', 'deferred', 'published', 'failed'])->default('pending');
