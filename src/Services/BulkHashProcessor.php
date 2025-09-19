@@ -63,6 +63,15 @@ class BulkHashProcessor
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
 
+        // Get database names for cross-database queries
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+        $qualifiedTable = $modelDatabase ? "`{$modelDatabase}`.`{$table}`" : "`{$table}`";
+
+        $hashDatabase = $this->connection->getDatabaseName();
+        $qualifiedHashesTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashesTable}`" : "`{$hashesTable}`";
+        $qualifiedHashDependentsTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashDependentsTable}`" : "`{$hashDependentsTable}`";
+
         sort($attributes);
 
         $concatParts = [];
@@ -77,8 +86,8 @@ class BulkHashProcessor
                 ORDER BY dhd.id, dh.hashable_type, dh.hashable_id
                 SEPARATOR '|'
             ))
-            FROM `{$hashDependentsTable}` dhd
-            INNER JOIN `{$hashesTable}` dh
+            FROM {$qualifiedHashDependentsTable} dhd
+            INNER JOIN {$qualifiedHashesTable} dh
                 ON dh.id = dhd.hash_id
                 AND dh.deleted_at IS NULL
             WHERE dhd.dependent_model_type = '{$morphClass}'
@@ -95,7 +104,7 @@ class BulkHashProcessor
         $idsPlaceholder = str_repeat('?,', count($modelIds) - 1).'?';
 
         $sql = "
-            INSERT INTO `{$hashesTable}` (hashable_type, hashable_id, attribute_hash, composite_hash, created_at, updated_at)
+            INSERT INTO {$qualifiedHashesTable} (hashable_type, hashable_id, attribute_hash, composite_hash, created_at, updated_at)
             SELECT
                 ? as hashable_type,
                 m.`{$primaryKey}` as hashable_id,
@@ -103,7 +112,7 @@ class BulkHashProcessor
                 {$compositeHashExpr} as composite_hash,
                 NOW() as created_at,
                 NOW() as updated_at
-            FROM `{$table}` m
+            FROM {$qualifiedTable} m
             WHERE m.`{$primaryKey}` IN ({$idsPlaceholder})
             ON DUPLICATE KEY UPDATE
                 attribute_hash = VALUES(attribute_hash),
@@ -126,13 +135,21 @@ class BulkHashProcessor
         $morphClass = $model->getMorphClass();
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
+        // Get database names for cross-database queries
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+        $qualifiedTable = $modelDatabase ? "`{$modelDatabase}`.`{$table}`" : "`{$table}`";
+
+        $hashDatabase = $this->connection->getDatabaseName();
+        $qualifiedHashesTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashesTable}`" : "`{$hashesTable}`";
+
         if (! in_array('deleted_at', $model->getFillable()) && ! $model->hasColumn('deleted_at')) {
             return 0;
         }
 
         $sql = "
-            UPDATE `{$hashesTable}` h
-            INNER JOIN `{$table}` m ON m.`{$primaryKey}` = h.hashable_id
+            UPDATE {$qualifiedHashesTable} h
+            INNER JOIN {$qualifiedTable} m ON m.`{$primaryKey}` = h.hashable_id
             SET h.deleted_at = m.deleted_at
             WHERE h.hashable_type = ?
               AND h.deleted_at IS NULL
@@ -150,9 +167,17 @@ class BulkHashProcessor
         $morphClass = $model->getMorphClass();
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
+        // Get database names for cross-database queries
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+        $qualifiedTable = $modelDatabase ? "`{$modelDatabase}`.`{$table}`" : "`{$table}`";
+
+        $hashDatabase = $this->connection->getDatabaseName();
+        $qualifiedHashesTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashesTable}`" : "`{$hashesTable}`";
+
         $sql = "
-            UPDATE `{$hashesTable}` h
-            LEFT JOIN `{$table}` m ON m.`{$primaryKey}` = h.hashable_id
+            UPDATE {$qualifiedHashesTable} h
+            LEFT JOIN {$qualifiedTable} m ON m.`{$primaryKey}` = h.hashable_id
             SET h.deleted_at = NOW()
             WHERE h.hashable_type = ?
               AND h.deleted_at IS NULL

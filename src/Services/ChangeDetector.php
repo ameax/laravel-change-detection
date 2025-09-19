@@ -133,14 +133,19 @@ class ChangeDetector
         }
         $attributeHashExpr = 'MD5(CONCAT('.implode(", '|', ", $concatParts).'))';
 
+        // Get the hash database name for qualified table names
+        $hashDatabase = $this->connection->getDatabaseName();
+        $qualifiedHashesTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashesTable}`" : "`{$hashesTable}`";
+        $qualifiedHashDependentsTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashDependentsTable}`" : "`{$hashDependentsTable}`";
+
         $dependencyHashExpr = "
             (SELECT MD5(GROUP_CONCAT(
                 IFNULL(dh.composite_hash, dh.attribute_hash)
                 ORDER BY dhd.id, dh.hashable_type, dh.hashable_id
                 SEPARATOR '|'
             ))
-            FROM `{$hashDependentsTable}` dhd
-            INNER JOIN `{$hashesTable}` dh
+            FROM {$qualifiedHashDependentsTable} dhd
+            INNER JOIN {$qualifiedHashesTable} dh
                 ON dh.id = dhd.hash_id
                 AND dh.deleted_at IS NULL
             WHERE dhd.dependent_model_type = '{$morphClass}'
@@ -154,10 +159,15 @@ class ChangeDetector
             END
         ";
 
+        // Get the model's database name for cross-database query
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+        $qualifiedTable = $modelDatabase ? "`{$modelDatabase}`.`{$table}`" : "`{$table}`";
+
         $sql = "
             SELECT COUNT(*) as changed_count
-            FROM `{$table}` m
-            LEFT JOIN `{$hashesTable}` h
+            FROM {$qualifiedTable} m
+            LEFT JOIN {$qualifiedHashesTable} h
                 ON h.hashable_type = ?
                 AND h.hashable_id = m.`{$primaryKey}`
                 AND h.deleted_at IS NULL
