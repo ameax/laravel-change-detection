@@ -3,6 +3,7 @@
 namespace Ameax\LaravelChangeDetection;
 
 use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
+use Ameax\LaravelChangeDetection\Commands\BuildDependencyRelationshipsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

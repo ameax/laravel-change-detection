@@ -7,6 +7,8 @@ namespace Ameax\LaravelChangeDetection\Services;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
+use Ameax\LaravelChangeDetection\Models\Publish;
+use Ameax\LaravelChangeDetection\Models\Publisher;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,9 +28,8 @@ class HashUpdater
     {
         return $this->connection->transaction(function () use ($model) {
             $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($model);
-            $dependencyHash = $this->hashCalculator->getDependencyCalculator()->calculate($model);
-            $compositeHash = $this->hashCalculator->calculate($model);
 
+            // Create or update hash with attribute hash first (temporary composite hash)
             $hash = Hash::updateOrCreate(
                 [
                     'hashable_type' => $model->getMorphClass(),
@@ -36,15 +37,25 @@ class HashUpdater
                 ],
                 [
                     'attribute_hash' => $attributeHash,
-                    'composite_hash' => $compositeHash,
+                    'composite_hash' => $attributeHash, // Temporary, will be recalculated
                     'deleted_at' => null, // Ensure it's marked as active
                 ]
             );
 
+            // Build dependency relationships for this model
+            $this->buildDependencyRelationships($model, $hash);
+
+            // Now recalculate composite hash with dependencies in place
+            $compositeHash = $this->hashCalculator->calculate($model);
+            $hash->update(['composite_hash' => $compositeHash]);
+
+            // Create publish record for this model if publishers exist
+            $this->createPublishRecordForModel($model, $hash);
+
             // Update any models that depend on this one
             $this->updateDependentModels($model);
 
-            return $hash;
+            return $hash->refresh();
         });
     }
 
@@ -65,17 +76,18 @@ class HashUpdater
 
                 if ($attributeHash && $compositeHash) {
                     // Use INSERT ... ON DUPLICATE KEY UPDATE for performance
+                    $now = now()->utc()->toDateTimeString();
                     $sql = "
                         INSERT INTO `{$hashesTable}` (hashable_type, hashable_id, attribute_hash, composite_hash, deleted_at, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, NULL, NOW(), NOW())
+                        VALUES (?, ?, ?, ?, NULL, ?, ?)
                         ON DUPLICATE KEY UPDATE
                             attribute_hash = VALUES(attribute_hash),
                             composite_hash = VALUES(composite_hash),
                             deleted_at = NULL,
-                            updated_at = NOW()
+                            updated_at = VALUES(updated_at)
                     ";
 
-                    $this->connection->statement($sql, [$morphClass, $modelId, $attributeHash, $compositeHash]);
+                    $this->connection->statement($sql, [$morphClass, $modelId, $attributeHash, $compositeHash, $now, $now]);
                     $updatedHashes[] = $modelId;
                 }
             }
@@ -171,5 +183,102 @@ class HashUpdater
     public function getConnection(): Connection
     {
         return $this->connection;
+    }
+
+    /**
+     * Build dependency relationships for a model based on its getHashCompositeDependencies().
+     */
+    private function buildDependencyRelationships(Hashable $model, Hash $dependentHash): void
+    {
+        $dependencies = $model->getHashCompositeDependencies();
+        if (empty($dependencies)) {
+            return;
+        }
+
+        foreach ($dependencies as $relationName) {
+            $this->buildDependencyForRelation($model, $dependentHash, $relationName);
+        }
+    }
+
+    /**
+     * Build dependency relationships for a specific relation.
+     */
+    private function buildDependencyForRelation(Hashable $dependentModel, Hash $dependentHash, string $relationName): void
+    {
+        if (!method_exists($dependentModel, $relationName)) {
+            return;
+        }
+
+        try {
+            $relation = $dependentModel->{$relationName}();
+
+            // Apply scope if the related model has one
+            $relatedModel = $relation->getRelated();
+            if ($relatedModel instanceof Hashable) {
+                $scope = $relatedModel->getHashableScope();
+                if ($scope) {
+                    $scope($relation);
+                }
+            }
+
+            $relatedModels = $relation->get();
+
+            foreach ($relatedModels as $relatedModel) {
+                if ($relatedModel instanceof Hashable) {
+                    // Ensure the related model has a hash
+                    $relatedHash = $relatedModel->getCurrentHash();
+                    if (!$relatedHash) {
+                        $relatedHash = $this->updateHash($relatedModel);
+                    }
+
+                    // Create dependency relationship: the related model's hash affects the dependent model's composite hash
+                    HashDependent::updateOrCreate([
+                        'hash_id' => $relatedHash->id,
+                        'dependent_model_type' => $dependentModel->getMorphClass(),
+                        'dependent_model_id' => $dependentModel->getKey(),
+                        'relation_name' => $relationName,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the entire hash update process
+            \Illuminate\Support\Facades\Log::warning(
+                "Failed to build dependency for relation {$relationName} on " . get_class($dependentModel),
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
+     * Create publish record for the model itself if publishers exist and no record exists yet.
+     */
+    private function createPublishRecordForModel(Hashable $model, Hash $hash): void
+    {
+        // Get all active publishers for this model type
+        $publishers = Publisher::where('model_type', $model->getMorphClass())
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($publishers as $publisher) {
+            // Check if a publish record already exists for this hash and publisher
+            $exists = Publish::where('hash_id', $hash->id)
+                ->where('publisher_id', $publisher->id)
+                ->exists();
+
+            if (!$exists) {
+                // Create publish record
+                Publish::create([
+                    'hash_id' => $hash->id,
+                    'publisher_id' => $publisher->id,
+                    'published_hash' => $hash->composite_hash,
+                    'status' => 'pending',
+                    'attempts' => 0,
+                    'metadata' => [
+                        'model_type' => $model->getMorphClass(),
+                        'model_id' => $model->getKey(),
+                    ],
+                ]);
+            }
+        }
     }
 }

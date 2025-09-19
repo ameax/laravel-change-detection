@@ -17,7 +17,7 @@ class LaravelChangeDetectionCommand extends Command
                         {--models=* : Specific model classes to check}
                         {--update : Update hashes for detected changes}
                         {--cleanup : Clean up orphaned hashes}
-                        {--limit=1000 : Limit number of records to process}
+                        {--limit= : Limit number of records to process (default: no limit)}
                         {--report : Show detailed report}
                         {--auto-discover : Auto-discover hashable models}';
 
@@ -110,6 +110,63 @@ class LaravelChangeDetectionCommand extends Command
      * @return \Illuminate\Support\Collection<int, class-string>
      */
     private function discoverHashableModels(): \Illuminate\Support\Collection
+    {
+        // Step 1: Start with models that have publishers (main models)
+        $mainModels = $this->getModelsFromPublishers();
+
+        if ($mainModels->isEmpty()) {
+            // Fallback to old behavior if no publishers configured
+            return $this->discoverAllHashableModels();
+        }
+
+        // Step 2: Find all dependency models from main models
+        $dependencyModels = $this->findDependencyModels($mainModels);
+
+        // Step 3: Return in correct processing order: dependencies first, then main models
+        return $dependencyModels->merge($mainModels)->unique();
+    }
+
+    private function getModelsFromPublishers(): \Illuminate\Support\Collection
+    {
+        $morphClasses = \Ameax\LaravelChangeDetection\Models\Publisher::where('status', 'active')
+            ->pluck('model_type')
+            ->unique();
+
+        return $morphClasses->map(function ($morphClass) {
+            return $this->getModelClassFromMorphClass($morphClass);
+        })->filter(function ($modelClass) {
+            return $modelClass && class_exists($modelClass) && $this->implementsHashable($modelClass);
+        });
+    }
+
+    private function findDependencyModels(\Illuminate\Support\Collection $mainModels): \Illuminate\Support\Collection
+    {
+        $dependencyModels = collect();
+
+        foreach ($mainModels as $modelClass) {
+            $model = new $modelClass;
+            $dependencies = $model->getHashCompositeDependencies();
+
+            foreach ($dependencies as $relationName) {
+                if (method_exists($model, $relationName)) {
+                    try {
+                        $relation = $model->{$relationName}();
+                        $relatedModel = $relation->getRelated();
+
+                        if ($relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                            $dependencyModels->push(get_class($relatedModel));
+                        }
+                    } catch (\Exception $e) {
+                        // Skip invalid relations
+                    }
+                }
+            }
+        }
+
+        return $dependencyModels->unique();
+    }
+
+    private function discoverAllHashableModels(): \Illuminate\Support\Collection
     {
         $models = collect();
         $appPath = app_path('Models');
@@ -211,7 +268,7 @@ class LaravelChangeDetectionCommand extends Command
         $this->info('Updating changed hashes...');
 
         $processor = app(BulkHashProcessor::class);
-        $limit = (int) $this->option('limit');
+        $limit = $this->option('limit') ? (int) $this->option('limit') : null;
         $totalUpdated = 0;
 
         foreach ($models as $modelClass) {
@@ -227,5 +284,27 @@ class LaravelChangeDetectionCommand extends Command
         $this->info("Total hash records updated: {$totalUpdated}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Get the model class from a morph class name by discovering all hashable models.
+     */
+    private function getModelClassFromMorphClass(string $morphClass): ?string
+    {
+        // Get all hashable models from the application
+        $allHashableModels = $this->discoverAllHashableModels();
+
+        foreach ($allHashableModels as $class) {
+            try {
+                $instance = new $class;
+                if ($instance->getMorphClass() === $morphClass) {
+                    return $class;
+                }
+            } catch (\Exception $e) {
+                // Skip invalid classes
+            }
+        }
+
+        return null;
     }
 }

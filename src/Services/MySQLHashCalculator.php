@@ -41,13 +41,16 @@ class MySQLHashCalculator
             default => "MD5({$concatExpression})"
         };
 
+        // Use the model's connection for hash calculation to support cross-database scenarios
+        $modelConnection = $model->getConnection();
+
         $sql = "
             SELECT {$hashExpression} as attribute_hash
             FROM `{$table}`
             WHERE `{$primaryKey}` = ?
         ";
 
-        $result = $this->connection->selectOne($sql, [$modelId]);
+        $result = $modelConnection->selectOne($sql, [$modelId]);
 
         return $result->attribute_hash;
     }
@@ -80,6 +83,9 @@ class MySQLHashCalculator
 
         $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
 
+        // Use the model's connection for hash calculation to support cross-database scenarios
+        $modelConnection = $model->getConnection();
+
         $sql = "
             SELECT
                 `{$primaryKey}` as model_id,
@@ -88,7 +94,7 @@ class MySQLHashCalculator
             WHERE `{$primaryKey}` IN ({$placeholders})
         ";
 
-        $results = $this->connection->select($sql, $modelIds);
+        $results = $modelConnection->select($sql, $modelIds);
 
         return collect($results)->keyBy('model_id')->map->attribute_hash->toArray();
     }

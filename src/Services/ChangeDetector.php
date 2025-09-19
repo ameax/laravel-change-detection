@@ -7,6 +7,7 @@ namespace Ameax\LaravelChangeDetection\Services;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -85,6 +86,10 @@ class ChangeDetector
             END
         ";
 
+        // Add scope filtering
+        $scopeClause = $this->buildScopeSubquery($modelClass, 'm', $primaryKey);
+        $scopeBindings = $this->getScopeBindings($modelClass);
+
         $limitClause = $limit ? "LIMIT {$limit}" : '';
 
         $sql = "
@@ -94,12 +99,14 @@ class ChangeDetector
                 ON h.hashable_type = ?
                 AND h.hashable_id = m.`{$primaryKey}`
                 AND h.deleted_at IS NULL
-            WHERE h.composite_hash IS NULL
-               OR h.composite_hash != {$compositeHashExpr}
+            WHERE (h.composite_hash IS NULL
+               OR h.composite_hash != {$compositeHashExpr})
+            {$scopeClause}
             {$limitClause}
         ";
 
-        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, [$morphClass]);
+        $bindings = array_merge([$morphClass], $scopeBindings);
+        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, $bindings);
 
         return array_column($results, 'model_id');
     }
@@ -112,7 +119,16 @@ class ChangeDetector
             return collect();
         }
 
-        return $modelClass::whereIn((new $modelClass)->getKeyName(), $changedIds)->get();
+        $query = $modelClass::whereIn((new $modelClass)->getKeyName(), $changedIds);
+
+        // Apply scope if defined
+        $model = new $modelClass;
+        $scope = $model->getHashableScope();
+        if ($scope) {
+            $scope($query);
+        }
+
+        return $query->get();
     }
 
     public function countChangedModels(string $modelClass): int
@@ -164,6 +180,10 @@ class ChangeDetector
         $modelDatabase = $modelConnection->getDatabaseName();
         $qualifiedTable = $modelDatabase ? "`{$modelDatabase}`.`{$table}`" : "`{$table}`";
 
+        // Add scope filtering
+        $scopeClause = $this->buildScopeSubquery($modelClass, 'm', $primaryKey);
+        $scopeBindings = $this->getScopeBindings($modelClass);
+
         $sql = "
             SELECT COUNT(*) as changed_count
             FROM {$qualifiedTable} m
@@ -171,11 +191,13 @@ class ChangeDetector
                 ON h.hashable_type = ?
                 AND h.hashable_id = m.`{$primaryKey}`
                 AND h.deleted_at IS NULL
-            WHERE h.composite_hash IS NULL
-               OR h.composite_hash != {$compositeHashExpr}
+            WHERE (h.composite_hash IS NULL
+               OR h.composite_hash != {$compositeHashExpr})
+            {$scopeClause}
         ";
 
-        $result = $this->connection->selectOne($sql, [$morphClass]);
+        $bindings = array_merge([$morphClass], $scopeBindings);
+        $result = $this->connection->selectOne($sql, $bindings);
 
         return (int) $result->changed_count;
     }
@@ -198,5 +220,57 @@ class ChangeDetector
     public function getConnection(): Connection
     {
         return $this->connection;
+    }
+
+    /**
+     * Build a subquery for scoped model filtering.
+     * Returns empty string if no scope is defined.
+     */
+    private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
+    {
+        $model = new $modelClass;
+        $scope = $model->getHashableScope();
+
+        if (!$scope) {
+            return ''; // No scope defined, no filtering needed
+        }
+
+        // Create a query with the scope applied to get the subquery SQL
+        $query = $modelClass::query();
+        $scope($query);
+
+        // Get the SQL and bindings from the scoped query
+        $subquerySql = $query->select($model->getKeyName())->toSql();
+
+        // Build qualified table name for cross-database compatibility
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+        $table = $model->getTable();
+
+        if ($modelDatabase) {
+            // Replace the table name in the subquery with the qualified table name
+            $qualifiedTable = "`{$modelDatabase}`.`{$table}`";
+            $subquerySql = str_replace("`{$table}`", $qualifiedTable, $subquerySql);
+        }
+
+        return " AND {$tableAlias}.`{$primaryKey}` IN ({$subquerySql})";
+    }
+
+    /**
+     * Get bindings from a scoped query for use in raw SQL.
+     */
+    private function getScopeBindings(string $modelClass): array
+    {
+        $model = new $modelClass;
+        $scope = $model->getHashableScope();
+
+        if (!$scope) {
+            return [];
+        }
+
+        $query = $modelClass::query();
+        $scope($query);
+
+        return $query->getBindings();
     }
 }
