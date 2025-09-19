@@ -307,13 +307,14 @@ return [
 
 ### Publisher Configuration
 
-Publishers can define their own rate limiting and batch processing settings:
+Publishers implement the `Publisher` contract with comprehensive rate limiting and error handling configuration:
 
 ```php
 use Ameax\LaravelChangeDetection\Contracts\Publisher;
 
 class CustomPublisher implements Publisher
 {
+    // Rate limiting configuration
     public function getBatchSize(): int
     {
         return 1000; // Process 1000 records per batch
@@ -321,73 +322,198 @@ class CustomPublisher implements Publisher
 
     public function getDelayMs(): int
     {
-        return 0; // No delay between records (e.g., for SFTP exports)
+        return 100; // 100ms delay between each record
     }
 
-    public function getMaxAttempts(): int
+    public function getRetryIntervals(): array
     {
-        return 3; // Retry failed publishes 3 times
+        return [30, 300, 3600]; // Retry after 30s, 5m, 1h
     }
 
-    // ... other required methods
+    // Error handling configuration
+    public function getMaxValidationErrors(): int
+    {
+        return 50; // Stop job after 50 validation errors
+    }
+
+    public function getMaxInfrastructureErrors(): int
+    {
+        return 1; // Stop job after 1 infrastructure error
+    }
+
+    public function handlePublishException(\Throwable $exception): string
+    {
+        // Return 'stop_job', 'fail_record', or 'defer_record'
+        if (str_contains($exception->getMessage(), 'Connection refused')) {
+            return 'stop_job'; // Critical infrastructure issue
+        }
+
+        return 'defer_record'; // Retry later
+    }
+
+    // Publishing logic
+    public function shouldPublish($model): bool
+    {
+        return $model->status === 'active';
+    }
+
+    public function getData($model): array
+    {
+        return $model->toArray();
+    }
+
+    public function publish($model, array $data): bool
+    {
+        // Your publishing logic here
+        return $this->sendToExternalAPI($data);
+    }
 }
+```
+
+### Error Handling & Recovery
+
+The publishing system tracks errors with detailed categorization:
+
+```php
+// Check publish status for a model
+$user = User::find(1);
+$status = $user->getPublishStatus();
+
+// Returns:
+// [
+//     'publisher_name' => [
+//         'status' => 'failed|deferred|completed',
+//         'last_error' => 'Error message',
+//         'error_type' => 'validation|infrastructure|data',
+//         'response_code' => 404,
+//         'attempt_count' => 3,
+//         'last_attempted_at' => '2024-01-15 10:30:00'
+//     ]
+// ]
+
+// Reset errors for debugging
+$user->resetPublishErrors(); // Reset all publishers
+$user->resetPublishErrorsForPublisher($publisherId); // Reset specific publisher
+
+// Get error count
+$errorCount = $user->getPublishErrorCount();
 ```
 
 ### Processing Publishes
 
-The publishing system uses publisher-specific settings for optimal performance:
+The `BulkPublishJob` processes publishes with intelligent error handling:
 
 ```bash
-# Process all pending publishes using each publisher's configuration
+# Queue bulk publish job (recommended)
 php artisan change-detection:process-publishes
 
-# Process synchronously with progress feedback
+# Process synchronously with real-time feedback
 php artisan change-detection:process-publishes --sync
 
 # Force processing even if another job is running
 php artisan change-detection:process-publishes --force
+
+# Process specific number of records
+php artisan change-detection:process-publishes --limit=500
 ```
+
+The job automatically:
+- **Single Instance**: Only one bulk job runs at a time using Laravel's `ShouldBeUnique`
+- **Publisher Grouping**: Groups records by publisher for optimal batch processing
+- **Rate Limiting**: Uses each publisher's `getBatchSize()` and `getDelayMs()` settings
+- **Error Differentiation**: Tracks validation vs infrastructure errors separately
+- **Smart Stopping**: Stops processing when error thresholds are reached
+- **Response Tracking**: Captures HTTP response codes for debugging
+- **Automatic Chaining**: Dispatches next batch if more records exist
 
 ### Publisher Examples
 
-**API Publisher (with rate limiting)**:
+**API Publisher (with strict rate limiting)**:
 ```php
-public function getBatchSize(): int { return 50; }   // Small batches for API
-public function getDelayMs(): int { return 200; }    // 200ms delay for rate limits
+class ApiPublisher implements Publisher
+{
+    public function getBatchSize(): int { return 50; }
+    public function getDelayMs(): int { return 200; }
+    public function getMaxValidationErrors(): int { return 10; }
+    public function getMaxInfrastructureErrors(): int { return 1; }
+
+    public function handlePublishException(\Throwable $exception): string
+    {
+        if (str_contains($exception->getMessage(), '429')) {
+            return 'stop_job'; // Rate limit hit, stop job
+        }
+        return 'defer_record';
+    }
+}
 ```
 
 **SFTP Export Publisher (no limits)**:
 ```php
-public function getBatchSize(): int { return 0; }    // Unlimited batch size
-public function getDelayMs(): int { return 0; }      // No delay between records
+class SftpExportPublisher implements Publisher
+{
+    public function getBatchSize(): int { return 0; }      // Unlimited
+    public function getDelayMs(): int { return 0; }        // No delay
+    public function getMaxValidationErrors(): int { return 0; } // No limit
+    public function getMaxInfrastructureErrors(): int { return 1; } // Stop on connection issues
+}
 ```
 
-**Log Publisher (moderate batching)**:
+**Email Publisher (moderate batching)**:
 ```php
-public function getBatchSize(): int { return 10; }   // Small batches to avoid log spam
-public function getDelayMs(): int { return 100; }    // 100ms delay between logs
+class EmailPublisher implements Publisher
+{
+    public function getBatchSize(): int { return 100; }
+    public function getDelayMs(): int { return 50; }
+    public function getMaxValidationErrors(): int { return 20; } // Invalid emails
+    public function getMaxInfrastructureErrors(): int { return 3; } // SMTP issues
+}
 ```
 
 ### Immediate Publishing
 
-For urgent records that need immediate publishing:
+For urgent records that bypass the queue system:
 
 ```php
-// Publish a single record immediately (synchronously)
-$publishRecord->publishNow();
+// Publish immediately (synchronous)
+$success = $publishRecord->publishNow();
 
-// Smart publishing - immediate if no bulk job is running
+// Smart publishing - immediate if no bulk job running, else queue
 $publishRecord->publishImmediatelyOrQueue();
+
+// Model-level immediate publishing
+$user = User::find(1);
+$user->publishImmediately(); // Publishes to all configured publishers
 ```
 
-### Bulk Processing
+### Error Types & Response Codes
 
-The `BulkPublishJob` automatically:
-- Groups records by publisher type
-- Uses each publisher's `getBatchSize()` and `getDelayMs()` settings
-- Processes only one instance at a time (unique job)
-- Chains to next batch if more records exist
-- Logs detailed progress per publisher
+The system categorizes errors for targeted handling:
+
+- **Validation Errors**: Invalid data format, missing required fields
+- **Infrastructure Errors**: Network timeouts, connection failures, authentication
+- **Data Errors**: Missing models, empty data sets
+
+Response codes are captured for HTTP-based publishers:
+```php
+// Publish records store detailed error information
+$publishRecord = Publish::find(1);
+echo $publishRecord->last_error_message;     // "HTTP 404: Resource not found"
+echo $publishRecord->last_response_code;     // 404
+echo $publishRecord->error_type;             // "validation"
+echo $publishRecord->attempt_count;          // 3
+```
+
+### Bulk Processing Details
+
+The `BulkPublishJob` processing flow:
+
+1. **Acquire Lock**: Prevents multiple instances using cache locks
+2. **Group by Publisher**: Processes each publisher type separately
+3. **Load Settings**: Uses publisher-specific batch size and delays
+4. **Process Batch**: Handles records with comprehensive error tracking
+5. **Error Monitoring**: Stops when error thresholds are exceeded
+6. **Chain Next Batch**: Automatically dispatches follow-up jobs
+7. **Release Lock**: Ensures clean shutdown
 
 ## Development & Debugging
 
@@ -431,6 +557,26 @@ $lastUpdated = $user->getHashLastUpdated();
 // Calculate hashes without storing
 $attributeHash = $user->calculateAttributeHash();
 $compositeHash = $user->calculateCompositeHash();
+```
+
+### Error Management Methods
+
+```php
+// Reset all publish errors for this model
+$resetCount = $user->resetPublishErrors();
+
+// Reset errors for specific publisher
+$resetCount = $user->resetPublishErrorsForPublisher($publisherId);
+
+// Get total error count across all publishers
+$errorCount = $user->getPublishErrorCount();
+
+// Get detailed publish status for all publishers
+$status = $user->getPublishStatus();
+// Returns array with publisher status details
+
+// Model can be published immediately (bypassing queue)
+$user->publishImmediately();
 ```
 
 ## Performance Considerations
