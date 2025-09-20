@@ -263,6 +263,51 @@ class OrphanedHashDetector
     }
 
     /**
+     * Immediately purge orphaned hashes (delete from database).
+     * This is different from cleanupOrphanedHashes which only marks them as deleted.
+     *
+     * @param  class-string  $modelClass
+     * @param  ?int  $limit
+     * @return int Number of purged records
+     */
+    public function purgeOrphanedHashes(string $modelClass, ?int $limit = null): int
+    {
+        $orphanedHashes = $this->detectOrphanedHashes($modelClass, $limit);
+
+        if (empty($orphanedHashes)) {
+            return 0;
+        }
+
+        $hashIds = array_column($orphanedHashes, 'hash_id');
+
+        return $this->deleteHashes($hashIds);
+    }
+
+    /**
+     * Physically delete hash records from the database.
+     * Note: Related publishes and hash_dependents will be cascade deleted.
+     *
+     * @param  array<int>  $hashIds
+     * @return int Number of deleted records
+     */
+    private function deleteHashes(array $hashIds): int
+    {
+        if (empty($hashIds)) {
+            return 0;
+        }
+
+        $hashesTable = config('change-detection.tables.hashes', 'hashes');
+        $idsPlaceholder = str_repeat('?,', count($hashIds) - 1).'?';
+
+        $sql = "
+            DELETE FROM `{$hashesTable}`
+            WHERE id IN ({$idsPlaceholder})
+        ";
+
+        return $this->connection->delete($sql, $hashIds);
+    }
+
+    /**
      * Build a subquery for scoped model filtering.
      * Returns the WHERE clause part for the scope.
      */
