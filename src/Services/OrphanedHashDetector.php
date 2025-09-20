@@ -33,6 +33,7 @@ class OrphanedHashDetector
         $primaryKey = $model->getKeyName();
         $morphClass = $model->getMorphClass();
         $modelConnectionName = $model->getConnectionName();
+        $scope = $model->getHashableScope();
 
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
@@ -41,17 +42,44 @@ class OrphanedHashDetector
 
         $limitClause = $limit ? "LIMIT {$limit}" : '';
 
-        $sql = "
-            SELECT h.id as hash_id, h.hashable_id as model_id
-            FROM {$hashesTableName} h
-            LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
-            WHERE h.hashable_type = ?
-              AND h.deleted_at IS NULL
-              AND m.`{$primaryKey}` IS NULL
-            {$limitClause}
-        ";
+        // Build the WHERE clause based on whether a scope is defined
+        if ($scope) {
+            // Get scope SQL and bindings
+            $scopeClause = $this->buildScopeSubquery($modelClass, 'm', $primaryKey, $modelTableName);
+            $scopeBindings = $this->getScopeBindings($modelClass);
 
-        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, [$morphClass]);
+            // Records are orphaned if they don't exist OR are outside the scope
+            $sql = "
+                SELECT h.id as hash_id, h.hashable_id as model_id
+                FROM {$hashesTableName} h
+                LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
+                WHERE h.hashable_type = ?
+                  AND h.deleted_at IS NULL
+                  AND (m.`{$primaryKey}` IS NULL OR NOT EXISTS (
+                      SELECT 1 FROM {$modelTableName} scoped
+                      WHERE scoped.`{$primaryKey}` = h.hashable_id
+                      {$scopeClause}
+                  ))
+                {$limitClause}
+            ";
+
+            $bindings = array_merge([$morphClass], $scopeBindings);
+        } else {
+            // No scope - only check if record exists
+            $sql = "
+                SELECT h.id as hash_id, h.hashable_id as model_id
+                FROM {$hashesTableName} h
+                LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
+                WHERE h.hashable_type = ?
+                  AND h.deleted_at IS NULL
+                  AND m.`{$primaryKey}` IS NULL
+                {$limitClause}
+            ";
+
+            $bindings = [$morphClass];
+        }
+
+        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, $bindings);
 
         return array_map(function ($result) {
             return [
@@ -140,22 +168,47 @@ class OrphanedHashDetector
         $primaryKey = $model->getKeyName();
         $morphClass = $model->getMorphClass();
         $modelConnectionName = $model->getConnectionName();
+        $scope = $model->getHashableScope();
 
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
 
         $modelTableName = $this->crossDbBuilder->buildCrossDatabaseTableName($table, $modelConnectionName);
         $hashesTableName = $this->crossDbBuilder->buildHashTableName($hashesTable);
 
-        $sql = "
-            SELECT COUNT(*) as orphaned_count
-            FROM {$hashesTableName} h
-            LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
-            WHERE h.hashable_type = ?
-              AND h.deleted_at IS NULL
-              AND m.`{$primaryKey}` IS NULL
-        ";
+        // Build the WHERE clause based on whether a scope is defined
+        if ($scope) {
+            // Get scope SQL and bindings
+            $scopeClause = $this->buildScopeSubquery($modelClass, 'm', $primaryKey, $modelTableName);
+            $scopeBindings = $this->getScopeBindings($modelClass);
 
-        $result = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, [$morphClass]);
+            $sql = "
+                SELECT COUNT(*) as orphaned_count
+                FROM {$hashesTableName} h
+                LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
+                WHERE h.hashable_type = ?
+                  AND h.deleted_at IS NULL
+                  AND (m.`{$primaryKey}` IS NULL OR NOT EXISTS (
+                      SELECT 1 FROM {$modelTableName} scoped
+                      WHERE scoped.`{$primaryKey}` = h.hashable_id
+                      {$scopeClause}
+                  ))
+            ";
+
+            $bindings = array_merge([$morphClass], $scopeBindings);
+        } else {
+            $sql = "
+                SELECT COUNT(*) as orphaned_count
+                FROM {$hashesTableName} h
+                LEFT JOIN {$modelTableName} m ON m.`{$primaryKey}` = h.hashable_id
+                WHERE h.hashable_type = ?
+                  AND h.deleted_at IS NULL
+                  AND m.`{$primaryKey}` IS NULL
+            ";
+
+            $bindings = [$morphClass];
+        }
+
+        $result = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, $bindings);
 
         return (int) $result[0]->orphaned_count;
     }
@@ -207,5 +260,53 @@ class OrphanedHashDetector
     public function getConnection(): Connection
     {
         return $this->connection;
+    }
+
+    /**
+     * Build a subquery for scoped model filtering.
+     * Returns the WHERE clause part for the scope.
+     */
+    private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey, string $modelTableName): string
+    {
+        $model = new $modelClass;
+        $scope = $model->getHashableScope();
+
+        if (!$scope) {
+            return ''; // No scope defined
+        }
+
+        // Create a query with the scope applied
+        $query = $modelClass::query();
+        $scope($query);
+
+        // Get the SQL from the scoped query
+        $subquerySql = $query->select($model->getKeyName())->toSql();
+
+        // Extract the WHERE clause from the subquery
+        // The subquery will be something like: "select `customer_id` from `tbl_customer` where `customer_id` < ?"
+        // We need just the WHERE part
+        if (preg_match('/where (.+)$/i', $subquerySql, $matches)) {
+            return ' AND ' . $matches[1];
+        }
+
+        return '';
+    }
+
+    /**
+     * Get bindings from a scoped query for use in raw SQL.
+     */
+    private function getScopeBindings(string $modelClass): array
+    {
+        $model = new $modelClass;
+        $scope = $model->getHashableScope();
+
+        if (!$scope) {
+            return [];
+        }
+
+        $query = $modelClass::query();
+        $scope($query);
+
+        return $query->getBindings();
     }
 }
