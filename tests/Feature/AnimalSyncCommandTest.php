@@ -10,8 +10,7 @@ beforeEach(function () {
     ]);
 });
 
-
-it('scope for heavy animals with hash generator', function() {
+it('scope for heavy animals with hash generator', function () {
     // Create 4 animals with different weights without triggering hash creation
     TestAnimal::withoutEvents(function () {
         TestAnimal::create([
@@ -65,6 +64,6 @@ it('scope for heavy animals with hash generator', function() {
     $hashedAnimalIds = Hash::where('hashable_type', 'test_animal')->pluck('hashable_id');
     $hashedAnimals = TestAnimal::whereIn('id', $hashedAnimalIds)->get();
 
-    expect($hashedAnimals->every(fn($animal) => $animal->weight > 3))->toBeTrue();
+    expect($hashedAnimals->every(fn ($animal) => $animal->weight > 3))->toBeTrue();
     expect($hashedAnimals->pluck('type')->sort()->values()->toArray())->toEqual(['Dog', 'Horse']);
 });
