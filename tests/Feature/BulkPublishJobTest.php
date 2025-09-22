@@ -6,28 +6,24 @@ use Ameax\LaravelChangeDetection\Jobs\BulkPublishJob;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Models\Publisher;
-use Ameax\LaravelChangeDetection\Tests\TestCase;
 use Ameax\LaravelChangeDetection\Tests\TestPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 
-class BulkPublishJobTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Cache::flush();
-    }
+beforeEach(function () {
+    Cache::flush();
+});
 
-    it('processes pending publish records in batches', function () {
+it('processes pending publish records in batches', function () {
         // Create publisher
         $publisher = Publisher::create([
             'name' => 'Test Publisher',
-            'class_name' => TestPublisher::class,
-            'is_active' => true,
+            'model_type' => 'TestModel',
+            'publisher_class' => TestPublisher::class,
+            'status' => 'active',
         ]);
 
         // Create test model and hash
@@ -39,8 +35,7 @@ class BulkPublishJobTest extends TestCase
         $hash = Hash::create([
             'hashable_type' => get_class($testModel),
             'hashable_id' => 1,
-            'model_hash' => 'test_hash',
-            'dependency_hash' => 'dep_hash',
+            'attribute_hash' => 'test_hash',
             'composite_hash' => 'composite_hash',
         ]);
 
@@ -84,15 +79,15 @@ class BulkPublishJobTest extends TestCase
     it('applies 100ms delay between publishes', function () {
         $publisher = Publisher::create([
             'name' => 'Test Publisher',
-            'class_name' => TestPublisher::class,
-            'is_active' => true,
+            'model_type' => 'TestModel',
+            'publisher_class' => TestPublisher::class,
+            'status' => 'active',
         ]);
 
         $hash = Hash::create([
             'hashable_type' => 'TestModel',
             'hashable_id' => 1,
-            'model_hash' => 'test_hash',
-            'dependency_hash' => 'dep_hash',
+            'attribute_hash' => 'test_hash',
             'composite_hash' => 'composite_hash',
         ]);
 
@@ -123,15 +118,15 @@ class BulkPublishJobTest extends TestCase
 
         $publisher = Publisher::create([
             'name' => 'Test Publisher',
-            'class_name' => TestPublisher::class,
-            'is_active' => true,
+            'model_type' => 'TestModel',
+            'publisher_class' => TestPublisher::class,
+            'status' => 'active',
         ]);
 
         $hash = Hash::create([
             'hashable_type' => 'TestModel',
             'hashable_id' => 1,
-            'model_hash' => 'test_hash',
-            'dependency_hash' => 'dep_hash',
+            'attribute_hash' => 'test_hash',
             'composite_hash' => 'composite_hash',
         ]);
 
@@ -154,4 +149,3 @@ class BulkPublishJobTest extends TestCase
 
         Queue::assertPushed(BulkPublishJob::class, 1); // Next job dispatched
     });
-}

@@ -1,6 +1,9 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Models\Hash;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 it('can create a basic hash record', function () {
     $hash = Hash::create([
