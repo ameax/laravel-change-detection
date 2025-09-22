@@ -21,7 +21,7 @@ class DependencyHashCalculator
     }
 
     /**
-     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     public function calculate(Hashable $model): ?string
     {

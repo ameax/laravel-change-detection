@@ -24,7 +24,7 @@ class CompositeHashCalculator
     }
 
     /**
-     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     public function calculate(Hashable $model): string
     {
@@ -44,8 +44,8 @@ class CompositeHashCalculator
     }
 
     /**
-     * @param class-string<Hashable&\Illuminate\Database\Eloquent\Model> $modelClass
-     * @param array<int> $modelIds
+     * @param  class-string<Hashable&\Illuminate\Database\Eloquent\Model>  $modelClass
+     * @param  array<int>  $modelIds
      * @return array<int, string>
      */
     public function calculateBulk(string $modelClass, array $modelIds): array

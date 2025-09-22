@@ -312,7 +312,8 @@ class OrphanedHashDetector
     /**
      * Build a subquery for scoped model filtering.
      * Returns the WHERE clause part for the scope.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey, string $modelTableName): string
     {
@@ -342,7 +343,8 @@ class OrphanedHashDetector
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array

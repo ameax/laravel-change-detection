@@ -7,7 +7,6 @@ namespace Ameax\LaravelChangeDetection\Services;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ChangeDetector
@@ -29,7 +28,7 @@ class ChangeDetector
     }
 
     /**
-     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     public function hasChanged(Hashable $model): bool
     {
@@ -128,7 +127,8 @@ class ChangeDetector
 
         if (empty($changedIds)) {
             /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
-            $emptyCollection = new \Illuminate\Database\Eloquent\Collection();
+            $emptyCollection = new \Illuminate\Database\Eloquent\Collection;
+
             return $emptyCollection;
         }
 
@@ -145,11 +145,12 @@ class ChangeDetector
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
         $result = $query->get();
+
         return $result;
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function countChangedModels(string $modelClass, ?int $limit = null): int
     {
@@ -223,7 +224,7 @@ class ChangeDetector
     }
 
     /**
-     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     private function getCurrentHash(Hashable $model): ?string
     {
@@ -248,7 +249,8 @@ class ChangeDetector
     /**
      * Build a subquery for scoped model filtering.
      * Returns empty string if no scope is defined.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
@@ -282,7 +284,8 @@ class ChangeDetector
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array

@@ -26,7 +26,7 @@ class BulkHashProcessor
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function processChangedModels(string $modelClass, ?int $limit = null): int
     {
@@ -41,8 +41,8 @@ class BulkHashProcessor
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
-     * @param array<int> $modelIds
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
      */
     public function updateHashesForIds(string $modelClass, array $modelIds): int
     {
@@ -61,8 +61,8 @@ class BulkHashProcessor
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
-     * @param array<int> $modelIds
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
      */
     private function updateHashesChunk(string $modelClass, array $modelIds): int
     {
@@ -154,7 +154,7 @@ class BulkHashProcessor
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function softDeleteHashesForDeletedModels(string $modelClass): int
     {
@@ -202,7 +202,7 @@ class BulkHashProcessor
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function cleanupOrphanedHashes(string $modelClass): int
     {
@@ -263,7 +263,8 @@ class BulkHashProcessor
     /**
      * Build a subquery for scoped model filtering.
      * Returns empty string if no scope is defined.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
@@ -297,7 +298,8 @@ class BulkHashProcessor
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array
@@ -317,8 +319,9 @@ class BulkHashProcessor
 
     /**
      * Build dependency relationships for multiple model IDs.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
-     * @param array<int> $modelIds
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
      */
     private function buildDependencyRelationshipsForIds(string $modelClass, array $modelIds): void
     {
@@ -357,10 +360,11 @@ class BulkHashProcessor
 
     /**
      * Build dependency relationships for a single model.
-     * @param \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $model
+     *
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     /**
-     * @param \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $model
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
      */
     private function buildDependencyRelationshipsForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): void
     {
@@ -431,8 +435,9 @@ class BulkHashProcessor
 
     /**
      * Recalculate composite hashes for model IDs after dependencies are created.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
-     * @param array<int> $modelIds
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
      */
     private function recalculateCompositeHashesForIds(string $modelClass, array $modelIds): void
     {
@@ -476,8 +481,9 @@ class BulkHashProcessor
 
     /**
      * Create publish records for model IDs that have active publishers.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
-     * @param array<int> $modelIds
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
      */
     private function createPublishRecordsForIds(string $modelClass, array $modelIds): void
     {
@@ -530,7 +536,8 @@ class BulkHashProcessor
 
     /**
      * Update models that depend on the cleaned up (deleted) hashes of the given model class.
-     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     private function updateDependentModelsAfterCleanup(string $modelClass): void
     {
@@ -566,7 +573,8 @@ class BulkHashProcessor
 
     /**
      * Update dependent models by their morph class by directly updating their hashes.
-     * @param array<int> $modelIds
+     *
+     * @param  array<int>  $modelIds
      */
     private function updateDependentModelsByMorphClass(string $morphClass, array $modelIds): void
     {

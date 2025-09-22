@@ -189,7 +189,7 @@ class Publish extends Model
     }
 
     /**
-     * @param Builder<Publish> $query
+     * @param  Builder<Publish>  $query
      * @return Builder<Publish>
      */
     public function scopePendingOrDeferred(Builder $query): Builder

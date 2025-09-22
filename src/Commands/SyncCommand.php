@@ -80,6 +80,7 @@ class SyncCommand extends Command
 
     /**
      * Get target models either from options or auto-discovery.
+     *
      * @return \Illuminate\Support\Collection<int, class-string>
      */
     private function getTargetModels(): \Illuminate\Support\Collection
@@ -104,6 +105,7 @@ class SyncCommand extends Command
 
     /**
      * Detect changes across all models.
+     *
      * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function detectChanges(\Illuminate\Support\Collection $models): void
@@ -143,6 +145,7 @@ class SyncCommand extends Command
 
     /**
      * Clean up orphaned hashes.
+     *
      * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function cleanupOrphans(\Illuminate\Support\Collection $models): void
@@ -189,6 +192,7 @@ class SyncCommand extends Command
 
     /**
      * Update changed hashes.
+     *
      * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function updateHashes(\Illuminate\Support\Collection $models): void
@@ -304,6 +308,7 @@ class SyncCommand extends Command
 
     /**
      * Auto-discover all hashable models in the application.
+     *
      * @return \Illuminate\Support\Collection<int, class-string>
      */
     private function discoverHashableModels(): \Illuminate\Support\Collection

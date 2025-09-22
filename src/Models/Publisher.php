@@ -58,7 +58,7 @@ class Publisher extends Model
     }
 
     /**
-     * @param Builder<Publisher> $query
+     * @param  Builder<Publisher>  $query
      * @return Builder<Publisher>
      */
     public function scopeActive(Builder $query): Builder
@@ -67,7 +67,7 @@ class Publisher extends Model
     }
 
     /**
-     * @param Builder<Publisher> $query
+     * @param  Builder<Publisher>  $query
      * @return Builder<Publisher>
      */
     public function scopeForModel(Builder $query, string $modelType): Builder

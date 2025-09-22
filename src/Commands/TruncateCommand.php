@@ -105,6 +105,7 @@ class TruncateCommand extends Command
 
     /**
      * Determine which tables to truncate based on options.
+     *
      * @return array<string>
      */
     private function getTablesToTruncate(string $hashesTable, string $hashDependentsTable, string $publishesTable): array
@@ -140,7 +141,7 @@ class TruncateCommand extends Command
 
     /**
      * Get record counts for each table.
-     * @param  \Illuminate\Database\Connection  $db
+     *
      * @param  array<string>  $tables
      * @return array<string, int>
      */
@@ -162,6 +163,7 @@ class TruncateCommand extends Command
 
     /**
      * Display record counts in a table format.
+     *
      * @param  array<string, int>  $recordCounts
      */
     private function displayRecordCounts(array $recordCounts): void

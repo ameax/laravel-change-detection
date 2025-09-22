@@ -91,9 +91,6 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    /**
-     * @param \Ameax\LaravelChangeDetection\Models\Publisher $publisher
-     */
     private function processPublisherBatch(\Ameax\LaravelChangeDetection\Models\Publisher $publisher): void
     {
         $batchSize = $publisher->publisher_class ?
@@ -283,8 +280,6 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * @param Publish $publishRecord
-     * @param \Ameax\LaravelChangeDetection\Contracts\Publisher|null $publisherInstance
      * @return array{status: string, error_type?: string, reason?: string}
      */
     private function processPublishRecord(Publish $publishRecord, ?\Ameax\LaravelChangeDetection\Contracts\Publisher $publisherInstance = null): array
