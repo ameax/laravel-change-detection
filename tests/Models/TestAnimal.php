@@ -39,7 +39,6 @@ class TestAnimal extends Model implements Hashable
         };
     }
 
-
     public function getHashableAttributes(): array
     {
         return ['type', 'birthday', 'group', 'features', 'weight'];

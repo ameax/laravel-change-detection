@@ -55,7 +55,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-
         // Test Animals table with various column types
         Schema::create('test_animals', function (Blueprint $table) {
             $table->id();
