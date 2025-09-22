@@ -84,9 +84,9 @@ it('detects and updates changes in existing cars', function () {
     $this->artisan('change-detection:sync', [
         '--models' => [TestCar::class],
     ])
-    ->expectsOutputToContain('2 changes detected')
-    ->expectsOutputToContain('Updated 2 hash records')
-    ->assertExitCode(0);
+        ->expectsOutputToContain('2 changes detected')
+        ->expectsOutputToContain('Updated 2 hash records')
+        ->assertExitCode(0);
 
     // Verify hashes were updated
     $newHash1 = Hash::where('hashable_type', 'test_car')
@@ -124,9 +124,9 @@ it('shows dry run results without making changes', function () {
         '--models' => [TestCar::class],
         '--dry-run' => true,
     ])
-    ->expectsOutputToContain('DRY RUN MODE')
-    ->expectsOutputToContain('Changes detected: 3')
-    ->assertExitCode(0);
+        ->expectsOutputToContain('DRY RUN MODE')
+        ->expectsOutputToContain('Changes detected: 3')
+        ->assertExitCode(0);
 
     // Verify no hashes were created
     $finalHashCount = Hash::where('hashable_type', 'test_car')->count();
@@ -181,9 +181,9 @@ it('shows detailed report when requested', function () {
         '--models' => [TestCar::class],
         '--report' => true,
     ])
-    ->expectsOutputToContain('Detailed Report')
-    ->expectsOutputToContain('TestCar')
-    ->assertExitCode(0);
+        ->expectsOutputToContain('Detailed Report')
+        ->expectsOutputToContain('TestCar')
+        ->assertExitCode(0);
 
     // Verify hashes were created
     $hashCount = Hash::where('hashable_type', 'test_car')->count();
