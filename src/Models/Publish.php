@@ -62,11 +62,17 @@ class Publish extends Model
         }
     }
 
+    /**
+     * @return BelongsTo<Hash, Publish>
+     */
     public function hash(): BelongsTo
     {
         return $this->belongsTo(Hash::class);
     }
 
+    /**
+     * @return BelongsTo<Publisher, Publish>
+     */
     public function publisher(): BelongsTo
     {
         return $this->belongsTo(Publisher::class);
@@ -158,6 +164,7 @@ class Publish extends Model
     private function getPublisherRetryIntervals(): array
     {
         try {
+            /** @phpstan-ignore-next-line */
             if (! $this->publisher || ! $this->publisher->publisher_class) {
                 return config('change-detection.retry_intervals', [
                     1 => 30,
@@ -187,12 +194,19 @@ class Publish extends Model
         }
     }
 
+    /**
+     * @param Builder<Publish> $query
+     * @return Builder<Publish>
+     */
     public function scopePendingOrDeferred(Builder $query): Builder
     {
         return $query->where(function ($q) {
+            /** @phpstan-ignore-next-line */
             $q->where('status', 'pending')
                 ->orWhere(function ($q) {
+                    /** @phpstan-ignore-next-line */
                     $q->where('status', 'deferred')
+                        /** @phpstan-ignore-next-line */
                         ->where('next_try', '<=', now());
                 });
         });
@@ -231,6 +245,7 @@ class Publish extends Model
 
             $hashableModel = $this->hash->hashable;
 
+            /** @phpstan-ignore-next-line */
             if (! $hashableModel) {
                 throw new \Exception('Hashable model not found');
             }

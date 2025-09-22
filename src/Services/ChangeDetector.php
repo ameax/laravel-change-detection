@@ -36,6 +36,10 @@ class ChangeDetector
         return $currentHash !== $calculatedHash;
     }
 
+    /**
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @return array<int>
+     */
     public function detectChangedModelIds(string $modelClass, ?int $limit = null): array
     {
         $model = new $modelClass;
@@ -110,6 +114,10 @@ class ChangeDetector
         return array_column($results, 'model_id');
     }
 
+    /**
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @return Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>
+     */
     public function detectChangedModels(string $modelClass, ?int $limit = null): Collection
     {
         $changedIds = $this->detectChangedModelIds($modelClass, $limit);
@@ -118,7 +126,9 @@ class ChangeDetector
             return collect();
         }
 
-        $query = $modelClass::whereIn((new $modelClass)->getKeyName(), $changedIds);
+        /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $tempModel */
+        $tempModel = new $modelClass;
+        $query = $modelClass::whereIn($tempModel->getKeyName(), $changedIds);
 
         // Apply scope if defined
         $model = new $modelClass;

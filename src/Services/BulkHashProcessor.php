@@ -342,11 +342,9 @@ class BulkHashProcessor
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
-            if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-                $scope = $model->getHashableScope();
-                if ($scope) {
-                    $scope($models);
-                }
+            $scope = $model->getHashableScope();
+            if ($scope) {
+                $scope($models);
             }
 
             $models = $models->get();
@@ -457,11 +455,9 @@ class BulkHashProcessor
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
-            if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-                $scope = $model->getHashableScope();
-                if ($scope) {
-                    $scope($models);
-                }
+            $scope = $model->getHashableScope();
+            if ($scope) {
+                $scope($models);
             }
 
             $models = $models->get();

@@ -204,6 +204,7 @@ class SyncCommand extends Command
             if ($this->modelStats[$modelClass]['changes_detected'] > 0) {
                 $this->line("  Processing {$modelName}...");
 
+                /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
                 $updated = $limit
                     ? $processor->processChangedModels($modelClass, (int) $limit)
                     : $processor->processChangedModels($modelClass);

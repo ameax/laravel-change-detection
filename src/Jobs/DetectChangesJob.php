@@ -96,7 +96,9 @@ class DetectChangesJob implements ShouldQueue
 
         Log::info("Updating {$changedCount} changed hashes for {$this->modelClass}");
 
-        $updated = $processor->processChangedModels($this->modelClass, $this->limit);
+        /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+        $modelClass = $this->modelClass;
+        $updated = $processor->processChangedModels($modelClass, $this->limit);
 
         Log::info("Updated {$updated} hash records for {$this->modelClass}");
     }

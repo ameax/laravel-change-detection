@@ -306,6 +306,7 @@ class LaravelChangeDetectionCommand extends Command
         foreach ($models as $modelClass) {
             $this->line("Processing {$modelClass}...");
 
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
             $updated = $processor->processChangedModels($modelClass, $limit);
             if ($updated > 0) {
                 $this->info("  Updated {$updated} hash records");

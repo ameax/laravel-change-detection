@@ -23,6 +23,9 @@ class CompositeHashCalculator
         $this->hashAlgorithm = config('change-detection.hash_algorithm', 'md5');
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     public function calculate(Hashable $model): string
     {
         $attributeHash = $this->attributeCalculator->calculateAttributeHash($model);
@@ -40,6 +43,11 @@ class CompositeHashCalculator
         };
     }
 
+    /**
+     * @param class-string<Hashable&\Illuminate\Database\Eloquent\Model> $modelClass
+     * @param array<int> $modelIds
+     * @return array<int, string>
+     */
     public function calculateBulk(string $modelClass, array $modelIds): array
     {
         $attributeHashes = $this->attributeCalculator->calculateAttributeHashBulk($modelClass, $modelIds);
