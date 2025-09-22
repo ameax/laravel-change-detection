@@ -43,10 +43,22 @@ return new class extends Migration
             $table->text('content');
             $table->timestamps();
         });
+
+        // Test cars table with various column types
+        Schema::create('test_cars', function (Blueprint $table) {
+            $table->id();
+            $table->string('model', 100);                    // String type
+            $table->integer('year');                         // Integer type
+            $table->decimal('price', 10, 2);                 // Decimal type
+            $table->boolean('is_electric')->default(false);  // Boolean type
+            $table->json('features')->nullable();            // JSON type
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('test_cars');
         Schema::dropIfExists('test_comments');
         Schema::dropIfExists('test_posts');
         Schema::dropIfExists('test_users');
