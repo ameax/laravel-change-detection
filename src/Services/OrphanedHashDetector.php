@@ -267,7 +267,6 @@ class OrphanedHashDetector
      * This is different from cleanupOrphanedHashes which only marks them as deleted.
      *
      * @param  class-string  $modelClass
-     * @param  ?int  $limit
      * @return int Number of purged records
      */
     public function purgeOrphanedHashes(string $modelClass, ?int $limit = null): int
@@ -316,7 +315,7 @@ class OrphanedHashDetector
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return ''; // No scope defined
         }
 
@@ -331,7 +330,7 @@ class OrphanedHashDetector
         // The subquery will be something like: "select `customer_id` from `tbl_customer` where `customer_id` < ?"
         // We need just the WHERE part
         if (preg_match('/where (.+)$/i', $subquerySql, $matches)) {
-            return ' AND ' . $matches[1];
+            return ' AND '.$matches[1];
         }
 
         return '';
@@ -345,7 +344,7 @@ class OrphanedHashDetector
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return [];
         }
 

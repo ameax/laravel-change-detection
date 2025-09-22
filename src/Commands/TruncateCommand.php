@@ -31,6 +31,7 @@ class TruncateCommand extends Command
 
         if (empty($tablesToTruncate)) {
             $this->error('No valid tables specified for truncation.');
+
             return self::FAILURE;
         }
 
@@ -40,6 +41,7 @@ class TruncateCommand extends Command
 
         if ($totalRecords === 0) {
             $this->info('All specified tables are already empty.');
+
             return self::SUCCESS;
         }
 
@@ -47,15 +49,16 @@ class TruncateCommand extends Command
         $this->displayRecordCounts($recordCounts);
 
         // Confirm truncation if not forced
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $message = sprintf(
                 'Are you sure you want to truncate %d tables with a total of %d records?',
                 count($tablesToTruncate),
                 $totalRecords
             );
 
-            if (!$this->confirm($message)) {
+            if (! $this->confirm($message)) {
                 $this->info('Truncation cancelled.');
+
                 return self::SUCCESS;
             }
         }
@@ -94,7 +97,8 @@ class TruncateCommand extends Command
             // Re-enable foreign key checks in case of error
             $db->statement('SET FOREIGN_KEY_CHECKS = 1');
 
-            $this->error('Failed to truncate tables: ' . $e->getMessage());
+            $this->error('Failed to truncate tables: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }
@@ -171,6 +175,6 @@ class TruncateCommand extends Command
         $this->table(['Table', 'Records'], $tableData);
 
         $total = array_sum($recordCounts);
-        $this->line('Total records to be deleted: ' . number_format($total));
+        $this->line('Total records to be deleted: '.number_format($total));
     }
 }

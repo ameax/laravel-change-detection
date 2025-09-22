@@ -23,6 +23,7 @@ class ProcessPublishesCommand extends Command
 
         if ($pendingCount === 0) {
             $this->info('No pending publishes found.');
+
             return self::SUCCESS;
         }
 
@@ -40,6 +41,7 @@ class ProcessPublishesCommand extends Command
         // Check if job is already running
         if (Cache::has('bulk_publish_job_running')) {
             $this->warn('BulkPublishJob is already running. Use --force to override or --sync to process synchronously.');
+
             return self::FAILURE;
         }
 
@@ -47,6 +49,7 @@ class ProcessPublishesCommand extends Command
         BulkPublishJob::dispatch();
 
         $this->info('BulkPublishJob dispatched successfully.');
+
         return self::SUCCESS;
     }
 

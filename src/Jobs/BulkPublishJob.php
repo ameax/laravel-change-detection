@@ -15,17 +15,22 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-class BulkPublishJob implements ShouldQueue, ShouldBeUnique
+class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 600; // 10 minutes
+
     public int $tries = 3;
+
     public int $maxExceptions = 3;
 
     private const DEFAULT_BATCH_SIZE = 100;
+
     private const DEFAULT_DELAY_MS = 50;
+
     private const LOCK_KEY = 'bulk_publish_job_running';
+
     private const LOCK_TIMEOUT = 600; // 10 minutes
 
     public function __construct()
@@ -52,8 +57,9 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
     public function handle(): void
     {
         // Additional lock check for extra safety
-        if (!$this->acquireLock()) {
+        if (! $this->acquireLock()) {
             Log::info('BulkPublishJob: Another instance is running, skipping');
+
             return;
         }
 
@@ -76,6 +82,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
 
         if ($publisherTypes->isEmpty()) {
             Log::info('BulkPublishJob: No pending publishes found');
+
             return;
         }
 
@@ -106,6 +113,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                 'class' => $publisher->publisher_class,
                 'error' => $e->getMessage(),
             ]);
+
             return;
         }
 
@@ -155,6 +163,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                             'publisher' => $publisher->name,
                             'reason' => $result['reason'] ?? 'Unknown',
                         ]);
+
                         return;
                 }
 
@@ -176,6 +185,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                             'validation_errors' => $validationErrors,
                             'max_allowed' => $maxValidationErrors,
                         ]);
+
                         return;
                     }
 
@@ -185,6 +195,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                             'infrastructure_errors' => $infrastructureErrors,
                             'max_allowed' => $maxInfrastructureErrors,
                         ]);
+
                         return;
                     }
                 }
@@ -208,6 +219,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                         'publisher' => $publisher->name,
                         'infrastructure_errors' => $infrastructureErrors,
                     ]);
+
                     return;
                 }
             }
@@ -230,17 +242,19 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
     private function getPublisherBatchSize(string $publisherClass): int
     {
         try {
-            if (!class_exists($publisherClass)) {
+            if (! class_exists($publisherClass)) {
                 return self::DEFAULT_BATCH_SIZE;
             }
 
             $publisher = app($publisherClass);
+
             return $publisher->getBatchSize() ?: self::DEFAULT_BATCH_SIZE;
         } catch (\Exception $e) {
             Log::warning('BulkPublishJob: Could not get batch size for {class}', [
                 'class' => $publisherClass,
                 'error' => $e->getMessage(),
             ]);
+
             return self::DEFAULT_BATCH_SIZE;
         }
     }
@@ -248,28 +262,31 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
     private function getPublisherDelay(string $publisherClass): int
     {
         try {
-            if (!class_exists($publisherClass)) {
+            if (! class_exists($publisherClass)) {
                 return self::DEFAULT_DELAY_MS;
             }
 
             $publisher = app($publisherClass);
+
             return $publisher->getDelayMs();
         } catch (\Exception $e) {
             Log::warning('BulkPublishJob: Could not get delay for {class}', [
                 'class' => $publisherClass,
                 'error' => $e->getMessage(),
             ]);
+
             return self::DEFAULT_DELAY_MS;
         }
     }
 
     private function processPublishRecord(Publish $publishRecord, $publisherInstance = null): array
     {
-        if (!$publishRecord->hash) {
+        if (! $publishRecord->hash) {
             Log::warning('BulkPublishJob: Publish record has no hash', [
                 'publish_id' => $publishRecord->id,
             ]);
             $publishRecord->markAsFailed('No hash found', null, 'data');
+
             return ['status' => 'failed', 'error_type' => 'data'];
         }
 
@@ -278,24 +295,25 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
         try {
             $publisherClass = $publishRecord->publisher->publisher_class;
 
-            if (!class_exists($publisherClass)) {
+            if (! class_exists($publisherClass)) {
                 throw new \Exception("Publisher class {$publisherClass} not found");
             }
 
             $publisher = $publisherInstance ?: app($publisherClass);
             $hashableModel = $publishRecord->hash->hashable;
 
-            if (!$hashableModel) {
+            if (! $hashableModel) {
                 throw new \Exception('Hashable model not found');
             }
 
-            if (!$publisher->shouldPublish($hashableModel)) {
+            if (! $publisher->shouldPublish($hashableModel)) {
                 Log::info('BulkPublishJob: Publisher says model should not be published', [
                     'publish_id' => $publishRecord->id,
                     'model_class' => get_class($hashableModel),
                     'model_id' => $hashableModel->getKey(),
                 ]);
                 $publishRecord->markAsPublished();
+
                 return ['status' => 'success'];
             }
 
@@ -307,9 +325,11 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                 Log::debug('BulkPublishJob: Successfully published', [
                     'publish_id' => $publishRecord->id,
                 ]);
+
                 return ['status' => 'success'];
             } else {
                 $publishRecord->markAsDeferred('Publisher returned false', null, 'data');
+
                 return ['status' => 'deferred', 'error_type' => 'data'];
             }
 
@@ -333,10 +353,11 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
                     return [
                         'status' => 'stop_job',
                         'reason' => $e->getMessage(),
-                        'error_type' => $errorType
+                        'error_type' => $errorType,
                     ];
                 } elseif ($errorHandling === 'fail_record') {
                     $publishRecord->markAsFailed($e->getMessage(), $responseCode, $errorType);
+
                     return ['status' => 'failed', 'error_type' => $errorType];
                 }
 
@@ -344,6 +365,7 @@ class BulkPublishJob implements ShouldQueue, ShouldBeUnique
             } else {
                 // Fallback without publisher
                 $publishRecord->markAsDeferred($e->getMessage(), null, 'unknown');
+
                 return ['status' => 'deferred', 'error_type' => 'unknown'];
             }
         }

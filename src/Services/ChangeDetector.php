@@ -7,7 +7,6 @@ namespace Ameax\LaravelChangeDetection\Services;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Connection;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -231,7 +230,7 @@ class ChangeDetector
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return ''; // No scope defined, no filtering needed
         }
 
@@ -264,7 +263,7 @@ class ChangeDetector
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return [];
         }
 

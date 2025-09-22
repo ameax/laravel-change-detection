@@ -63,7 +63,7 @@ interface Publisher
     /**
      * Determine if an exception should stop the entire job or just defer this record.
      *
-     * @param \Throwable $exception The exception that occurred
+     * @param  \Throwable  $exception  The exception that occurred
      * @return string 'stop_job', 'defer_record', or 'fail_record'
      */
     public function handlePublishException(\Throwable $exception): string;
