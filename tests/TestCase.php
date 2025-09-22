@@ -58,9 +58,13 @@ class TestCase extends Orchestra
             // Drop all existing tables first
             $this->dropAllTables();
 
-            // Run migrations
-            $migration = include __DIR__.'/../database/migrations/create_change_detection_tables.php.stub';
-            $migration->up();
+            // Run package migrations
+            $packageMigration = include __DIR__.'/../database/migrations/create_change_detection_tables.php.stub';
+            $packageMigration->up();
+
+            // Run test migrations
+            $testMigration = include __DIR__.'/migrations/create_test_tables.php';
+            $testMigration->up();
 
             RefreshDatabaseState::$migrated = true;
         } else {
@@ -74,10 +78,17 @@ class TestCase extends Orchestra
         DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
 
         $tables = [
+            // Test tables
+            'test_comments',
+            'test_posts',
+            'test_users',
+            'test_models',
+            // Package tables
             'hash_dependents',
             'publishes',
             'publishers',
             'hashes',
+            // Laravel tables
             'migrations',
         ];
 
@@ -93,6 +104,12 @@ class TestCase extends Orchestra
         DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
 
         $tables = [
+            // Test tables
+            'test_comments',
+            'test_posts',
+            'test_users',
+            'test_models',
+            // Package tables
             'hash_dependents',
             'publishes',
             'publishers',
