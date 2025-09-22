@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Ameax\LaravelChangeDetection\Tests\Models;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
@@ -16,26 +14,28 @@ class TestComment extends Model implements Hashable
     protected $table = 'test_comments';
 
     protected $fillable = [
-        'article_id',
+        'post_id',
+        'user_id',
         'content',
-        'author',
-        'created_at',
     ];
 
     public function getHashableAttributes(): array
     {
-        return ['content', 'author'];
+        return ['content'];
     }
 
     public function getHashCompositeDependencies(): array
     {
-        // Optional: Could have dependencies if needed
-        // For now, leaf node
         return [];
     }
 
-    public function article(): BelongsTo
+    public function post(): BelongsTo
     {
-        return $this->belongsTo(TestArticle::class, 'article_id');
+        return $this->belongsTo(TestPost::class, 'post_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(TestUser::class, 'user_id');
     }
 }

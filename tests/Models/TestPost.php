@@ -1,40 +1,43 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Ameax\LaravelChangeDetection\Tests\Models;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Traits\InteractsWithHashes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class TestReply extends Model implements Hashable
+class TestPost extends Model implements Hashable
 {
     use InteractsWithHashes;
 
-    protected $table = 'test_replies';
+    protected $table = 'test_posts';
 
     protected $fillable = [
-        'article_id',
+        'user_id',
+        'title',
         'content',
-        'author',
-        'created_at',
+        'status',
     ];
 
     public function getHashableAttributes(): array
     {
-        return ['content', 'author'];
+        return ['title', 'content', 'status'];
     }
 
     public function getHashCompositeDependencies(): array
     {
-        // Leaf node - no dependencies
-        return [];
+        return ['comments'];
     }
 
-    public function article(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(TestArticle::class, 'article_id');
+        return $this->belongsTo(TestUser::class, 'user_id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TestComment::class, 'post_id');
     }
 }

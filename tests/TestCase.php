@@ -4,6 +4,7 @@ namespace Ameax\LaravelChangeDetection\Tests;
 
 use Ameax\LaravelChangeDetection\LaravelChangeDetectionServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -15,6 +16,8 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Ameax\\LaravelChangeDetection\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
+
+        $this->setUpDatabase();
     }
 
     protected function getPackageProviders($app)
@@ -43,84 +46,84 @@ class TestCase extends Orchestra
         ]);
     }
 
-    protected function defineDatabaseMigrations()
+    protected function setUpDatabase()
     {
-        $this->loadMigrationsFrom(__DIR__.'/migrations');
+        $isMigrated = (bool) env('MIGRATED');
 
-        // Load the main package migration
-        include_once __DIR__.'/../database/migrations/create_change_detection_tables.php.stub';
-        $migration = new class extends \Illuminate\Database\Migrations\Migration
-        {
-            public function up(): void
-            {
-                $hashesTable = 'hashes';
-                $publishersTable = 'publishers';
-                $publishesTable = 'publishes';
-                $hashDependentsTable = 'hash_dependents';
+        if (! RefreshDatabaseState::$migrated) {
+            RefreshDatabaseState::$migrated = $isMigrated;
+        }
 
-                if (! \Illuminate\Support\Facades\Schema::hasTable($hashesTable)) {
-                    \Illuminate\Support\Facades\Schema::create($hashesTable, function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->id();
-                        $table->morphs('hashable');
-                        $table->string('attribute_hash', 32);
-                        $table->string('composite_hash', 32)->nullable();
-                        $table->timestamp('deleted_at')->nullable();
-                        $table->timestamps();
-                        $table->unique(['hashable_type', 'hashable_id']);
-                        $table->index('deleted_at');
-                    });
-                }
+        if (! RefreshDatabaseState::$migrated) {
+            // Drop all existing tables first
+            $this->dropAllTables();
 
-                if (! \Illuminate\Support\Facades\Schema::hasTable($publishersTable)) {
-                    \Illuminate\Support\Facades\Schema::create($publishersTable, function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->id();
-                        $table->string('name');
-                        $table->string('model_type');
-                        $table->string('publisher_class');
-                        $table->enum('status', ['active', 'inactive'])->default('active');
-                        $table->json('config')->nullable();
-                        $table->timestamps();
-                        $table->index('model_type');
-                        $table->index('status');
-                        $table->unique('name');
-                    });
-                }
+            // Run package migrations
+            $packageMigration = include __DIR__.'/../database/migrations/create_change_detection_tables.php.stub';
+            $packageMigration->up();
 
-                if (! \Illuminate\Support\Facades\Schema::hasTable($publishesTable)) {
-                    \Illuminate\Support\Facades\Schema::create($publishesTable, function (\Illuminate\Database\Schema\Blueprint $table) use ($hashesTable, $publishersTable) {
-                        $table->id();
-                        $table->foreignId('hash_id')->nullable()->constrained($hashesTable)->cascadeOnDelete();
-                        $table->foreignId('publisher_id')->constrained($publishersTable)->cascadeOnDelete();
-                        $table->string('published_hash', 32)->nullable();
-                        $table->json('metadata')->nullable();
-                        $table->timestamp('published_at')->nullable();
-                        $table->enum('status', ['pending', 'dispatched', 'deferred', 'published', 'failed'])->default('pending');
-                        $table->unsignedInteger('attempts')->default(0);
-                        $table->text('last_error')->nullable();
-                        $table->integer('last_response_code')->nullable();
-                        $table->enum('error_type', ['validation', 'infrastructure', 'data', 'unknown'])->nullable();
-                        $table->timestamp('next_try')->nullable();
-                        $table->timestamps();
-                        $table->unique(['hash_id', 'publisher_id']);
-                        $table->index(['status', 'next_try']);
-                    });
-                }
+            // Run test migrations
+            $testMigration = include __DIR__.'/migrations/create_test_tables.php';
+            $testMigration->up();
 
-                if (! \Illuminate\Support\Facades\Schema::hasTable($hashDependentsTable)) {
-                    \Illuminate\Support\Facades\Schema::create($hashDependentsTable, function (\Illuminate\Database\Schema\Blueprint $table) use ($hashesTable) {
-                        $table->id();
-                        $table->foreignId('hash_id')->constrained($hashesTable)->cascadeOnDelete();
-                        $table->string('dependent_model_type');
-                        $table->unsignedBigInteger('dependent_model_id');
-                        $table->string('relation_name')->nullable();
-                        $table->timestamps();
-                        $table->unique(['hash_id', 'dependent_model_type', 'dependent_model_id'], 'unique_hash_dependent');
-                        $table->index(['dependent_model_type', 'dependent_model_id'], 'dependent_model_index');
-                    });
-                }
-            }
-        };
+            RefreshDatabaseState::$migrated = true;
+        } else {
+            // Clear data but keep structure
+            $this->clearDatabaseData();
+        }
+    }
 
-        $migration->up();
+    protected function dropAllTables()
+    {
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            // Test tables
+            'test_animals',
+            'test_cars',
+            'test_comments',
+            'test_posts',
+            'test_users',
+            'test_models',
+            // Package tables
+            'hash_dependents',
+            'publishes',
+            'publishers',
+            'hashes',
+            // Laravel tables
+            'migrations',
+        ];
+
+        foreach ($tables as $table) {
+            DB::connection('testing')->statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=1');
+    }
+
+    protected function clearDatabaseData()
+    {
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            // Test tables
+            'test_animals',
+            'test_cars',
+            'test_comments',
+            'test_posts',
+            'test_users',
+            'test_models',
+            // Package tables
+            'hash_dependents',
+            'publishes',
+            'publishers',
+            'hashes',
+        ];
+
+        foreach ($tables as $table) {
+            DB::connection('testing')->table($table)->truncate();
+        }
+
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=1');
     }
 }
