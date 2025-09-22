@@ -228,7 +228,16 @@ class HashUpdater
                     // Ensure the related model has a hash
                     $relatedHash = $relatedModel->getCurrentHash();
                     if (!$relatedHash) {
-                        $relatedHash = $this->updateHash($relatedModel);
+                        // Create a basic hash for the related model if it doesn't exist
+                        // This ensures new records get hashes and can be dependencies
+                        $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
+
+                        $relatedHash = Hash::create([
+                            'hashable_type' => $relatedModel->getMorphClass(),
+                            'hashable_id' => $relatedModel->getKey(),
+                            'attribute_hash' => $attributeHash,
+                            'composite_hash' => $attributeHash, // Initially same as attribute hash
+                        ]);
                     }
 
                     // Create dependency relationship: the related model's hash affects the dependent model's composite hash

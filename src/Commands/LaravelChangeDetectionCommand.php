@@ -17,6 +17,7 @@ class LaravelChangeDetectionCommand extends Command
                         {--models=* : Specific model classes to check}
                         {--update : Update hashes for detected changes}
                         {--cleanup : Clean up orphaned hashes}
+                        {--purge : Immediately purge orphaned hashes instead of marking as deleted}
                         {--limit= : Limit number of records to process (default: no limit)}
                         {--report : Show detailed report}
                         {--auto-discover : Auto-discover hashable models}';
@@ -62,7 +63,7 @@ class LaravelChangeDetectionCommand extends Command
         }
 
         if ($this->option('cleanup')) {
-            $this->cleanupOrphanedHashes($models);
+            $this->cleanupOrphanedHashes($models, $this->option('purge'));
         }
 
         if ($this->option('update') && $totalChanges > 0) {
@@ -235,25 +236,40 @@ class LaravelChangeDetectionCommand extends Command
 
     /**
      * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  bool  $purge  Whether to immediately purge instead of just marking as deleted
      */
-    private function cleanupOrphanedHashes(\Illuminate\Support\Collection $models): void
+    private function cleanupOrphanedHashes(\Illuminate\Support\Collection $models, bool $purge = false): void
     {
         $this->line('');
-        $this->info('Cleaning up orphaned hashes...');
+
+        if ($purge) {
+            $this->info('Purging orphaned hashes...');
+        } else {
+            $this->info('Cleaning up orphaned hashes...');
+        }
 
         $detector = app(OrphanedHashDetector::class);
         $totalCleaned = 0;
 
         foreach ($models as $modelClass) {
-            $cleaned = $detector->cleanupOrphanedHashes($modelClass);
+            $cleaned = $purge
+                ? $detector->purgeOrphanedHashes($modelClass)
+                : $detector->cleanupOrphanedHashes($modelClass);
+
             if ($cleaned > 0) {
-                $this->info("  {$modelClass}: cleaned {$cleaned} orphaned hashes");
+                $action = $purge ? 'purged' : 'cleaned';
+                $this->info("  {$modelClass}: {$action} {$cleaned} orphaned hashes");
                 $totalCleaned += $cleaned;
             }
         }
 
         if ($totalCleaned > 0) {
-            $this->info("Total orphaned hashes cleaned: {$totalCleaned}");
+            $action = $purge ? 'purged' : 'cleaned';
+            $this->info("Total orphaned hashes {$action}: {$totalCleaned}");
+
+            if ($purge) {
+                $this->info('Note: Related records in publishes and hash_dependents tables were automatically deleted via cascade.');
+            }
         } else {
             $this->info('No orphaned hashes found');
         }
