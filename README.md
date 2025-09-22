@@ -192,9 +192,35 @@ When a reply is created/updated/deleted, the parent article's hash automatically
 
 ## CLI Commands
 
+### Sync Command (Recommended)
+
+The simplest way to synchronize all hash records with a single command:
+
+```bash
+# Synchronize all hashes (auto-discover, detect, cleanup, and update)
+php artisan change-detection:sync
+
+# Preview changes without making modifications
+php artisan change-detection:sync --dry-run
+
+# Show detailed report of operations
+php artisan change-detection:sync --report
+
+# Limit processing per model (useful for large datasets)
+php artisan change-detection:sync --limit=1000
+
+# Immediately purge orphaned hashes instead of soft-deleting
+php artisan change-detection:sync --purge
+
+# Sync specific models only
+php artisan change-detection:sync --models="App\Models\User,App\Models\Post"
+```
+
+This command combines auto-discovery, change detection, orphan cleanup, and hash updates in one operation.
+
 ### Detect Changes Command
 
-Comprehensive command for monitoring and managing hash changes:
+For fine-grained control over change detection:
 
 ```bash
 # Auto-discover and check all hashable models
@@ -214,6 +240,39 @@ php artisan change-detection:detect --auto-discover --report
 
 # Limit processing (useful for large datasets)
 php artisan change-detection:detect --auto-discover --limit=1000
+```
+
+### Truncate Command
+
+Reset the change detection system by clearing all tables:
+
+```bash
+# Truncate all change detection tables
+php artisan change-detection:truncate
+
+# Skip confirmation prompt
+php artisan change-detection:truncate --force
+
+# Only truncate specific tables
+php artisan change-detection:truncate --only=hashes,publishes
+```
+
+### Purge Deleted Hashes
+
+Remove soft-deleted hash records:
+
+```bash
+# Purge all deleted hashes
+php artisan change-detection:purge
+
+# Purge hashes deleted more than 7 days ago
+php artisan change-detection:purge --older-than=7
+
+# Preview what would be purged
+php artisan change-detection:purge --dry-run
+
+# Skip confirmation
+php artisan change-detection:purge --force
 ```
 
 ### Background Processing
