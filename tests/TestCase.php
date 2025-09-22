@@ -79,6 +79,7 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_animals',
             'test_cars',
             'test_comments',
             'test_posts',
@@ -106,6 +107,7 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_animals',
             'test_cars',
             'test_comments',
             'test_posts',

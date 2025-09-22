@@ -54,6 +54,16 @@ return new class extends Migration
             $table->json('features')->nullable();            // JSON type
             $table->timestamps();
         });
+
+        // Test Animals table with various column types
+        Schema::create('test_animals', function (Blueprint $table) {
+            $table->id();
+            $table->string('type', 100);                    // String type
+            $table->integer('birthday');                         // Integer type
+            $table->decimal('group', 10,2);                 // Decimal type
+            $table->json('features')->nullable();            // JSON type
+            $table->timestamps();
+        });
     }
 
     public function down(): void
