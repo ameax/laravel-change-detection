@@ -4,6 +4,7 @@ namespace Ameax\LaravelChangeDetection\Tests;
 
 use Ameax\LaravelChangeDetection\LaravelChangeDetectionServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -15,6 +16,8 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Ameax\\LaravelChangeDetection\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
+
+        $this->setUpDatabase();
     }
 
     protected function getPackageProviders($app)
@@ -43,8 +46,63 @@ class TestCase extends Orchestra
         ]);
     }
 
-    protected function defineDatabaseMigrations()
+    protected function setUpDatabase()
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $isMigrated = (bool) env('MIGRATED');
+
+        if (! RefreshDatabaseState::$migrated) {
+            RefreshDatabaseState::$migrated = $isMigrated;
+        }
+
+        if (! RefreshDatabaseState::$migrated) {
+            // Drop all existing tables first
+            $this->dropAllTables();
+
+            // Run migrations
+            $migration = include __DIR__.'/../database/migrations/create_change_detection_tables.php.stub';
+            $migration->up();
+
+            RefreshDatabaseState::$migrated = true;
+        } else {
+            // Clear data but keep structure
+            $this->clearDatabaseData();
+        }
+    }
+
+    protected function dropAllTables()
+    {
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'hash_dependents',
+            'publishes',
+            'publishers',
+            'hashes',
+            'migrations',
+        ];
+
+        foreach ($tables as $table) {
+            DB::connection('testing')->statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=1');
+    }
+
+    protected function clearDatabaseData()
+    {
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'hash_dependents',
+            'publishes',
+            'publishers',
+            'hashes',
+        ];
+
+        foreach ($tables as $table) {
+            DB::connection('testing')->table($table)->truncate();
+        }
+
+        DB::connection('testing')->statement('SET FOREIGN_KEY_CHECKS=1');
     }
 }
