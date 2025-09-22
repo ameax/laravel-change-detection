@@ -143,6 +143,7 @@ class HashUpdater
             $dependentModel = $dependentModelClass::find($dependent->dependent_model_id);
 
             if ($dependentModel instanceof Hashable) {
+                /** @var Hashable&\Illuminate\Database\Eloquent\Model $dependentModel */
                 $this->updateHash($dependentModel);
             }
         }
@@ -241,6 +242,7 @@ class HashUpdater
                     if (! $relatedHash) {
                         // Create a basic hash for the related model if it doesn't exist
                         // This ensures new records get hashes and can be dependencies
+                        /** @var Hashable&\Illuminate\Database\Eloquent\Model $relatedModel */
                         $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
 
                         $relatedHash = Hash::create([
@@ -252,7 +254,6 @@ class HashUpdater
                     }
 
                     // Create dependency relationship: the related model's hash affects the dependent model's composite hash
-                    /** @phpstan-ignore-next-line */
                     HashDependent::updateOrCreate([
                         'hash_id' => $relatedHash->id,
                         'dependent_model_type' => $dependentModel->getMorphClass(),

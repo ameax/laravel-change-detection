@@ -18,11 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, mixed>|null $config
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
- * @extends Model<Publisher>
  */
 class Publisher extends Model
 {
-    /** @use HasFactory<\Database\Factories\PublisherFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -49,9 +47,6 @@ class Publisher extends Model
         }
     }
 
-    /**
-     * @return HasMany<Publish>
-     */
     public function publishes(): HasMany
     {
         return $this->hasMany(Publish::class);
@@ -68,7 +63,6 @@ class Publisher extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        /** @phpstan-ignore-next-line */
         return $query->where('status', 'active');
     }
 
@@ -78,7 +72,6 @@ class Publisher extends Model
      */
     public function scopeForModel(Builder $query, string $modelType): Builder
     {
-        /** @phpstan-ignore-next-line */
         return $query->where('model_type', $modelType);
     }
 

@@ -62,17 +62,11 @@ class Publish extends Model
         }
     }
 
-    /**
-     * @return BelongsTo<Hash, Publish>
-     */
     public function hash(): BelongsTo
     {
         return $this->belongsTo(Hash::class);
     }
 
-    /**
-     * @return BelongsTo<Publisher, Publish>
-     */
     public function publisher(): BelongsTo
     {
         return $this->belongsTo(Publisher::class);
@@ -201,12 +195,9 @@ class Publish extends Model
     public function scopePendingOrDeferred(Builder $query): Builder
     {
         return $query->where(function ($q) {
-            /** @phpstan-ignore-next-line */
             $q->where('status', 'pending')
                 ->orWhere(function ($q) {
-                    /** @phpstan-ignore-next-line */
                     $q->where('status', 'deferred')
-                        /** @phpstan-ignore-next-line */
                         ->where('next_try', '<=', now());
                 });
         });

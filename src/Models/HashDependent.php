@@ -40,9 +40,6 @@ class HashDependent extends Model
         }
     }
 
-    /**
-     * @return BelongsTo<Hash, HashDependent>
-     */
     public function hash(): BelongsTo
     {
         return $this->belongsTo(Hash::class, 'hash_id');

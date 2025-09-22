@@ -172,7 +172,13 @@ class BulkHashProcessor
         $hashDatabase = $this->connection->getDatabaseName();
         $qualifiedHashesTable = $hashDatabase ? "`{$hashDatabase}`.`{$hashesTable}`" : "`{$hashesTable}`";
 
-        if (! in_array('deleted_at', $model->getFillable()) && ! $model->hasColumn('deleted_at')) {
+        // Check if the model has a deleted_at column
+        try {
+            $schema = $model->getConnection()->getSchemaBuilder();
+            if (! $schema->hasColumn($model->getTable(), 'deleted_at')) {
+                return 0;
+            }
+        } catch (\Exception $e) {
             return 0;
         }
 
@@ -262,9 +268,6 @@ class BulkHashProcessor
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
         $model = new $modelClass;
-        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-            return '';
-        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -300,9 +303,6 @@ class BulkHashProcessor
     private function getScopeBindings(string $modelClass): array
     {
         $model = new $modelClass;
-        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-            return [];
-        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -327,9 +327,6 @@ class BulkHashProcessor
         }
 
         $model = new $modelClass;
-        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-            return;
-        }
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
             return;
@@ -339,6 +336,7 @@ class BulkHashProcessor
         $chunks = array_chunk($modelIds, 100);
 
         foreach ($chunks as $chunk) {
+            /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
@@ -347,18 +345,21 @@ class BulkHashProcessor
                 $scope($models);
             }
 
+            /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
             $models = $models->get();
 
             foreach ($models as $model) {
-                if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-                    $this->buildDependencyRelationshipsForModel($model);
-                }
+                /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
+                $this->buildDependencyRelationshipsForModel($model);
             }
         }
     }
 
     /**
      * Build dependency relationships for a single model.
+     * @param \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
+    /**
      * @param \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $model
      */
     private function buildDependencyRelationshipsForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): void
@@ -398,6 +399,7 @@ class BulkHashProcessor
                         if (! $relatedHash) {
                             // Create a basic hash for the related model if it doesn't exist
                             // This ensures new records get hashes and can be dependencies
+                            /** @var \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $relatedModel */
                             $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
 
                             $relatedHash = \Ameax\LaravelChangeDetection\Models\Hash::create([
@@ -409,7 +411,6 @@ class BulkHashProcessor
                         }
 
                         // Create dependency relationship if it doesn't exist
-                        /** @phpstan-ignore-next-line */
                         \Ameax\LaravelChangeDetection\Models\HashDependent::updateOrCreate([
                             'hash_id' => $relatedHash->id,
                             'dependent_model_type' => $model->getMorphClass(),
@@ -440,9 +441,6 @@ class BulkHashProcessor
         }
 
         $model = new $modelClass;
-        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-            return;
-        }
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
             return; // No dependencies, composite hash = attribute hash (already correct)
@@ -452,6 +450,7 @@ class BulkHashProcessor
         $chunks = array_chunk($modelIds, 100);
 
         foreach ($chunks as $chunk) {
+            /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
@@ -463,15 +462,14 @@ class BulkHashProcessor
             $models = $models->get();
 
             foreach ($models as $model) {
-                if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-                    // Recalculate composite hash with dependencies now in place
-                    $compositeHash = $this->hashCalculator->calculate($model);
+                /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
+                // Recalculate composite hash with dependencies now in place
+                $compositeHash = $this->hashCalculator->calculate($model);
 
-                    // Update the hash record
-                    \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $model->getMorphClass())
-                        ->where('hashable_id', $model->getKey())
-                        ->update(['composite_hash' => $compositeHash]);
-                }
+                // Update the hash record
+                \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $model->getMorphClass())
+                    ->where('hashable_id', $model->getKey())
+                    ->update(['composite_hash' => $compositeHash]);
             }
         }
     }

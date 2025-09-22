@@ -7,3 +7,7 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
+    ignoreErrors:
+        -
+            message: '#Trait Ameax\\LaravelChangeDetection\\Traits\\InteractsWithHashes is used zero times and is not analysed#'
+            path: src/Traits/InteractsWithHashes.php

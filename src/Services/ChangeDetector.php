@@ -28,8 +28,12 @@ class ChangeDetector
         $this->crossDbBuilder = $crossDbBuilder ?? new CrossDatabaseQueryBuilder($connectionName);
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     public function hasChanged(Hashable $model): bool
     {
+        /** @var Hashable&\Illuminate\Database\Eloquent\Model $model */
         $calculatedHash = $this->hashCalculator->calculate($model);
         $currentHash = $this->getCurrentHash($model);
 
@@ -116,14 +120,16 @@ class ChangeDetector
 
     /**
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
-     * @return Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>
+     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>
      */
-    public function detectChangedModels(string $modelClass, ?int $limit = null): Collection
+    public function detectChangedModels(string $modelClass, ?int $limit = null): \Illuminate\Database\Eloquent\Collection
     {
         $changedIds = $this->detectChangedModelIds($modelClass, $limit);
 
         if (empty($changedIds)) {
-            return collect();
+            /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
+            $emptyCollection = new \Illuminate\Database\Eloquent\Collection();
+            return $emptyCollection;
         }
 
         /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $tempModel */
@@ -132,14 +138,14 @@ class ChangeDetector
 
         // Apply scope if defined
         $model = new $modelClass;
-        if ($model instanceof Hashable) {
-            $scope = $model->getHashableScope();
-            if ($scope) {
-                $scope($query);
-            }
+        $scope = $model->getHashableScope();
+        if ($scope) {
+            $scope($query);
         }
 
-        return $query->get();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
+        $result = $query->get();
+        return $result;
     }
 
     /**
@@ -216,11 +222,11 @@ class ChangeDetector
         return (int) $result->changed_count;
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     private function getCurrentHash(Hashable $model): ?string
     {
-        if (! $model instanceof \Illuminate\Database\Eloquent\Model) {
-            return null;
-        }
         $hash = Hash::where('hashable_type', $model->getMorphClass())
             ->where('hashable_id', $model->getKey())
             ->active()
@@ -247,9 +253,6 @@ class ChangeDetector
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
         $model = new $modelClass;
-        if (! $model instanceof Hashable) {
-            return '';
-        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -285,9 +288,6 @@ class ChangeDetector
     private function getScopeBindings(string $modelClass): array
     {
         $model = new $modelClass;
-        if (! $model instanceof Hashable) {
-            return [];
-        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
