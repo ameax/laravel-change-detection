@@ -1,6 +1,30 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:processChangedModels\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, class\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Commands/LaravelChangeDetectionCommand.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:processChangedModels\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, class\-string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Commands/SyncCommand.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: src/Jobs/BulkPublishJob.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:processChangedModels\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, class\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Jobs/DetectChangesJob.php
+
+		-
 			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\HashDependent\:\:hash\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -28,6 +52,12 @@ parameters:
 			message: '#^Method Ameax\\LaravelChangeDetection\\Models\\Publish\:\:scopePendingOrDeferred\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
+			path: src/Models/Publish.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 2
 			path: src/Models/Publish.php
 
 		-
@@ -97,50 +127,32 @@ parameters:
 			path: src/Models/Publisher.php
 
 		-
-			message: '#^Call to an undefined method object\:\:getFillable\(\)\.$#'
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\:\:hasColumn\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: src/Services/BulkHashProcessor.php
 
 		-
-			message: '#^Call to an undefined method object\:\:getHashableAttributes\(\)\.$#'
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: src/Services/BulkHashProcessor.php
 
 		-
-			message: '#^Call to an undefined method object\:\:getKeyName\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: src/Services/BulkHashProcessor.php
-
-		-
-			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: src/Services/BulkHashProcessor.php
-
-		-
-			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: src/Services/BulkHashProcessor.php
-
-		-
-			message: '#^Call to an undefined method object\:\:hasColumn\(\)\.$#'
+			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: src/Services/BulkHashProcessor.php
 
 		-
-			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:updateHashesChunk\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
+			message: '#^Instanceof between Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model and Ameax\\LaravelChangeDetection\\Contracts\\Hashable will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 4
 			path: src/Services/BulkHashProcessor.php
 
 		-
-			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:updateHashesForIds\(\) has parameter \$modelIds with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Parameter \#1 \$model of method Ameax\\LaravelChangeDetection\\Services\\MySQLHashCalculator\:\:calculateAttributeHash\(\) expects Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model, Ameax\\LaravelChangeDetection\\Contracts\\Hashable given\.$#'
+			identifier: argument.type
 			count: 1
 			path: src/Services/BulkHashProcessor.php
 
@@ -151,24 +163,6 @@ parameters:
 			path: src/Services/BulkHashProcessor.php
 
 		-
-			message: '#^Property Ameax\\LaravelChangeDetection\\Services\\BulkHashProcessor\:\:\$hashCalculator is never read, only written\.$#'
-			identifier: property.onlyWritten
-			count: 1
-			path: src/Services/BulkHashProcessor.php
-
-		-
-			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/Services/ChangeDetector.php
-
-		-
-			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/Services/ChangeDetector.php
-
-		-
 			message: '#^Call to an undefined method object\:\:getConnectionName\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -177,24 +171,30 @@ parameters:
 		-
 			message: '#^Call to an undefined method object\:\:getHashableAttributes\(\)\.$#'
 			identifier: method.notFound
-			count: 2
+			count: 1
 			path: src/Services/ChangeDetector.php
 
 		-
 			message: '#^Call to an undefined method object\:\:getKeyName\(\)\.$#'
 			identifier: method.notFound
-			count: 3
+			count: 2
 			path: src/Services/ChangeDetector.php
 
 		-
 			message: '#^Call to an undefined method object\:\:getMorphClass\(\)\.$#'
 			identifier: method.notFound
-			count: 2
+			count: 1
 			path: src/Services/ChangeDetector.php
 
 		-
 			message: '#^Call to an undefined method object\:\:getTable\(\)\.$#'
 			identifier: method.notFound
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Instanceof between Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model and Ameax\\LaravelChangeDetection\\Contracts\\Hashable will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
 			count: 2
 			path: src/Services/ChangeDetector.php
 
@@ -207,6 +207,18 @@ parameters:
 		-
 			message: '#^Method Ameax\\LaravelChangeDetection\\Services\\ChangeDetector\:\:detectChangedModels\(\) return type with generic class Illuminate\\Support\\Collection does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\ChangeDetector\:\:buildScopeSubquery\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/ChangeDetector.php
+
+		-
+			message: '#^Parameter \#1 \$modelClass of method Ameax\\LaravelChangeDetection\\Services\\ChangeDetector\:\:getScopeBindings\(\) expects class\-string\<Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model\>, string given\.$#'
+			identifier: argument.type
 			count: 1
 			path: src/Services/ChangeDetector.php
 
@@ -315,13 +327,13 @@ parameters:
 		-
 			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getKey\(\)\.$#'
 			identifier: method.notFound
-			count: 3
+			count: 1
 			path: src/Services/HashUpdater.php
 
 		-
 			message: '#^Call to an undefined method Ameax\\LaravelChangeDetection\\Contracts\\Hashable\:\:getMorphClass\(\)\.$#'
 			identifier: method.notFound
-			count: 3
+			count: 1
 			path: src/Services/HashUpdater.php
 
 		-
@@ -362,6 +374,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel of Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<TRelatedModel\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of TRelatedModel of Illuminate\\Database\\Eloquent\\Model, ''hashable_type'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Services/HashUpdater.php
+
+		-
+			message: '#^Parameter \#1 \$model of method Ameax\\LaravelChangeDetection\\Services\\HashUpdater\:\:updateHash\(\) expects Ameax\\LaravelChangeDetection\\Contracts\\Hashable&Illuminate\\Database\\Eloquent\\Model, Ameax\\LaravelChangeDetection\\Contracts\\Hashable given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Services/HashUpdater.php
