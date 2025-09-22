@@ -55,6 +55,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+
         // Test Animals table with various column types
         Schema::create('test_animals', function (Blueprint $table) {
             $table->id();
@@ -62,6 +63,7 @@ return new class extends Migration
             $table->integer('birthday');                         // Integer type
             $table->decimal('group', 10, 2);                 // Decimal type
             $table->json('features')->nullable();            // JSON type
+            $table->float('weight')->nullable();             // Float type for animal weight
             $table->timestamps();
         });
     }
