@@ -20,6 +20,9 @@ class DependencyHashCalculator
         $this->hashAlgorithm = config('change-detection.hash_algorithm', 'md5');
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     public function calculate(Hashable $model): ?string
     {
         $hashesTable = config('change-detection.tables.hashes', 'hashes');

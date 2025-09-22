@@ -7,6 +7,15 @@ namespace Ameax\LaravelChangeDetection\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $hash_id
+ * @property string $dependent_model_type
+ * @property int $dependent_model_id
+ * @property string $relation_name
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ */
 class HashDependent extends Model
 {
     protected $fillable = [

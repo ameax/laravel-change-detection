@@ -310,6 +310,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             $publisher = $publisherInstance ?: app($publisherClass);
             $hashableModel = $publishRecord->hash->hashable;
 
+            /** @phpstan-ignore-next-line */
             if (! $hashableModel) {
                 throw new \Exception('Hashable model not found');
             }
