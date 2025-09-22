@@ -363,15 +363,26 @@ class BulkHashProcessor
                 foreach ($relatedModels as $relatedModel) {
                     if ($relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
                         $relatedHash = $relatedModel->getCurrentHash();
-                        if ($relatedHash) {
-                            // Create dependency relationship if it doesn't exist
-                            \Ameax\LaravelChangeDetection\Models\HashDependent::updateOrCreate([
-                                'hash_id' => $relatedHash->id,
-                                'dependent_model_type' => $model->getMorphClass(),
-                                'dependent_model_id' => $model->getKey(),
-                                'relation_name' => $relationName,
+                        if (!$relatedHash) {
+                            // Create a basic hash for the related model if it doesn't exist
+                            // This ensures new records get hashes and can be dependencies
+                            $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
+
+                            $relatedHash = \Ameax\LaravelChangeDetection\Models\Hash::create([
+                                'hashable_type' => $relatedModel->getMorphClass(),
+                                'hashable_id' => $relatedModel->getKey(),
+                                'attribute_hash' => $attributeHash,
+                                'composite_hash' => $attributeHash, // Initially same as attribute hash
                             ]);
                         }
+
+                        // Create dependency relationship if it doesn't exist
+                        \Ameax\LaravelChangeDetection\Models\HashDependent::updateOrCreate([
+                            'hash_id' => $relatedHash->id,
+                            'dependent_model_type' => $model->getMorphClass(),
+                            'dependent_model_id' => $model->getKey(),
+                            'relation_name' => $relationName,
+                        ]);
                     }
                 }
             } catch (\Exception $e) {

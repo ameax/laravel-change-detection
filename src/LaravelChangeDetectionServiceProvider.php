@@ -6,6 +6,8 @@ use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
 use Ameax\LaravelChangeDetection\Commands\BuildDependencyRelationshipsCommand;
 use Ameax\LaravelChangeDetection\Commands\ProcessPublishesCommand;
 use Ameax\LaravelChangeDetection\Commands\PurgeDeletedHashesCommand;
+use Ameax\LaravelChangeDetection\Commands\SyncCommand;
+use Ameax\LaravelChangeDetection\Commands\TruncateCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -25,7 +27,9 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
             ->hasMigration('create_change_detection_tables')
             ->hasCommand(LaravelChangeDetectionCommand::class)
             ->hasCommand(ProcessPublishesCommand::class)
-            ->hasCommand(PurgeDeletedHashesCommand::class);
+            ->hasCommand(PurgeDeletedHashesCommand::class)
+            ->hasCommand(SyncCommand::class)
+            ->hasCommand(TruncateCommand::class);
     }
 
     public function packageRegistered(): void
