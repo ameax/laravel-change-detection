@@ -60,7 +60,9 @@ class DetectChangesJob implements ShouldQueue
         ]);
 
         try {
-            $changedCount = $detector->countChangedModels($this->modelClass);
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $modelClass = $this->modelClass;
+            $changedCount = $detector->countChangedModels($modelClass);
 
             Log::info("Found {$changedCount} changed records for {$this->modelClass}");
 
@@ -105,10 +107,12 @@ class DetectChangesJob implements ShouldQueue
 
         Log::info("Cleaning up orphaned hashes for {$this->modelClass}");
 
-        $orphanedCount = $detector->countOrphanedHashes($this->modelClass);
+        /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+        $modelClass = $this->modelClass;
+        $orphanedCount = $detector->countOrphanedHashes($modelClass);
 
         if ($orphanedCount > 0) {
-            $cleaned = $detector->cleanupOrphanedHashes($this->modelClass, $this->limit);
+            $cleaned = $detector->cleanupOrphanedHashes($modelClass, $this->limit);
             Log::info("Cleaned up {$cleaned} orphaned hashes for {$this->modelClass}");
         } else {
             Log::info("No orphaned hashes found for {$this->modelClass}");

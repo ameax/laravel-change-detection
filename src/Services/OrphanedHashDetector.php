@@ -22,7 +22,7 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param  class-string  $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<int, array{hash_id: int, model_id: int}>
      */
     public function detectOrphanedHashes(string $modelClass, ?int $limit = null): array
@@ -90,7 +90,7 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param  class-string  $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<int, array{hash_id: int, model_id: int, model_deleted_at: string}>
      */
     public function detectSoftDeletedModelHashes(string $modelClass, ?int $limit = null): array
@@ -160,6 +160,9 @@ class OrphanedHashDetector
         return $this->connection->update($sql, [$deletedAt, ...$hashIds]);
     }
 
+    /**
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     */
     public function countOrphanedHashes(string $modelClass): int
     {
         /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
@@ -214,7 +217,7 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param  class-string  $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function cleanupOrphanedHashes(string $modelClass, ?int $limit = null): int
     {
@@ -230,7 +233,7 @@ class OrphanedHashDetector
     }
 
     /**
-     * @param  class-string  $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
     public function cleanupSoftDeletedModelHashes(string $modelClass, ?int $limit = null): int
     {
@@ -266,7 +269,7 @@ class OrphanedHashDetector
      * Immediately purge orphaned hashes (delete from database).
      * This is different from cleanupOrphanedHashes which only marks them as deleted.
      *
-     * @param  class-string  $modelClass
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return int Number of purged records
      */
     public function purgeOrphanedHashes(string $modelClass, ?int $limit = null): int
@@ -309,6 +312,7 @@ class OrphanedHashDetector
     /**
      * Build a subquery for scoped model filtering.
      * Returns the WHERE clause part for the scope.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey, string $modelTableName): string
     {
@@ -338,6 +342,8 @@ class OrphanedHashDetector
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array
     {

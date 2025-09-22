@@ -57,6 +57,7 @@ interface Publisher
      * Get retry intervals in seconds for this publisher.
      * Array with attempt number as key and delay in seconds as value.
      * Example: [1 => 30, 2 => 300, 3 => 1800]
+     * @return array<int, int>
      */
     public function getRetryIntervals(): array;
 

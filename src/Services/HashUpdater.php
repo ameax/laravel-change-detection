@@ -24,6 +24,9 @@ class HashUpdater
         $this->connection = DB::connection($connectionName ?? config('change-detection.database_connection'));
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     public function updateHash(Hashable $model): Hash
     {
         return $this->connection->transaction(function () use ($model) {
@@ -99,6 +102,9 @@ class HashUpdater
         });
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     public function markAsDeleted(Hashable $model): void
     {
         Hash::where('hashable_type', $model->getMorphClass())
@@ -121,6 +127,9 @@ class HashUpdater
         $this->updateDependentModelsBulk($modelClass, $modelIds);
     }
 
+    /**
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
+     */
     private function updateDependentModels(Hashable $model): void
     {
         // Find all models that depend on this one
@@ -187,6 +196,7 @@ class HashUpdater
 
     /**
      * Build dependency relationships for a model based on its getHashCompositeDependencies().
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
      */
     private function buildDependencyRelationships(Hashable $model, Hash $dependentHash): void
     {
@@ -202,6 +212,7 @@ class HashUpdater
 
     /**
      * Build dependency relationships for a specific relation.
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $dependentModel
      */
     private function buildDependencyForRelation(Hashable $dependentModel, Hash $dependentHash, string $relationName): void
     {
@@ -241,6 +252,7 @@ class HashUpdater
                     }
 
                     // Create dependency relationship: the related model's hash affects the dependent model's composite hash
+                    /** @phpstan-ignore-next-line */
                     HashDependent::updateOrCreate([
                         'hash_id' => $relatedHash->id,
                         'dependent_model_type' => $dependentModel->getMorphClass(),
@@ -260,6 +272,7 @@ class HashUpdater
 
     /**
      * Create publish record for the model itself if publishers exist and no record exists yet.
+     * @param Hashable&\Illuminate\Database\Eloquent\Model $model
      */
     private function createPublishRecordForModel(Hashable $model, Hash $hash): void
     {

@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $status
  * @property int $attempts
  * @property string|null $last_error
+ * @property int|null $last_response_code
+ * @property string|null $error_type
  * @property \Illuminate\Support\Carbon|null $next_try
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
@@ -150,6 +152,9 @@ class Publish extends Model
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     private function getPublisherRetryIntervals(): array
     {
         try {

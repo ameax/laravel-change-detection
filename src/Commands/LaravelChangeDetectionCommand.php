@@ -43,6 +43,7 @@ class LaravelChangeDetectionCommand extends Command
         foreach ($models as $modelClass) {
             $this->line("Checking {$modelClass}...");
 
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
             $changedCount = $detector->countChangedModels($modelClass);
             $totalChanges += $changedCount;
 
@@ -63,7 +64,8 @@ class LaravelChangeDetectionCommand extends Command
         }
 
         if ($this->option('cleanup')) {
-            $this->cleanupOrphanedHashes($models, $this->option('purge'));
+            $purge = (bool) $this->option('purge');
+            $this->cleanupOrphanedHashes($models, $purge);
         }
 
         if ($this->option('update') && $totalChanges > 0) {
@@ -127,6 +129,9 @@ class LaravelChangeDetectionCommand extends Command
         return $dependencyModels->merge($mainModels)->unique();
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, class-string>
+     */
     private function getModelsFromPublishers(): \Illuminate\Support\Collection
     {
         $morphClasses = \Ameax\LaravelChangeDetection\Models\Publisher::where('status', 'active')
@@ -140,12 +145,19 @@ class LaravelChangeDetectionCommand extends Command
         });
     }
 
+    /**
+     * @param  \Illuminate\Support\Collection<int, class-string>  $mainModels
+     * @return \Illuminate\Support\Collection<int, class-string>
+     */
     private function findDependencyModels(\Illuminate\Support\Collection $mainModels): \Illuminate\Support\Collection
     {
         $dependencyModels = collect();
 
         foreach ($mainModels as $modelClass) {
             $model = new $modelClass;
+            if (! $model instanceof Hashable) {
+                continue;
+            }
             $dependencies = $model->getHashCompositeDependencies();
 
             foreach ($dependencies as $relationName) {
@@ -167,6 +179,9 @@ class LaravelChangeDetectionCommand extends Command
         return $dependencyModels->unique();
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, class-string>
+     */
     private function discoverAllHashableModels(): \Illuminate\Support\Collection
     {
         $models = collect();
@@ -252,6 +267,7 @@ class LaravelChangeDetectionCommand extends Command
         $totalCleaned = 0;
 
         foreach ($models as $modelClass) {
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
             $cleaned = $purge
                 ? $detector->purgeOrphanedHashes($modelClass)
                 : $detector->cleanupOrphanedHashes($modelClass);
@@ -313,7 +329,7 @@ class LaravelChangeDetectionCommand extends Command
         foreach ($allHashableModels as $class) {
             try {
                 $instance = new $class;
-                if ($instance->getMorphClass() === $morphClass) {
+                if ($instance instanceof Model && $instance->getMorphClass() === $morphClass) {
                     return $class;
                 }
             } catch (\Exception $e) {

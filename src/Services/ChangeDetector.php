@@ -122,15 +122,20 @@ class ChangeDetector
 
         // Apply scope if defined
         $model = new $modelClass;
-        $scope = $model->getHashableScope();
-        if ($scope) {
-            $scope($query);
+        if ($model instanceof Hashable) {
+            $scope = $model->getHashableScope();
+            if ($scope) {
+                $scope($query);
+            }
         }
 
         return $query->get();
     }
 
-    public function countChangedModels(string $modelClass): int
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     */
+    public function countChangedModels(string $modelClass, ?int $limit = null): int
     {
         $model = new $modelClass;
         $table = $model->getTable();
@@ -203,6 +208,9 @@ class ChangeDetector
 
     private function getCurrentHash(Hashable $model): ?string
     {
+        if (! $model instanceof \Illuminate\Database\Eloquent\Model) {
+            return null;
+        }
         $hash = Hash::where('hashable_type', $model->getMorphClass())
             ->where('hashable_id', $model->getKey())
             ->active()
@@ -224,10 +232,14 @@ class ChangeDetector
     /**
      * Build a subquery for scoped model filtering.
      * Returns empty string if no scope is defined.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
         $model = new $modelClass;
+        if (! $model instanceof Hashable) {
+            return '';
+        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -257,10 +269,15 @@ class ChangeDetector
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array
     {
         $model = new $modelClass;
+        if (! $model instanceof Hashable) {
+            return [];
+        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {

@@ -105,12 +105,13 @@ class TruncateCommand extends Command
 
     /**
      * Determine which tables to truncate based on options.
+     * @return array<string>
      */
     private function getTablesToTruncate(string $hashesTable, string $hashDependentsTable, string $publishesTable): array
     {
         $only = $this->option('only');
 
-        if ($only) {
+        if ($only && is_string($only)) {
             $requested = array_map('trim', explode(',', $only));
             $tables = [];
 
@@ -139,8 +140,11 @@ class TruncateCommand extends Command
 
     /**
      * Get record counts for each table.
+     * @param  \Illuminate\Database\Connection  $db
+     * @param  array<string>  $tables
+     * @return array<string, int>
      */
-    private function getRecordCounts($db, array $tables): array
+    private function getRecordCounts(\Illuminate\Database\Connection $db, array $tables): array
     {
         $counts = [];
         $connection = config('change-detection.database_connection');
@@ -158,6 +162,7 @@ class TruncateCommand extends Command
 
     /**
      * Display record counts in a table format.
+     * @param  array<string, int>  $recordCounts
      */
     private function displayRecordCounts(array $recordCounts): void
     {

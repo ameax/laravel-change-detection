@@ -25,6 +25,9 @@ class BulkHashProcessor
         $this->batchSize = $batchSize;
     }
 
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     */
     public function processChangedModels(string $modelClass, ?int $limit = null): int
     {
         $detector = app(ChangeDetector::class);
@@ -37,6 +40,10 @@ class BulkHashProcessor
         return $this->updateHashesForIds($modelClass, $changedIds);
     }
 
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param array<int> $modelIds
+     */
     public function updateHashesForIds(string $modelClass, array $modelIds): int
     {
         if (empty($modelIds)) {
@@ -53,6 +60,10 @@ class BulkHashProcessor
         return $updated;
     }
 
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param array<int> $modelIds
+     */
     private function updateHashesChunk(string $modelClass, array $modelIds): int
     {
         $model = new $modelClass;
@@ -142,6 +153,9 @@ class BulkHashProcessor
         return count($modelIds); // Return count of processed IDs
     }
 
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     */
     public function softDeleteHashesForDeletedModels(string $modelClass): int
     {
         $model = new $modelClass;
@@ -181,6 +195,9 @@ class BulkHashProcessor
         return $this->connection->update($sql, $bindings);
     }
 
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     */
     public function cleanupOrphanedHashes(string $modelClass): int
     {
         $model = new $modelClass;
@@ -240,10 +257,14 @@ class BulkHashProcessor
     /**
      * Build a subquery for scoped model filtering.
      * Returns empty string if no scope is defined.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
      */
     private function buildScopeSubquery(string $modelClass, string $tableAlias, string $primaryKey): string
     {
         $model = new $modelClass;
+        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+            return '';
+        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -273,10 +294,15 @@ class BulkHashProcessor
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @return array<mixed>
      */
     private function getScopeBindings(string $modelClass): array
     {
         $model = new $modelClass;
+        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+            return [];
+        }
         $scope = $model->getHashableScope();
 
         if (! $scope) {
@@ -291,6 +317,8 @@ class BulkHashProcessor
 
     /**
      * Build dependency relationships for multiple model IDs.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param array<int> $modelIds
      */
     private function buildDependencyRelationshipsForIds(string $modelClass, array $modelIds): void
     {
@@ -299,6 +327,9 @@ class BulkHashProcessor
         }
 
         $model = new $modelClass;
+        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+            return;
+        }
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
             return;
@@ -311,9 +342,11 @@ class BulkHashProcessor
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
-            $scope = $model->getHashableScope();
-            if ($scope) {
-                $scope($models);
+            if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                $scope = $model->getHashableScope();
+                if ($scope) {
+                    $scope($models);
+                }
             }
 
             $models = $models->get();
@@ -328,6 +361,7 @@ class BulkHashProcessor
 
     /**
      * Build dependency relationships for a single model.
+     * @param \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $model
      */
     private function buildDependencyRelationshipsForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): void
     {
@@ -377,6 +411,7 @@ class BulkHashProcessor
                         }
 
                         // Create dependency relationship if it doesn't exist
+                        /** @phpstan-ignore-next-line */
                         \Ameax\LaravelChangeDetection\Models\HashDependent::updateOrCreate([
                             'hash_id' => $relatedHash->id,
                             'dependent_model_type' => $model->getMorphClass(),
@@ -397,6 +432,8 @@ class BulkHashProcessor
 
     /**
      * Recalculate composite hashes for model IDs after dependencies are created.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param array<int> $modelIds
      */
     private function recalculateCompositeHashesForIds(string $modelClass, array $modelIds): void
     {
@@ -405,6 +442,9 @@ class BulkHashProcessor
         }
 
         $model = new $modelClass;
+        if (! $model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+            return;
+        }
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
             return; // No dependencies, composite hash = attribute hash (already correct)
@@ -417,9 +457,11 @@ class BulkHashProcessor
             $models = $modelClass::whereIn($model->getKeyName(), $chunk);
 
             // Apply scope if defined
-            $scope = $model->getHashableScope();
-            if ($scope) {
-                $scope($models);
+            if ($model instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                $scope = $model->getHashableScope();
+                if ($scope) {
+                    $scope($models);
+                }
             }
 
             $models = $models->get();
@@ -440,6 +482,8 @@ class BulkHashProcessor
 
     /**
      * Create publish records for model IDs that have active publishers.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
+     * @param array<int> $modelIds
      */
     private function createPublishRecordsForIds(string $modelClass, array $modelIds): void
     {
@@ -492,6 +536,7 @@ class BulkHashProcessor
 
     /**
      * Update models that depend on the cleaned up (deleted) hashes of the given model class.
+     * @param class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass
      */
     private function updateDependentModelsAfterCleanup(string $modelClass): void
     {
@@ -527,6 +572,7 @@ class BulkHashProcessor
 
     /**
      * Update dependent models by their morph class by directly updating their hashes.
+     * @param array<int> $modelIds
      */
     private function updateDependentModelsByMorphClass(string $morphClass, array $modelIds): void
     {

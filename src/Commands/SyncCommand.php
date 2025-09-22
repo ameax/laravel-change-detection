@@ -30,6 +30,7 @@ class SyncCommand extends Command
 
     private int $totalOrphansProcessed = 0;
 
+    /** @var array<string, array{name: string, changes_detected: int, hashes_updated: int, orphans_processed: int}> */
     private array $modelStats = [];
 
     public function handle(): int
@@ -79,6 +80,7 @@ class SyncCommand extends Command
 
     /**
      * Get target models either from options or auto-discovery.
+     * @return \Illuminate\Support\Collection<int, class-string>
      */
     private function getTargetModels(): \Illuminate\Support\Collection
     {
@@ -102,6 +104,7 @@ class SyncCommand extends Command
 
     /**
      * Detect changes across all models.
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function detectChanges(\Illuminate\Support\Collection $models): void
     {
@@ -114,6 +117,7 @@ class SyncCommand extends Command
             $modelName = class_basename($modelClass);
             $this->line("  Checking {$modelName}...");
 
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
             $changedCount = $limit
                 ? $detector->countChangedModels($modelClass, (int) $limit)
                 : $detector->countChangedModels($modelClass);
@@ -139,6 +143,7 @@ class SyncCommand extends Command
 
     /**
      * Clean up orphaned hashes.
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function cleanupOrphans(\Illuminate\Support\Collection $models): void
     {
@@ -156,6 +161,7 @@ class SyncCommand extends Command
         $action = $isPurge ? 'purged' : 'cleaned';
 
         foreach ($models as $modelClass) {
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
             $modelName = class_basename($modelClass);
 
             if ($isPurge) {
@@ -183,6 +189,7 @@ class SyncCommand extends Command
 
     /**
      * Update changed hashes.
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
      */
     private function updateHashes(\Illuminate\Support\Collection $models): void
     {
@@ -296,6 +303,7 @@ class SyncCommand extends Command
 
     /**
      * Auto-discover all hashable models in the application.
+     * @return \Illuminate\Support\Collection<int, class-string>
      */
     private function discoverHashableModels(): \Illuminate\Support\Collection
     {

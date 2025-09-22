@@ -91,7 +91,10 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    private function processPublisherBatch($publisher): void
+    /**
+     * @param \Ameax\LaravelChangeDetection\Models\Publisher $publisher
+     */
+    private function processPublisherBatch(\Ameax\LaravelChangeDetection\Models\Publisher $publisher): void
     {
         $batchSize = $publisher->publisher_class ?
             $this->getPublisherBatchSize($publisher->publisher_class) :
@@ -279,7 +282,12 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    private function processPublishRecord(Publish $publishRecord, $publisherInstance = null): array
+    /**
+     * @param Publish $publishRecord
+     * @param \Ameax\LaravelChangeDetection\Contracts\Publisher|null $publisherInstance
+     * @return array{status: string, error_type?: string, reason?: string}
+     */
+    private function processPublishRecord(Publish $publishRecord, ?\Ameax\LaravelChangeDetection\Contracts\Publisher $publisherInstance = null): array
     {
         if (! $publishRecord->hash) {
             Log::warning('BulkPublishJob: Publish record has no hash', [
