@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Services;
 
 use Illuminate\Database\Connection;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 class BulkHashProcessor
@@ -178,6 +177,7 @@ class BulkHashProcessor
         ";
 
         $bindings = array_merge([$morphClass], $scopeBindings);
+
         return $this->connection->update($sql, $bindings);
     }
 
@@ -208,8 +208,8 @@ class BulkHashProcessor
             SET h.deleted_at = ?
             WHERE h.hashable_type = ?
               AND h.deleted_at IS NULL
-              AND (m.`{$primaryKey}` IS NULL" . (!empty($scopeClause) ? " OR NOT EXISTS (SELECT 1 FROM {$qualifiedTable} scoped WHERE scoped.`{$primaryKey}` = h.hashable_id {$scopeClause})" : "") . ")
-        ";
+              AND (m.`{$primaryKey}` IS NULL".(! empty($scopeClause) ? " OR NOT EXISTS (SELECT 1 FROM {$qualifiedTable} scoped WHERE scoped.`{$primaryKey}` = h.hashable_id {$scopeClause})" : '').')
+        ';
 
         $bindings = array_merge([$now, $morphClass], $scopeBindings);
         $updated = $this->connection->update($sql, $bindings);
@@ -246,7 +246,7 @@ class BulkHashProcessor
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return ''; // No scope defined, no filtering needed
         }
 
@@ -279,7 +279,7 @@ class BulkHashProcessor
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (!$scope) {
+        if (! $scope) {
             return [];
         }
 
@@ -337,12 +337,12 @@ class BulkHashProcessor
         }
 
         $dependentHash = $model->getCurrentHash();
-        if (!$dependentHash) {
+        if (! $dependentHash) {
             return; // Skip if no hash exists
         }
 
         foreach ($dependencies as $relationName) {
-            if (!method_exists($model, $relationName)) {
+            if (! method_exists($model, $relationName)) {
                 continue;
             }
 
@@ -363,7 +363,7 @@ class BulkHashProcessor
                 foreach ($relatedModels as $relatedModel) {
                     if ($relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
                         $relatedHash = $relatedModel->getCurrentHash();
-                        if (!$relatedHash) {
+                        if (! $relatedHash) {
                             // Create a basic hash for the related model if it doesn't exist
                             // This ensures new records get hashes and can be dependencies
                             $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
@@ -388,7 +388,7 @@ class BulkHashProcessor
             } catch (\Exception $e) {
                 // Log error but continue processing
                 \Illuminate\Support\Facades\Log::warning(
-                    "Failed to build dependency for relation {$relationName} on " . get_class($model),
+                    "Failed to build dependency for relation {$relationName} on ".get_class($model),
                     ['error' => $e->getMessage()]
                 );
             }
@@ -472,7 +472,7 @@ class BulkHashProcessor
                     ->where('publisher_id', $publisher->id)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     // Create publish record
                     \Ameax\LaravelChangeDetection\Models\Publish::create([
                         'hash_id' => $hash->id,
@@ -540,7 +540,7 @@ class BulkHashProcessor
 
         // Mark these dependent model hashes for recalculation by updating their updated_at
         // This will make them appear as "changed" in the next detection run
-        $placeholders = str_repeat('?,', count($modelIds) - 1) . '?';
+        $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
         $now = now()->utc()->toDateTimeString();
 
         $sql = "

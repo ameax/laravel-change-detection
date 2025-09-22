@@ -117,7 +117,6 @@ class Publish extends Model
         ]);
     }
 
-
     public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
         $this->attempts++;
@@ -127,6 +126,7 @@ class Publish extends Model
 
         if ($this->attempts > count($retryIntervals)) {
             $this->markAsFailed($error, $responseCode, $errorType);
+
             return;
         }
 
@@ -153,7 +153,7 @@ class Publish extends Model
     private function getPublisherRetryIntervals(): array
     {
         try {
-            if (!$this->publisher || !$this->publisher->publisher_class) {
+            if (! $this->publisher || ! $this->publisher->publisher_class) {
                 return config('change-detection.retry_intervals', [
                     1 => 30,
                     2 => 300,
@@ -162,7 +162,7 @@ class Publish extends Model
             }
 
             $publisherClass = $this->publisher->publisher_class;
-            if (!class_exists($publisherClass)) {
+            if (! class_exists($publisherClass)) {
                 return config('change-detection.retry_intervals', [
                     1 => 30,
                     2 => 300,
@@ -171,6 +171,7 @@ class Publish extends Model
             }
 
             $publisher = app($publisherClass);
+
             return $publisher->getRetryIntervals();
         } catch (\Exception $e) {
             return config('change-detection.retry_intervals', [
@@ -197,12 +198,13 @@ class Publish extends Model
      */
     public function publishNow(): bool
     {
-        if (!$this->isPending() && !$this->shouldRetry()) {
+        if (! $this->isPending() && ! $this->shouldRetry()) {
             return false;
         }
 
-        if (!$this->hash) {
+        if (! $this->hash) {
             $this->markAsFailed('No hash found', null);
+
             return false;
         }
 
@@ -211,25 +213,26 @@ class Publish extends Model
         try {
             $publisherClass = $this->publisher->publisher_class;
 
-            if (!class_exists($publisherClass)) {
+            if (! class_exists($publisherClass)) {
                 throw new \Exception("Publisher class {$publisherClass} not found");
             }
 
             $publisher = app($publisherClass);
 
             // Load hashable relation if not already loaded
-            if (!$this->relationLoaded('hash') || !$this->hash->relationLoaded('hashable')) {
+            if (! $this->relationLoaded('hash') || ! $this->hash->relationLoaded('hashable')) {
                 $this->load('hash.hashable');
             }
 
             $hashableModel = $this->hash->hashable;
 
-            if (!$hashableModel) {
+            if (! $hashableModel) {
                 throw new \Exception('Hashable model not found');
             }
 
-            if (!$publisher->shouldPublish($hashableModel)) {
+            if (! $publisher->shouldPublish($hashableModel)) {
                 $this->markAsPublished();
+
                 return true;
             }
 
@@ -238,14 +241,17 @@ class Publish extends Model
 
             if ($success) {
                 $this->markAsPublished();
+
                 return true;
             } else {
                 $this->markAsDeferred('Publisher returned false', null);
+
                 return false;
             }
 
         } catch (\Exception $e) {
             $this->markAsDeferred($e->getMessage(), null);
+
             return false;
         }
     }

@@ -205,7 +205,7 @@ class HashUpdater
      */
     private function buildDependencyForRelation(Hashable $dependentModel, Hash $dependentHash, string $relationName): void
     {
-        if (!method_exists($dependentModel, $relationName)) {
+        if (! method_exists($dependentModel, $relationName)) {
             return;
         }
 
@@ -227,7 +227,7 @@ class HashUpdater
                 if ($relatedModel instanceof Hashable) {
                     // Ensure the related model has a hash
                     $relatedHash = $relatedModel->getCurrentHash();
-                    if (!$relatedHash) {
+                    if (! $relatedHash) {
                         // Create a basic hash for the related model if it doesn't exist
                         // This ensures new records get hashes and can be dependencies
                         $attributeHash = $this->hashCalculator->getAttributeCalculator()->calculateAttributeHash($relatedModel);
@@ -252,7 +252,7 @@ class HashUpdater
         } catch (\Exception $e) {
             // Log error but don't fail the entire hash update process
             \Illuminate\Support\Facades\Log::warning(
-                "Failed to build dependency for relation {$relationName} on " . get_class($dependentModel),
+                "Failed to build dependency for relation {$relationName} on ".get_class($dependentModel),
                 ['error' => $e->getMessage()]
             );
         }
@@ -274,7 +274,7 @@ class HashUpdater
                 ->where('publisher_id', $publisher->id)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 // Create publish record
                 Publish::create([
                     'hash_id' => $hash->id,

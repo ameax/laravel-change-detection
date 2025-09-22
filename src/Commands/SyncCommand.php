@@ -25,8 +25,11 @@ class SyncCommand extends Command
     public $description = 'Synchronize all hash records (auto-discover, detect, cleanup, and update)';
 
     private int $totalChangesDetected = 0;
+
     private int $totalHashesUpdated = 0;
+
     private int $totalOrphansProcessed = 0;
+
     private array $modelStats = [];
 
     public function handle(): int
@@ -41,6 +44,7 @@ class SyncCommand extends Command
 
         if ($models->isEmpty()) {
             $this->error('No hashable models found.');
+
             return self::FAILURE;
         }
 
@@ -59,7 +63,7 @@ class SyncCommand extends Command
         $this->cleanupOrphans($models);
 
         // Step 3: Update changed hashes (if not dry run)
-        if (!$this->option('dry-run') && $this->totalChangesDetected > 0) {
+        if (! $this->option('dry-run') && $this->totalChangesDetected > 0) {
             $this->updateHashes($models);
         }
 
@@ -80,12 +84,14 @@ class SyncCommand extends Command
     {
         $specifiedModels = $this->option('models');
 
-        if (!empty($specifiedModels) && is_array($specifiedModels)) {
+        if (! empty($specifiedModels) && is_array($specifiedModels)) {
             return collect($specifiedModels)->filter(function ($model) {
-                if (!class_exists($model)) {
+                if (! class_exists($model)) {
                     $this->error("Model class {$model} does not exist");
+
                     return false;
                 }
+
                 return $this->implementsHashable($model);
             });
         }
@@ -124,7 +130,7 @@ class SyncCommand extends Command
             if ($changedCount > 0) {
                 $this->warn("    → {$changedCount} changes detected");
             } else {
-                $this->info("    → No changes detected");
+                $this->info('    → No changes detected');
             }
         }
 
@@ -141,6 +147,7 @@ class SyncCommand extends Command
         if ($this->option('dry-run')) {
             $this->line('  (Skipped in dry-run mode)');
             $this->line('');
+
             return;
         }
 
@@ -166,7 +173,7 @@ class SyncCommand extends Command
 
         if ($this->totalOrphansProcessed === 0) {
             $this->info('  No orphaned hashes found');
-        } else if ($isPurge) {
+        } elseif ($isPurge) {
             $this->line('');
             $this->info('Note: Related records in publishes and hash_dependents tables were automatically deleted via cascade.');
         }
@@ -221,10 +228,10 @@ class SyncCommand extends Command
             $this->warn('Mode: DRY RUN (no changes made)');
         }
 
-        $this->line("Models processed: " . count($this->modelStats));
+        $this->line('Models processed: '.count($this->modelStats));
         $this->line("Changes detected: {$this->totalChangesDetected}");
 
-        if (!$this->option('dry-run')) {
+        if (! $this->option('dry-run')) {
             $this->line("Hashes updated: {$this->totalHashesUpdated}");
             $action = $this->option('purge') ? 'purged' : 'marked as deleted';
             $this->line("Orphaned hashes {$action}: {$this->totalOrphansProcessed}");
@@ -236,7 +243,7 @@ class SyncCommand extends Command
 
         if ($this->totalChangesDetected === 0 && $this->totalOrphansProcessed === 0) {
             $this->info('✨ All hash records are up to date!');
-        } else if ($this->option('dry-run')) {
+        } elseif ($this->option('dry-run')) {
             $this->warn('Run without --dry-run to apply these changes.');
         } else {
             $this->info('✅ Synchronization completed successfully!');
@@ -278,7 +285,7 @@ class SyncCommand extends Command
      */
     private function implementsHashable(string $modelClass): bool
     {
-        if (!class_exists($modelClass)) {
+        if (! class_exists($modelClass)) {
             return false;
         }
 
@@ -295,20 +302,20 @@ class SyncCommand extends Command
         $models = collect();
         $appPath = app_path('Models');
 
-        if (!File::exists($appPath)) {
+        if (! File::exists($appPath)) {
             return $models;
         }
 
         $files = File::allFiles($appPath);
 
         foreach ($files as $file) {
-            $relativePath = str_replace($appPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-            $className = 'App\\Models\\' . str_replace(['/', '.php'], ['\\', ''], $relativePath);
+            $relativePath = str_replace($appPath.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $className = 'App\\Models\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
 
             if (class_exists($className)) {
                 $reflection = new ReflectionClass($className);
 
-                if (!$reflection->isAbstract() &&
+                if (! $reflection->isAbstract() &&
                     $reflection->isSubclassOf(Model::class) &&
                     $reflection->implementsInterface(Hashable::class)) {
                     $models->push($className);

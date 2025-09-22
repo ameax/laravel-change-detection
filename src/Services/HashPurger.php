@@ -19,7 +19,7 @@ class HashPurger
     /**
      * Purge deleted hashes from the database.
      *
-     * @param int|null $olderThanDays Only purge hashes deleted more than X days ago
+     * @param  int|null  $olderThanDays  Only purge hashes deleted more than X days ago
      * @return int Number of purged hash records
      */
     public function purgeDeletedHashes(?int $olderThanDays = null): int
@@ -60,7 +60,7 @@ class HashPurger
     /**
      * Count how many hashes would be purged.
      *
-     * @param int|null $olderThanDays Only count hashes deleted more than X days ago
+     * @param  int|null  $olderThanDays  Only count hashes deleted more than X days ago
      * @return int Number of purgeable hash records
      */
     public function countPurgeable(?int $olderThanDays = null): int
@@ -92,8 +92,8 @@ class HashPurger
     /**
      * Purge deleted hashes for specific model types.
      *
-     * @param array<string> $morphClasses Array of morph class names
-     * @param int|null $olderThanDays Only purge hashes deleted more than X days ago
+     * @param  array<string>  $morphClasses  Array of morph class names
+     * @param  int|null  $olderThanDays  Only purge hashes deleted more than X days ago
      * @return int Number of purged hash records
      */
     public function purgeDeletedHashesForModels(array $morphClasses, ?int $olderThanDays = null): int
@@ -103,7 +103,7 @@ class HashPurger
         }
 
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
-        $placeholders = str_repeat('?,', count($morphClasses) - 1) . '?';
+        $placeholders = str_repeat('?,', count($morphClasses) - 1).'?';
 
         if ($olderThanDays !== null && $olderThanDays > 0) {
             $sql = "
@@ -130,7 +130,7 @@ class HashPurger
     /**
      * Get statistics about purgeable hashes grouped by model type.
      *
-     * @param int|null $olderThanDays Only count hashes deleted more than X days ago
+     * @param  int|null  $olderThanDays  Only count hashes deleted more than X days ago
      * @return array<int, array{model_type: string, count: int, oldest_deleted_at: string}>
      */
     public function getPurgeableStatistics(?int $olderThanDays = null): array

@@ -3,7 +3,6 @@
 namespace Ameax\LaravelChangeDetection;
 
 use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
-use Ameax\LaravelChangeDetection\Commands\BuildDependencyRelationshipsCommand;
 use Ameax\LaravelChangeDetection\Commands\ProcessPublishesCommand;
 use Ameax\LaravelChangeDetection\Commands\PurgeDeletedHashesCommand;
 use Ameax\LaravelChangeDetection\Commands\SyncCommand;

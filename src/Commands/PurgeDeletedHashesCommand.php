@@ -28,6 +28,7 @@ class PurgeDeletedHashesCommand extends Command
 
         if ($purgeableCount === 0) {
             $this->info('No deleted hashes found to purge.');
+
             return self::SUCCESS;
         }
 
@@ -40,17 +41,19 @@ class PurgeDeletedHashesCommand extends Command
         if ($dryRun) {
             $this->line('');
             $this->warn('Dry run mode - no records were actually deleted.');
+
             return self::SUCCESS;
         }
 
         // Confirm deletion if not forced
-        if (!$force) {
+        if (! $force) {
             $message = $olderThanDays
                 ? "Are you sure you want to purge {$purgeableCount} hash records deleted more than {$olderThanDays} days ago?"
                 : "Are you sure you want to purge ALL {$purgeableCount} deleted hash records?";
 
-            if (!$this->confirm($message)) {
+            if (! $this->confirm($message)) {
                 $this->info('Purge cancelled.');
+
                 return self::SUCCESS;
             }
         }
@@ -75,8 +78,7 @@ class PurgeDeletedHashesCommand extends Command
     /**
      * Display statistics about what will be purged.
      *
-     * @param array<int, array{model_type: string, count: int, oldest_deleted_at: string}> $statistics
-     * @param int|null $olderThanDays
+     * @param  array<int, array{model_type: string, count: int, oldest_deleted_at: string}>  $statistics
      */
     private function displayStatistics(array $statistics, ?int $olderThanDays): void
     {

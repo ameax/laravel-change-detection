@@ -112,7 +112,7 @@ trait InteractsWithHashes
     public function resetPublishErrors(): int
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return 0;
         }
 
@@ -136,7 +136,7 @@ trait InteractsWithHashes
     public function resetPublishErrorsForPublisher(int $publisherId): int
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return 0;
         }
 
@@ -161,7 +161,7 @@ trait InteractsWithHashes
     public function getPublishErrorCount(): int
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return 0;
         }
 
@@ -176,7 +176,7 @@ trait InteractsWithHashes
     public function getPublishStatus(): array
     {
         $currentHash = $this->getCurrentHash();
-        if (!$currentHash) {
+        if (! $currentHash) {
             return [
                 'pending' => 0,
                 'published' => 0,
