@@ -27,7 +27,7 @@ class TestAnimal extends Model implements Hashable
 
     public function scopeTypeFilter($query, $type)
     {
-          return $query->where('type', $type);
+        return $query->where('type', $type);
     }
 
     public function getHashableAttributes(): array

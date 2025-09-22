@@ -60,7 +60,7 @@ return new class extends Migration
             $table->id();
             $table->string('type', 100);                    // String type
             $table->integer('birthday');                         // Integer type
-            $table->decimal('group', 10,2);                 // Decimal type
+            $table->decimal('group', 10, 2);                 // Decimal type
             $table->json('features')->nullable();            // JSON type
             $table->timestamps();
         });
