@@ -16,13 +16,13 @@ beforeEach(function () {
 
 describe('basic sync operations', function () {
     it('creates hashes only for scoped records', function () {
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         expectActiveHashCount(2); // Only heavy animals (dog, horse)
     });
 
     it('skips hash creation for out-of-scope records', function () {
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Verify light animals have no hashes
         expect(getAnimalHash(1))->toBeNull(); // Cat (2.5kg)
@@ -36,7 +36,7 @@ describe('basic sync operations', function () {
     it('creates publish records when publisher exists', function () {
         $publisher = createAnimalPublisher();
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         expectActiveHashCount(2);
         expectPublishCount($publisher, 2);
@@ -46,7 +46,7 @@ describe('basic sync operations', function () {
 describe('hash updates', function () {
     beforeEach(function () {
         $this->publisher = createAnimalPublisher();
-        runSync();
+        runSyncForModel(TestAnimal::class);
     });
 
     it('updates hash when record changes within scope', function () {
@@ -54,7 +54,7 @@ describe('hash updates', function () {
         $originalAttributeHash = $originalHash->attribute_hash;
 
         updateAnimalWeight(2, 5.5); // Still heavy
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $newHash = getAnimalHash(2);
         expect($newHash->attribute_hash)->not->toBe($originalAttributeHash);
@@ -63,7 +63,7 @@ describe('hash updates', function () {
 
     it('soft deletes hash when record leaves scope', function () {
         updateAnimalWeight(2, 1.9); // Now light
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $hash = getAnimalHash(2);
         expect($hash)->not->toBeNull();
@@ -76,7 +76,7 @@ describe('hash updates', function () {
         expect(getAnimalHash(1))->toBeNull();
 
         updateAnimalWeight(1, 3.5); // Now heavy
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $hash = getAnimalHash(1);
         expect($hash)->not->toBeNull();
@@ -88,11 +88,11 @@ describe('hash updates', function () {
 describe('sync with different options', function () {
     it('soft deletes hash when record leaves scope without purge option', function () {
         createAnimalPublisher();
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Dog leaves scope (becomes light)
         updateAnimalWeight(2, 1.9);
-        runSync(); // No purge option
+        runSyncForModel(TestAnimal::class); // No purge option
 
         // Hash should be soft deleted (still exists but marked as deleted)
         $hash = getAnimalHash(2);
@@ -107,11 +107,11 @@ describe('sync with different options', function () {
 
     it('hard deletes hash when record leaves scope with purge option', function () {
         createAnimalPublisher();
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Dog leaves scope (becomes light)
         updateAnimalWeight(2, 1.9);
-        runSync(['--purge' => true]); // With purge option
+        runSyncForModel(TestAnimal::class, ['--purge' => true]); // With purge option
 
         // Hash should be completely removed from database
         expect(getAnimalHash(2))->toBeNull();
@@ -126,7 +126,7 @@ describe('publisher interactions', function () {
     it('creates publish records for active publishers', function () {
         $publisher = createAnimalPublisher(['status' => 'active']);
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Hashes are always created regardless of publisher status
         expectActiveHashCount(2);
@@ -138,7 +138,7 @@ describe('publisher interactions', function () {
     it('does not create publish records for inactive publishers', function () {
         $publisher = createAnimalPublisher(['status' => 'inactive']);
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Hashes are always created regardless of publisher status
         expectActiveHashCount(2);
@@ -149,16 +149,16 @@ describe('publisher interactions', function () {
 
     it('maintains publish records through multiple updates', function () {
         $publisher = createAnimalPublisher();
-        runSync();
+        runSyncForModel(TestAnimal::class);
         expectPublishCount($publisher, 2);
 
         // Multiple updates to same record
         updateAnimalWeight(2, 5.5);
-        runSync();
+        runSyncForModel(TestAnimal::class);
         updateAnimalWeight(2, 6.0);
-        runSync();
+        runSyncForModel(TestAnimal::class);
         updateAnimalWeight(2, 7.5);
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // Still same publish records (no duplicates for updates)
         expectPublishCount($publisher, 2);
@@ -173,7 +173,7 @@ describe('publisher interactions', function () {
             'config' => ['endpoint' => 'https://api.example.com'],
         ]);
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         expectPublishCount($logPublisher, 2);
         expectPublishCount($apiPublisher, 2);
@@ -190,13 +190,13 @@ describe('complex weight change scenarios', function () {
         $cat->weight = 4.2; // Heavy
         $cat->save();
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
         $initialHash = getAnimalHash(1);
         expect($initialHash)->not->toBeNull();
 
         // Make cat even heavier
         updateAnimalWeight(1, 5.5);
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $finalHash = getAnimalHash(1);
         expect($finalHash)->not->toBeNull();
@@ -215,13 +215,13 @@ describe('complex weight change scenarios', function () {
         $cat->weight = 4.2; // Heavy
         $cat->save();
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
         $initialHash = getAnimalHash(1);
         expect($initialHash)->not->toBeNull();
 
         // Make cat light
         updateAnimalWeight(1, 1.9);
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $finalHash = getAnimalHash(1);
         expect($finalHash)->not->toBeNull();
@@ -235,13 +235,13 @@ describe('complex weight change scenarios', function () {
         createAnimalPublisher();
 
         // Cat starts at 2.5kg (light)
-        runSync();
+        runSyncForModel(TestAnimal::class);
         $initialHash = getAnimalHash(1);
         expect($initialHash)->toBeNull(); // No hash for light animal
 
         // Make cat heavy
         updateAnimalWeight(1, 3.5);
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         $finalHash = getAnimalHash(1);
         expect($finalHash)->not->toBeNull();
@@ -255,7 +255,7 @@ describe('complex weight change scenarios', function () {
 describe('edge cases', function () {
     it('handles records at exact boundary (3kg)', function () {
         updateAnimalWeight(1, 3.0); // Exactly at boundary
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         // The boundary test shows that 3kg is NOT included in scope
         // Heavy animals are defined as weight > 3, not >= 3
@@ -273,14 +273,14 @@ describe('edge cases', function () {
     it('handles empty model set gracefully', function () {
         TestAnimal::query()->delete();
 
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         expectActiveHashCount(0);
     });
 
     it('handles sync without publisher', function () {
         // No publisher created
-        runSync();
+        runSyncForModel(TestAnimal::class);
 
         expectActiveHashCount(2);
         expect(\Ameax\LaravelChangeDetection\Models\Publish::count())->toBe(0);

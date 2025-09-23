@@ -65,10 +65,46 @@ return new class extends Migration
             $table->float('weight')->nullable();             // Float type for animal weight
             $table->timestamps();
         });
+
+        // Weather Stations table - Main monitoring station
+        Schema::create('test_weather_stations', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('location');
+            $table->decimal('latitude', 10, 8);
+            $table->decimal('longitude', 11, 8);
+            $table->string('status')->default('active');
+            $table->boolean('is_operational')->default(true);
+            $table->timestamps();
+        });
+
+        // Windvanes table - Wind direction sensors
+        Schema::create('test_windvanes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('weather_station_id')->constrained('test_weather_stations')->cascadeOnDelete();
+            $table->decimal('direction', 5, 2);             // 0-359.99 degrees
+            $table->decimal('accuracy', 5, 2);              // accuracy percentage
+            $table->date('calibration_date');
+            $table->timestamps();
+        });
+
+        // Anemometers table - Wind speed sensors
+        Schema::create('test_anemometers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('weather_station_id')->constrained('test_weather_stations')->cascadeOnDelete();
+            $table->decimal('wind_speed', 5, 2);            // m/s
+            $table->decimal('max_speed', 5, 2);             // maximum recorded speed
+            $table->string('sensor_type');
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('test_anemometers');
+        Schema::dropIfExists('test_windvanes');
+        Schema::dropIfExists('test_weather_stations');
+        Schema::dropIfExists('test_animals');
         Schema::dropIfExists('test_cars');
         Schema::dropIfExists('test_comments');
         Schema::dropIfExists('test_posts');
