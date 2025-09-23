@@ -2,9 +2,9 @@
 
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publisher;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 
 // ===== WEATHER STATION-SPECIFIC SYNC FUNCTIONS =====
 

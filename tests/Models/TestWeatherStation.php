@@ -4,10 +4,10 @@ namespace Ameax\LaravelChangeDetection\Tests\Models;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Traits\InteractsWithHashes;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
-use Closure;
 
 class TestWeatherStation extends Model implements Hashable
 {
@@ -44,7 +44,7 @@ class TestWeatherStation extends Model implements Hashable
     {
         return function ($query) {
             $query->where('is_operational', true)
-                  ->where('status', 'active');
+                ->where('status', 'active');
         };
     }
 
@@ -61,7 +61,7 @@ class TestWeatherStation extends Model implements Hashable
     public function scopeOperational(Builder $query): Builder
     {
         return $query->where('is_operational', true)
-                    ->where('status', 'active');
+            ->where('status', 'active');
     }
 
     public function hasCompleteSensorSetup(): bool

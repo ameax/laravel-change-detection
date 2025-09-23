@@ -3,9 +3,9 @@
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 beforeEach(function () {
@@ -105,7 +105,7 @@ it('demonstrates complex hash system behavior and limitations', function () {
         $originalCompositeHash,
         $attributeChangedHash->composite_hash,
         $secondHash->composite_hash,
-        $thirdHash->composite_hash
+        $thirdHash->composite_hash,
     ];
     expect(count(array_unique($allHashes)))->toBe(4); // All different states
 

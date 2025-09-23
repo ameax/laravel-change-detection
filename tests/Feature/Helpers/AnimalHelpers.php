@@ -127,6 +127,7 @@ function setupHeavyAnimals(int $count = 3): array
                 'weight' => 4.0 + $i, // All > 3kg
             ]);
         }
+
         return $animals;
     });
 }
@@ -144,6 +145,7 @@ function setupLightAnimals(int $count = 3): array
                 'weight' => 1.0 + ($i * 0.5), // All < 3kg
             ]);
         }
+
         return $animals;
     });
 }

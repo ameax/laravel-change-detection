@@ -105,6 +105,7 @@ function expectHashUnchanged(string $morphType, int $modelId, string $originalHa
 function getAllHashStatesForModel(string $morphType, int $modelId, string $hashField = 'composite_hash'): array
 {
     $hash = getHashForModel($morphType, $modelId);
+
     return $hash ? [$hash->$hashField] : [];
 }
 
@@ -113,7 +114,7 @@ function getAllHashStatesForModel(string $morphType, int $modelId, string $hashF
 function createPublisherForModel(string $modelType, ?string $name = null, array $overrides = []): Publisher
 {
     return Publisher::create(array_merge([
-        'name' => $name ?? "Test " . ucfirst(str_replace('_', ' ', $modelType)) . " Publisher",
+        'name' => $name ?? 'Test '.ucfirst(str_replace('_', ' ', $modelType)).' Publisher',
         'model_type' => $modelType,
         'publisher_class' => LogPublisher::class,
         'status' => 'active',
@@ -166,6 +167,7 @@ function syncAndVerifyHashCreation(string $modelClass, string $morphType, int $m
 {
     runSyncForModel($modelClass);
     expectHashActive($morphType, $modelId);
+
     return getHashForModel($morphType, $modelId);
 }
 

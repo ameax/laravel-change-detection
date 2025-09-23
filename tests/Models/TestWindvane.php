@@ -4,9 +4,9 @@ namespace Ameax\LaravelChangeDetection\Tests\Models;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Traits\InteractsWithHashes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 
 class TestWindvane extends Model implements Hashable
 {
@@ -56,6 +56,7 @@ class TestWindvane extends Model implements Hashable
     {
         $directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
         $index = round($this->direction / 45) % 8;
+
         return $directions[$index];
     }
 }
