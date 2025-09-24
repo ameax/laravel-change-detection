@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Services;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Models\Publish;
@@ -139,7 +140,7 @@ class HashUpdater
         })->get();
 
         foreach ($dependents as $dependent) {
-            $dependentModelClass = $dependent->dependent_model_type;
+            $dependentModelClass = ModelDiscoveryHelper::getModelClassFromMorphName($dependent->dependent_model_type);
             $dependentModel = $dependentModelClass::find($dependent->dependent_model_id);
 
             if ($dependentModel instanceof Hashable) {

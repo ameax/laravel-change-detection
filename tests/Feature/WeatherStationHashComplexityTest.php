@@ -148,6 +148,7 @@ describe('composite hash dependencies', function () {
         $updatedHash = getStationHash($station->id);
         // Note: Current implementation may not update composite hash for dependency changes
         // This is a limitation that should be documented
+        expect($updatedHash->composite_hash)->not()->toBe($initialHash->composite_hash);
         expect($updatedHash->attribute_hash)->toBe($initialHash->attribute_hash);
     })->only();
     // ->skip('Composite hash updates for dependencies not yet implemented');
@@ -167,7 +168,7 @@ describe('composite hash dependencies', function () {
 
         $updatedHash = getStationHash($station->id);
         // Composite hash should update when dependencies change
-        expect($updatedHash->composite_hash)->not->toBe($initialHash->composite_hash);
+        expect($updatedHash->composite_hash)->not()->toBe($initialHash->composite_hash);
     });
     // ->skip('Composite hash updates for dependencies not yet implemented');
 });
