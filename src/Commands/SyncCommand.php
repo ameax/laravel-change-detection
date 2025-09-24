@@ -333,8 +333,6 @@ class SyncCommand extends Command
 
     /**
      * Discover models from Publisher records.
-     *
-     * @param \Illuminate\Support\Collection $models
      */
     private function discoverModelsFromPublishers(\Illuminate\Support\Collection &$models): void
     {
@@ -356,8 +354,6 @@ class SyncCommand extends Command
 
     /**
      * Discover models from app/Models directory.
-     *
-     * @param \Illuminate\Support\Collection $models
      */
     private function discoverModelsFromAppPath(\Illuminate\Support\Collection &$models): void
     {

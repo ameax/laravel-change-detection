@@ -64,7 +64,6 @@ class BulkHashProcessor
      * Process models that have hashes but haven't had dependencies built yet.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
-     * @param  int|null  $limit
      * @return int Number of models processed
      */
     public function buildPendingDependencies(string $modelClass, ?int $limit = null): int

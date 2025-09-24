@@ -1,10 +1,10 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
+use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
+use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 beforeEach(function () {
@@ -17,7 +17,7 @@ beforeEach(function () {
 });
 
 it('can discover dependency models from composite dependencies', function () {
-    $station = new TestWeatherStation();
+    $station = new TestWeatherStation;
 
     // Get the composite dependencies (relation names)
     $dependencies = $station->getHashCompositeDependencies();
@@ -62,7 +62,7 @@ it('can discover all models from publisher model_type', function () {
     expect($mainModelClass)->toBe(TestWeatherStation::class);
 
     // Step 2: Get an instance to discover dependencies
-    $mainModel = new $mainModelClass();
+    $mainModel = new $mainModelClass;
 
     // Step 3: Collect all model classes that need to be synced
     $modelsToSync = [$mainModelClass];
@@ -89,7 +89,7 @@ it('can discover all models from publisher model_type', function () {
 
 describe('ModelDiscoveryHelper', function () {
     it('gets dependency models from a model instance', function () {
-        $station = new TestWeatherStation();
+        $station = new TestWeatherStation;
 
         $dependencies = ModelDiscoveryHelper::getDependencyModelsFromModel($station);
 
@@ -114,7 +114,7 @@ describe('ModelDiscoveryHelper', function () {
     });
 
     it('gets model class from relation name', function () {
-        $station = new TestWeatherStation();
+        $station = new TestWeatherStation;
 
         // Test valid relation
         $modelClass = ModelDiscoveryHelper::getModelClassFromRelation($station, 'windvanes');
@@ -183,7 +183,7 @@ describe('ModelDiscoveryHelper', function () {
     });
 
     it('handles empty composite dependencies correctly', function () {
-        $car = new TestCar();
+        $car = new TestCar;
 
         $dependencies = ModelDiscoveryHelper::getDependencyModelsFromModel($car);
         expect($dependencies)->toBe([]);

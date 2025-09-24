@@ -269,7 +269,7 @@ describe('scope state transitions', function () {
         ];
 
         foreach ($scenarios as [$location, $status, $maxSpeed, $shouldHaveHash]) {
-            $station = TestWeatherStation::withoutEvents(function () use ($location, $status, $maxSpeed, $shouldHaveHash) {
+            $station = TestWeatherStation::withoutEvents(function () use ($location, $status, $maxSpeed) {
                 return TestWeatherStation::create([
                     'name' => "Test {$location}-{$status}-{$maxSpeed}",
                     'location' => $location,
@@ -279,7 +279,6 @@ describe('scope state transitions', function () {
                     'is_operational' => true,
                 ]);
             });
-
 
             createWindvaneForStation($station->id);
             createAnemometerForStation($station->id, $maxSpeed);
@@ -302,14 +301,14 @@ describe('bulk operations', function () {
     it('handles 20+ stations efficiently', function () {
         for ($i = 1; $i <= 20; $i++) {
             $station = TestWeatherStation::withoutEvents(function () use ($i) {
-               return TestWeatherStation::create([
-                   'name' => "Bulk Station {$i}",
-                   'location' => $i <= 10 ? 'Bayern' : 'Berlin',
-                   'latitude' => 40.0 + ($i * 0.01),
-                   'longitude' => -74.0,
-                   'status' => $i % 2 === 0 ? 'active' : 'inactive',
-                   'is_operational' => true,
-               ]);
+                return TestWeatherStation::create([
+                    'name' => "Bulk Station {$i}",
+                    'location' => $i <= 10 ? 'Bayern' : 'Berlin',
+                    'latitude' => 40.0 + ($i * 0.01),
+                    'longitude' => -74.0,
+                    'status' => $i % 2 === 0 ? 'active' : 'inactive',
+                    'is_operational' => true,
+                ]);
             });
 
             if ($i <= 15) {
