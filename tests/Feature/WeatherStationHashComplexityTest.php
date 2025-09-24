@@ -91,7 +91,9 @@ describe('basic sync operations', function () {
         $windvane = createWindvaneForStation($station->id);
         $anemometer = createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        createPublisherForModel('test_weather_station');
+
+        runSyncAutoDiscover();
 
         // Check that hash_dependent records were created
         $hashDependents = \Ameax\LaravelChangeDetection\Models\HashDependent::where('dependent_model_type', 'test_weather_station')

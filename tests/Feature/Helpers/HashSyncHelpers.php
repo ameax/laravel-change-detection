@@ -14,6 +14,11 @@ function runSyncForModel(string $modelClass, array $options = []): void
     ], $options))->assertExitCode(0);
 }
 
+function runSyncAutoDiscover(array $options = []): void
+{
+    test()->artisan('change-detection:sync', $options)->assertExitCode(0);
+}
+
 function runSyncForModels(array $modelClasses, array $options = []): void
 {
     test()->artisan('change-detection:sync', array_merge([
