@@ -99,7 +99,6 @@ describe('basic sync operations', function () {
         $anemometer = createAnemometerForStation($station->id, 25.0);
 
         $publisher = createPublisherForModel('test_weather_station');
-
         runSyncAutoDiscover();
 
         // Check if hashes were created
@@ -150,7 +149,7 @@ describe('composite hash dependencies', function () {
         // This is a limitation that should be documented
         expect($updatedHash->composite_hash)->not()->toBe($initialHash->composite_hash);
         expect($updatedHash->attribute_hash)->toBe($initialHash->attribute_hash);
-    })->only();
+    });
     // ->skip('Composite hash updates for dependencies not yet implemented');
 
     it('updates station composite hash when anemometer changes', function () {
@@ -164,7 +163,7 @@ describe('composite hash dependencies', function () {
         $initialHash = getStationHash($station->id);
 
         updateWindSpeed($anemometer->id, 45.0);
-        runSyncForModel(TestWeatherStation::class);
+        runSyncAutoDiscover();
 
         $updatedHash = getStationHash($station->id);
         // Composite hash should update when dependencies change
@@ -196,14 +195,14 @@ describe('multiple sensors per station', function () {
         $publisher = createPublisherForModel('test_weather_station');
         runSyncAutoDiscover();
 
-        $hashBefore = getStationHash($station->id)->composite_hash;
+        $compositehashBefore = getStationHash($station->id)->composite_hash;
 
         createWindvaneForStation($station->id, 180.0);
-        runSyncForModel(TestWeatherStation::class);
+        runSyncAutoDiscover();
 
-        $hashAfter = getStationHash($station->id)->composite_hash;
+        $compsiteHashAfter = getStationHash($station->id)->composite_hash;
         // Should update but current implementation may not
-        expect($hashAfter)->not->toBe($hashBefore);
+        expect($compsiteHashAfter)->not->toBe($compositehashBefore);
     });
     // ->skip('Composite hash updates for new sensors not yet implemented');
 });
@@ -214,7 +213,8 @@ describe('edge cases', function () {
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 20.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
 
         // Scope is > 20, so 20.0 exactly should not be in scope
         // Hash may be created then soft-deleted
@@ -231,15 +231,16 @@ describe('edge cases', function () {
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
         expect(getStationHash($station->id))->not->toBeNull();
 
         updateStationAttribute($station->id, 'location', 'Berlin');
-        runSyncForModel(TestWeatherStation::class);
+        runSyncAutoDiscover();
         expect(getStationHash($station->id)->deleted_at)->not->toBeNull();
 
         updateStationAttribute($station->id, 'location', 'Bayern');
-        runSyncForModel(TestWeatherStation::class);
+        runSyncAutoDiscover();
         expect(getStationHash($station->id)->deleted_at)->toBeNull();
     });
 
@@ -248,15 +249,15 @@ describe('edge cases', function () {
         $windvane = createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
         expect(getStationHash($station->id))->not->toBeNull();
 
         // Delete station (sensors cascade delete due to foreign key)
         $station->delete();
 
         // After deletion, the station doesn't exist but hash remains (soft-deleted)
-        runSyncForModel(TestWeatherStation::class);
-
+        runSyncAutoDiscover();
         // Hash should be soft-deleted since station no longer exists
         $hash = Hash::where('hashable_type', 'test_weather_station')
             ->where('hashable_id', $station->id)
@@ -291,9 +292,8 @@ describe('scope state transitions', function () {
             createWindvaneForStation($station->id);
             createAnemometerForStation($station->id, $maxSpeed);
         }
-
-        runSyncForModel(TestWeatherStation::class);
-
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
         // Count how many actually meet criteria
         // Bayern + active + speed > 20 = only first scenario
         $activeCount = TestWeatherStation::where('location', 'Bayern')
@@ -325,7 +325,8 @@ describe('bulk operations', function () {
             }
         }
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
 
         $activeHashes = Hash::where('hashable_type', 'test_weather_station')
             ->whereNull('deleted_at')->count();
