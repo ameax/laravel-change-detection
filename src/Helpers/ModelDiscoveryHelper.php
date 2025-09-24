@@ -13,12 +13,12 @@ class ModelDiscoveryHelper
     /**
      * Get dependency model classes from a model instance.
      *
-     * @param Model&Hashable $model
+     * @param  Model&Hashable  $model
      * @return array<string, class-string> Array with relation names as keys and model classes as values
      */
     public static function getDependencyModelsFromModel(Model $model): array
     {
-        if (!$model instanceof Hashable) {
+        if (! $model instanceof Hashable) {
             return [];
         }
 
@@ -39,7 +39,6 @@ class ModelDiscoveryHelper
     /**
      * Get model class from morph name.
      *
-     * @param string $morphName
      * @return class-string|null
      */
     public static function getModelClassFromMorphName(string $morphName): ?string
@@ -62,19 +61,18 @@ class ModelDiscoveryHelper
     /**
      * Get model class from a model instance and relation name.
      *
-     * @param Model $model
-     * @param string $relationName
      * @return class-string|null
      */
     public static function getModelClassFromRelation(Model $model, string $relationName): ?string
     {
-        if (!method_exists($model, $relationName)) {
+        if (! method_exists($model, $relationName)) {
             return null;
         }
 
         try {
             $relation = $model->$relationName();
             $relatedModel = $relation->getRelated();
+
             return get_class($relatedModel);
         } catch (\Exception $e) {
             return null;
@@ -84,20 +82,19 @@ class ModelDiscoveryHelper
     /**
      * Get dependency models from a morph name.
      *
-     * @param string $morphName
      * @return array<string, class-string> Array with relation names as keys and model classes as values
      */
     public static function getDependencyModelsFromMorphName(string $morphName): array
     {
         $modelClass = self::getModelClassFromMorphName($morphName);
 
-        if (!$modelClass || !class_exists($modelClass)) {
+        if (! $modelClass || ! class_exists($modelClass)) {
             return [];
         }
 
-        $model = new $modelClass();
+        $model = new $modelClass;
 
-        if (!$model instanceof Model) {
+        if (! $model instanceof Model) {
             return [];
         }
 
@@ -109,14 +106,13 @@ class ModelDiscoveryHelper
      * Includes the main model and all its dependencies.
      * Dependencies are returned first, then the main model, to ensure proper hash creation order.
      *
-     * @param string $morphName
      * @return array<class-string> Array of model classes
      */
     public static function getAllModelsForSync(string $morphName): array
     {
         $mainModelClass = self::getModelClassFromMorphName($morphName);
 
-        if (!$mainModelClass) {
+        if (! $mainModelClass) {
             return [];
         }
 
@@ -136,24 +132,22 @@ class ModelDiscoveryHelper
 
     /**
      * Check if a model class implements Hashable interface.
-     *
-     * @param string $modelClass
-     * @return bool
      */
     public static function isHashable(string $modelClass): bool
     {
-        if (!class_exists($modelClass)) {
+        if (! class_exists($modelClass)) {
             return false;
         }
 
         $reflection = new \ReflectionClass($modelClass);
+
         return $reflection->implementsInterface(Hashable::class);
     }
 
     /**
      * Filter an array of model classes to only include Hashable models.
      *
-     * @param array<class-string> $modelClasses
+     * @param  array<class-string>  $modelClasses
      * @return array<class-string>
      */
     public static function filterHashableModels(array $modelClasses): array
