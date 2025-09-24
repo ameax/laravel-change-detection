@@ -128,7 +128,7 @@ describe('basic sync operations', function () {
         // Check that we have dependencies for both windvane and anemometer
         $dependencyTypes = $hashDependents->pluck('relation_name')->sort()->values()->toArray();
         expect($dependencyTypes)->toEqual(['anemometers', 'windvanes']);
-    })->only();
+    });
 });
 
 describe('composite hash dependencies', function () {
@@ -137,17 +137,19 @@ describe('composite hash dependencies', function () {
         $windvane = createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
+
         $initialHash = getStationHash($station->id);
 
         updateWindDirection($windvane->id, 270.0);
-        runSyncForModel(TestWeatherStation::class);
+        runSyncAutoDiscover();
 
         $updatedHash = getStationHash($station->id);
         // Note: Current implementation may not update composite hash for dependency changes
         // This is a limitation that should be documented
         expect($updatedHash->attribute_hash)->toBe($initialHash->attribute_hash);
-    });
+    })->only();
     // ->skip('Composite hash updates for dependencies not yet implemented');
 
     it('updates station composite hash when anemometer changes', function () {
@@ -155,7 +157,9 @@ describe('composite hash dependencies', function () {
         createWindvaneForStation($station->id);
         $anemometer = createAnemometerForStation($station->id, 30.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
+
         $initialHash = getStationHash($station->id);
 
         updateWindSpeed($anemometer->id, 45.0);
@@ -176,7 +180,8 @@ describe('multiple sensors per station', function () {
         createWindvaneForStation($station->id, 180.0);
         createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
 
         expect(getStationHash($station->id))->not->toBeNull();
         expect($station->windvanes)->toHaveCount(3);
@@ -187,7 +192,9 @@ describe('multiple sensors per station', function () {
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
-        runSyncForModel(TestWeatherStation::class);
+        $publisher = createPublisherForModel('test_weather_station');
+        runSyncAutoDiscover();
+
         $hashBefore = getStationHash($station->id)->composite_hash;
 
         createWindvaneForStation($station->id, 180.0);
