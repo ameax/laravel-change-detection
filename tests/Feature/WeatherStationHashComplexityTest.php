@@ -85,9 +85,33 @@ describe('basic sync operations', function () {
         expect($hash2)->not->toBeNull();
         expect($hash2->deleted_at)->not->toBeNull();
     });
-});
 
-// @claude add a test to check there is a hash_depentent record after running the sync
+    it('creates hash_dependent records after sync', function () {
+        $station = createStationInBayern();
+        $windvane = createWindvaneForStation($station->id);
+        $anemometer = createAnemometerForStation($station->id, 25.0);
+
+        runSyncForModel(TestWeatherStation::class);
+
+        // Check that hash_dependent records were created
+        $hashDependents = \Ameax\LaravelChangeDetection\Models\HashDependent::where('dependent_model_type', 'test_weather_station')
+            ->where('dependent_model_id', $station->id)
+            ->get();
+
+        expect($hashDependents)->toHaveCount(2);
+
+        // Check that we have dependencies for both windvane and anemometer
+        $dependencyTypes = $hashDependents->pluck('dependent_model_type')->sort()->values();
+        expect($dependencyTypes)->toEqual(['test_anemometer', 'test_windvane']);
+
+        // Verify the dependency IDs match
+        $windvaneDependency = $hashDependents->where('dependent_model_type', 'test_windvane')->first();
+        expect($windvaneDependency->dependency_id)->toBe($windvane->id);
+
+        $anemometerDependency = $hashDependents->where('dependent_model_type', 'test_anemometer')->first();
+        expect($anemometerDependency->dependency_id)->toBe($anemometer->id);
+    })->only();
+});
 
 describe('composite hash dependencies', function () {
     it('updates station composite hash when windvane changes', function () {
