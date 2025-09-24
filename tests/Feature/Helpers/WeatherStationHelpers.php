@@ -156,8 +156,8 @@ function setupStandardWeatherStations(): array
     return TestWeatherStation::withoutEvents(function () {
         // Create operational station with both sensors
         $operationalStation = TestWeatherStation::create([
-            'name' => 'Downtown Station',
-            'location' => 'Downtown Area',
+            'name' => 'Bayern 1',
+            'location' => 'Bayern',
             'latitude' => 40.7128,
             'longitude' => -74.0060,
             'status' => 'active',
@@ -186,8 +186,8 @@ function setupStandardWeatherStations(): array
 
         // Create operational station without sensors (for incomplete setup tests)
         $incompleteStation = TestWeatherStation::create([
-            'name' => 'Incomplete Station',
-            'location' => 'Remote Area',
+            'name' => 'Bayern 2',
+            'location' => 'Bayern',
             'latitude' => 40.6782,
             'longitude' => -73.9442,
             'status' => 'active',
@@ -377,4 +377,38 @@ function simulateMaintenanceCycle(int $stationId): array
     $lifecycle['restored'] = getStationHash($stationId);
 
     return $lifecycle;
+}
+
+// ===== QUICK STATION CREATION HELPERS =====
+
+function createStationInBayern(array $overrides = []): TestWeatherStation
+{
+    return TestWeatherStation::create(array_merge([
+        'name' => 'Bayern Station '.uniqid(),
+        'location' => 'Bayern',
+        'latitude' => 48.1351 + (rand(0, 100) / 1000),
+        'longitude' => 11.5820 + (rand(0, 100) / 1000),
+        'status' => 'active',
+        'is_operational' => true,
+    ], $overrides));
+}
+
+function createWindvaneForStation(int $stationId, float $direction = 90.0): TestWindvane
+{
+    return TestWindvane::create([
+        'weather_station_id' => $stationId,
+        'direction' => $direction,
+        'accuracy' => 95.0 + (rand(0, 40) / 10), // 95.0 - 99.0
+        'calibration_date' => '2024-01-'.str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT),
+    ]);
+}
+
+function createAnemometerForStation(int $stationId, float $maxSpeed = 25.0): TestAnemometer
+{
+    return TestAnemometer::create([
+        'weather_station_id' => $stationId,
+        'wind_speed' => $maxSpeed * 0.6, // Current speed is 60% of max
+        'max_speed' => $maxSpeed,
+        'sensor_type' => 'ultrasonic',
+    ]);
 }

@@ -43,8 +43,34 @@ class TestWeatherStation extends Model implements Hashable
     public function getHashableScope(): ?Closure
     {
         return function ($query) {
-            $query->where('is_operational', true)
+            $query->where('location', 'Bayern')
+                ->where('status', 'active')
+                ->whereIn('id', function ($subquery) {
+                    $subquery->select('weather_station_id')
+                        ->from('test_anemometers')
+                        ->where('max_speed', '>', 20.0);
+                });
+        };
+    }
+
+
+    public function scopeGetActiveWsInBayern(): ?Closure
+    {
+        return function ($query) {
+            $query->where('location', 'Bayern')
                 ->where('status', 'active');
+
+        };
+    }
+
+    // New scope combining both model scopes
+    public function scopeGetActiveInByernWithMaxSpeed(): ?Closure
+    {
+        return function ($query) {
+            $query->scopeGetActiveWsInBayern()
+                ->whereHas('TestAnemometer', function ($q) {
+                    $q->where('Max_speed', '>', 20.0);
+                });
         };
     }
 
