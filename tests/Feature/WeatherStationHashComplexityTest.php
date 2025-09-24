@@ -1,8 +1,6 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Models\Hash;
-use Ameax\LaravelChangeDetection\Models\Publisher;
-use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
@@ -104,7 +102,7 @@ describe('composite hash dependencies', function () {
         // This is a limitation that should be documented
         expect($updatedHash->attribute_hash)->toBe($initialHash->attribute_hash);
     });
-    //->skip('Composite hash updates for dependencies not yet implemented');
+    // ->skip('Composite hash updates for dependencies not yet implemented');
 
     it('updates station composite hash when anemometer changes', function () {
         $station = createStationInBayern();
@@ -121,7 +119,7 @@ describe('composite hash dependencies', function () {
         // Composite hash should update when dependencies change
         expect($updatedHash->composite_hash)->not->toBe($initialHash->composite_hash);
     });
-    //->skip('Composite hash updates for dependencies not yet implemented');
+    // ->skip('Composite hash updates for dependencies not yet implemented');
 });
 
 describe('multiple sensors per station', function () {
@@ -153,7 +151,7 @@ describe('multiple sensors per station', function () {
         // Should update but current implementation may not
         expect($hashAfter)->not->toBe($hashBefore);
     });
-        //->skip('Composite hash updates for new sensors not yet implemented');
+    // ->skip('Composite hash updates for new sensors not yet implemented');
 });
 
 describe('edge cases', function () {
@@ -244,7 +242,7 @@ describe('scope state transitions', function () {
         // Bayern + active + speed > 20 = only first scenario
         $activeCount = TestWeatherStation::where('location', 'Bayern')
             ->where('status', 'active')
-            ->whereHas('anemometers', fn($q) => $q->where('max_speed', '>', 20))
+            ->whereHas('anemometers', fn ($q) => $q->where('max_speed', '>', 20))
             ->count();
 
         expectActiveHashCountForType('test_weather_station', $activeCount);

@@ -53,7 +53,6 @@ class TestWeatherStation extends Model implements Hashable
         };
     }
 
-
     public function scopeGetActiveWsInBayern(): ?Closure
     {
         return function ($query) {
