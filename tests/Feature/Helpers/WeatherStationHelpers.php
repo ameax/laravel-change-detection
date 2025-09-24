@@ -395,20 +395,24 @@ function createStationInBayern(array $overrides = []): TestWeatherStation
 
 function createWindvaneForStation(int $stationId, float $direction = 90.0): TestWindvane
 {
-    return TestWindvane::create([
-        'weather_station_id' => $stationId,
-        'direction' => $direction,
-        'accuracy' => 95.0 + (rand(0, 40) / 10), // 95.0 - 99.0
-        'calibration_date' => '2024-01-'.str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT),
-    ]);
+    return TestWindvane::withoutEvents(function () use ($stationId, $direction) {
+        return TestWindvane::create([
+            'weather_station_id' => $stationId,
+            'direction' => $direction,
+            'accuracy' => 95.0 + (rand(0, 40) / 10), // 95.0 - 99.0
+            'calibration_date' => '2024-01-'.str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT),
+        ]);
+    });
 }
 
 function createAnemometerForStation(int $stationId, float $maxSpeed = 25.0): TestAnemometer
 {
-    return TestAnemometer::create([
-        'weather_station_id' => $stationId,
-        'wind_speed' => $maxSpeed * 0.6, // Current speed is 60% of max
-        'max_speed' => $maxSpeed,
-        'sensor_type' => 'ultrasonic',
-    ]);
+    return TestAnemometer::withoutEvents(function () use ($stationId, $maxSpeed) {
+        return TestAnemometer::create([
+            'weather_station_id' => $stationId,
+            'wind_speed' => $maxSpeed * 0.6, // Current speed is 60% of max
+            'max_speed' => $maxSpeed,
+            'sensor_type' => 'ultrasonic',
+        ]);
+    });
 }

@@ -48,12 +48,14 @@ describe('basic sync operations', function () {
         expectActiveHashCountForType('test_weather_station', 1);
 
         // Add an anemometer to incomplete station (should enter scope - has Bayern + active)
-        TestAnemometer::create([
-            'weather_station_id' => $this->stations['incomplete']->id,
-            'wind_speed' => 15.0,
-            'max_speed' => 30.0, // > 20, so meets criteria
-            'sensor_type' => 'ultrasonic',
-        ]);
+        TestAnemometer::withoutEvents(function () {
+            TestAnemometer::create([
+                'weather_station_id' => $this->stations['incomplete']->id,
+                'wind_speed' => 15.0,
+                'max_speed' => 30.0, // > 20, so meets criteria
+                'sensor_type' => 'ultrasonic',
+            ]);
+        });
 
         runSyncForModel(TestWeatherStation::class);
 
@@ -84,6 +86,8 @@ describe('basic sync operations', function () {
         expect($hash2->deleted_at)->not->toBeNull();
     });
 });
+
+// @claude add a test to check there is a hash_depentent record after running the sync
 
 describe('composite hash dependencies', function () {
     it('updates station composite hash when windvane changes', function () {
@@ -223,14 +227,17 @@ describe('scope state transitions', function () {
         ];
 
         foreach ($scenarios as [$location, $status, $maxSpeed, $shouldHaveHash]) {
-            $station = TestWeatherStation::create([
-                'name' => "Test {$location}-{$status}-{$maxSpeed}",
-                'location' => $location,
-                'latitude' => 40.0,
-                'longitude' => -74.0,
-                'status' => $status,
-                'is_operational' => true,
-            ]);
+            $station = TestWeatherStation::withoutEvents(function () use ($location, $status, $maxSpeed, $shouldHaveHash) {
+                return TestWeatherStation::create([
+                    'name' => "Test {$location}-{$status}-{$maxSpeed}",
+                    'location' => $location,
+                    'latitude' => 40.0,
+                    'longitude' => -74.0,
+                    'status' => $status,
+                    'is_operational' => true,
+                ]);
+            });
+
 
             createWindvaneForStation($station->id);
             createAnemometerForStation($station->id, $maxSpeed);
@@ -252,14 +259,16 @@ describe('scope state transitions', function () {
 describe('bulk operations', function () {
     it('handles 20+ stations efficiently', function () {
         for ($i = 1; $i <= 20; $i++) {
-            $station = TestWeatherStation::create([
-                'name' => "Bulk Station {$i}",
-                'location' => $i <= 10 ? 'Bayern' : 'Berlin',
-                'latitude' => 40.0 + ($i * 0.01),
-                'longitude' => -74.0,
-                'status' => $i % 2 === 0 ? 'active' : 'inactive',
-                'is_operational' => true,
-            ]);
+            $station = TestWeatherStation::withoutEvents(function () use ($i) {
+               return TestWeatherStation::create([
+                   'name' => "Bulk Station {$i}",
+                   'location' => $i <= 10 ? 'Bayern' : 'Berlin',
+                   'latitude' => 40.0 + ($i * 0.01),
+                   'longitude' => -74.0,
+                   'status' => $i % 2 === 0 ? 'active' : 'inactive',
+                   'is_operational' => true,
+               ]);
+            });
 
             if ($i <= 15) {
                 createWindvaneForStation($station->id);
