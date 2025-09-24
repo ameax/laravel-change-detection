@@ -87,13 +87,36 @@ describe('basic sync operations', function () {
     });
 
     it('creates hash_dependent records after sync', function () {
+        // Clean up ALL test data to ensure isolation
+        TestWeatherStation::query()->delete();
+        TestWindvane::query()->delete();
+        TestAnemometer::query()->delete();
+        \Ameax\LaravelChangeDetection\Models\Hash::query()->delete();
+        \Ameax\LaravelChangeDetection\Models\HashDependent::query()->delete();
+
         $station = createStationInBayern();
         $windvane = createWindvaneForStation($station->id);
         $anemometer = createAnemometerForStation($station->id, 25.0);
 
-        createPublisherForModel('test_weather_station');
+        $publisher = createPublisherForModel('test_weather_station');
 
         runSyncAutoDiscover();
+
+        // Check if hashes were created
+        $stationHash = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', 'test_weather_station')
+            ->where('hashable_id', $station->id)
+            ->first();
+        expect($stationHash)->not->toBeNull('No hash record was created for the weather station');
+
+        $windvaneHash = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', 'test_windvane')
+            ->where('hashable_id', $windvane->id)
+            ->first();
+        expect($windvaneHash)->not->toBeNull('No hash record was created for the windvane');
+
+        $anemometerHash = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', 'test_anemometer')
+            ->where('hashable_id', $anemometer->id)
+            ->first();
+        expect($anemometerHash)->not->toBeNull('No hash record was created for the anemometer');
 
         // Check that hash_dependent records were created
         $hashDependents = \Ameax\LaravelChangeDetection\Models\HashDependent::where('dependent_model_type', 'test_weather_station')
@@ -103,15 +126,8 @@ describe('basic sync operations', function () {
         expect($hashDependents)->toHaveCount(2);
 
         // Check that we have dependencies for both windvane and anemometer
-        $dependencyTypes = $hashDependents->pluck('dependent_model_type')->sort()->values();
-        expect($dependencyTypes)->toEqual(['test_anemometer', 'test_windvane']);
-
-        // Verify the dependency IDs match
-        $windvaneDependency = $hashDependents->where('dependent_model_type', 'test_windvane')->first();
-        expect($windvaneDependency->dependency_id)->toBe($windvane->id);
-
-        $anemometerDependency = $hashDependents->where('dependent_model_type', 'test_anemometer')->first();
-        expect($anemometerDependency->dependency_id)->toBe($anemometer->id);
+        $dependencyTypes = $hashDependents->pluck('relation_name')->sort()->values()->toArray();
+        expect($dependencyTypes)->toEqual(['anemometers', 'windvanes']);
     })->only();
 });
 

@@ -78,12 +78,10 @@ it('can discover all models from publisher model_type', function () {
         }
     }
 
-    // Verify we found all necessary models for syncing
-    expect($modelsToSync)->toBe([
-        TestWeatherStation::class,
-        TestWindvane::class,
-        TestAnemometer::class,
-    ]);
+    // Verify we found all necessary models for syncing (order doesn't matter here)
+    expect($modelsToSync)->toContain(TestWeatherStation::class);
+    expect($modelsToSync)->toContain(TestWindvane::class);
+    expect($modelsToSync)->toContain(TestAnemometer::class);
 
     // These are all the models that need to be processed by sync command
     expect($modelsToSync)->toHaveCount(3);
@@ -145,13 +143,14 @@ describe('ModelDiscoveryHelper', function () {
         expect($dependencies)->toBe([]);
     });
 
-    it('gets all models for sync from morph name', function () {
+    it('gets all models for sync from morph name in correct order', function () {
         $models = ModelDiscoveryHelper::getAllModelsForSync('test_weather_station');
 
+        // Dependencies should come first, then the main model
         expect($models)->toBe([
-            TestWeatherStation::class,
-            TestWindvane::class,
-            TestAnemometer::class,
+            TestWindvane::class,      // dependency first
+            TestAnemometer::class,    // dependency second
+            TestWeatherStation::class, // main model last
         ]);
 
         // Test with model that has no dependencies

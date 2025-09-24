@@ -21,6 +21,7 @@ return new class extends Migration
             $table->morphs('hashable');
             $table->string('attribute_hash', 32);
             $table->string('composite_hash', 32)->nullable();
+            $table->boolean('has_dependencies_built')->default(false); // Track if dependencies have been processed
             $table->timestamp('deleted_at')->nullable(); // NEW: Soft delete support
             $table->timestamps();
 

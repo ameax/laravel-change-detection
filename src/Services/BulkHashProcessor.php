@@ -61,6 +61,41 @@ class BulkHashProcessor
     }
 
     /**
+     * Process models that have hashes but haven't had dependencies built yet.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  int|null  $limit
+     * @return int Number of models processed
+     */
+    public function buildPendingDependencies(string $modelClass, ?int $limit = null): int
+    {
+        $model = new $modelClass;
+        $morphClass = $model->getMorphClass();
+
+        // Find hashes that need dependencies built
+        $query = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
+            ->where('has_dependencies_built', false)
+            ->whereNull('deleted_at');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        $hashes = $query->get();
+
+        if ($hashes->isEmpty()) {
+            return 0;
+        }
+
+        $modelIds = $hashes->pluck('hashable_id')->toArray();
+
+        // Build dependencies for these models
+        $this->buildDependencyRelationshipsForIds($modelClass, $modelIds);
+
+        return count($modelIds);
+    }
+
+    /**
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @param  array<int>  $modelIds
      */
@@ -120,12 +155,13 @@ class BulkHashProcessor
 
         $now = now()->utc()->toDateTimeString();
         $sql = "
-            INSERT INTO {$qualifiedHashesTable} (hashable_type, hashable_id, attribute_hash, composite_hash, created_at, updated_at)
+            INSERT INTO {$qualifiedHashesTable} (hashable_type, hashable_id, attribute_hash, composite_hash, has_dependencies_built, created_at, updated_at)
             SELECT
                 ? as hashable_type,
                 m.`{$primaryKey}` as hashable_id,
                 {$attributeHashExpr} as attribute_hash,
                 {$compositeHashExpr} as composite_hash,
+                0 as has_dependencies_built,
                 ? as created_at,
                 ? as updated_at
             FROM {$qualifiedTable} m
@@ -335,8 +371,8 @@ class BulkHashProcessor
             return;
         }
 
-        // Process in smaller chunks to avoid memory issues
-        $chunks = array_chunk($modelIds, 100);
+        // Process in chunks to avoid memory issues and optimize batch operations
+        $chunks = array_chunk($modelIds, 1000);
 
         foreach ($chunks as $chunk) {
             /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
@@ -355,6 +391,9 @@ class BulkHashProcessor
                 /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
                 $this->buildDependencyRelationshipsForModel($model);
             }
+
+            // Mark all models in this chunk as having dependencies built (batch update)
+            $this->markDependenciesBuiltForChunk($modelClass, $chunk);
         }
     }
 
@@ -434,6 +473,27 @@ class BulkHashProcessor
     }
 
     /**
+     * Mark multiple hashes as having dependencies built (batch update).
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
+     */
+    private function markDependenciesBuiltForChunk(string $modelClass, array $modelIds): void
+    {
+        if (empty($modelIds)) {
+            return;
+        }
+
+        $model = new $modelClass;
+        $morphClass = $model->getMorphClass();
+
+        // Batch update all hashes in this chunk
+        \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
+            ->whereIn('hashable_id', $modelIds)
+            ->update(['has_dependencies_built' => true]);
+    }
+
+    /**
      * Recalculate composite hashes for model IDs after dependencies are created.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
@@ -451,8 +511,8 @@ class BulkHashProcessor
             return; // No dependencies, composite hash = attribute hash (already correct)
         }
 
-        // Process in smaller chunks
-        $chunks = array_chunk($modelIds, 100);
+        // Process in chunks to optimize batch operations
+        $chunks = array_chunk($modelIds, 1000);
 
         foreach ($chunks as $chunk) {
             /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */

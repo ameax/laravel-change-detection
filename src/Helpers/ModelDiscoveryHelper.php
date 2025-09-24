@@ -107,6 +107,7 @@ class ModelDiscoveryHelper
     /**
      * Get all model classes that need to be synced for a given morph name.
      * Includes the main model and all its dependencies.
+     * Dependencies are returned first, then the main model, to ensure proper hash creation order.
      *
      * @param string $morphName
      * @return array<class-string> Array of model classes
@@ -119,14 +120,16 @@ class ModelDiscoveryHelper
             return [];
         }
 
-        $models = [$mainModelClass];
+        $models = [];
         $dependencyModels = self::getDependencyModelsFromMorphName($morphName);
 
+        // Add dependencies first
         foreach ($dependencyModels as $dependencyClass) {
-            if (!in_array($dependencyClass, $models)) {
-                $models[] = $dependencyClass;
-            }
+            $models[] = $dependencyClass;
         }
+
+        // Add main model last
+        $models[] = $mainModelClass;
 
         return $models;
     }

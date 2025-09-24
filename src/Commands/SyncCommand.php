@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Commands;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
+use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
 use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
@@ -220,6 +222,17 @@ class SyncCommand extends Command
                     $this->info("    → Updated {$updated} hash records");
                 }
             }
+
+            // Always check for pending dependencies (even for models with no changes)
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $pendingDeps = $limit
+                ? $processor->buildPendingDependencies($modelClass, (int) $limit)
+                : $processor->buildPendingDependencies($modelClass);
+
+            if ($pendingDeps > 0) {
+                $this->line("  {$modelName}: Building dependencies...");
+                $this->info("    → Built dependencies for {$pendingDeps} records");
+            }
         }
 
         $this->line('');
@@ -297,13 +310,7 @@ class SyncCommand extends Command
      */
     private function implementsHashable(string $modelClass): bool
     {
-        if (! class_exists($modelClass)) {
-            return false;
-        }
-
-        $reflection = new ReflectionClass($modelClass);
-
-        return $reflection->implementsInterface(Hashable::class);
+        return ModelDiscoveryHelper::isHashable($modelClass);
     }
 
     /**
@@ -314,10 +321,50 @@ class SyncCommand extends Command
     private function discoverHashableModels(): \Illuminate\Support\Collection
     {
         $models = collect();
+
+        // First, discover models from Publishers
+        $this->discoverModelsFromPublishers($models);
+
+        // Then, discover models from app/Models as fallback
+        $this->discoverModelsFromAppPath($models);
+
+        return $models->unique()->sort()->values();
+    }
+
+    /**
+     * Discover models from Publisher records.
+     *
+     * @param \Illuminate\Support\Collection $models
+     */
+    private function discoverModelsFromPublishers(\Illuminate\Support\Collection &$models): void
+    {
+        $publishers = Publisher::active()->get();
+
+        foreach ($publishers as $publisher) {
+            $modelType = $publisher->model_type;
+
+            // Get all models needed for this publisher (main + dependencies)
+            $publisherModels = ModelDiscoveryHelper::getAllModelsForSync($modelType);
+
+            foreach ($publisherModels as $modelClass) {
+                if (ModelDiscoveryHelper::isHashable($modelClass)) {
+                    $models->push($modelClass);
+                }
+            }
+        }
+    }
+
+    /**
+     * Discover models from app/Models directory.
+     *
+     * @param \Illuminate\Support\Collection $models
+     */
+    private function discoverModelsFromAppPath(\Illuminate\Support\Collection &$models): void
+    {
         $appPath = app_path('Models');
 
         if (! File::exists($appPath)) {
-            return $models;
+            return;
         }
 
         $files = File::allFiles($appPath);
@@ -336,7 +383,5 @@ class SyncCommand extends Command
                 }
             }
         }
-
-        return $models->sort()->values();
     }
 }
