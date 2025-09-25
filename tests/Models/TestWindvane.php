@@ -32,6 +32,11 @@ class TestWindvane extends Model implements Hashable
         return ['direction', 'accuracy', 'calibration_date'];
     }
 
+    public function getHashableScope(): ?\Closure
+    {
+        return null;
+    }
+
     public function getHashCompositeDependencies(): array
     {
         return [];

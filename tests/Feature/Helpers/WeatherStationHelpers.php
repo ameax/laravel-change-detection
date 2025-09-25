@@ -428,3 +428,4 @@ function createAnemometerForStation(int $stationId, float $maxSpeed = 25.0): Tes
         ]);
     });
 }
+

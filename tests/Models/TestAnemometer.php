@@ -41,6 +41,11 @@ class TestAnemometer extends Model implements Hashable
         return $this->belongsTo(TestWeatherStation::class, 'weather_station_id');
     }
 
+    public function getHashableScope(): ?\Closure
+    {
+        return null;
+    }
+
     public function scopeHighWind(Builder $query): Builder
     {
         return $query->where('wind_speed', '>', 10.0);

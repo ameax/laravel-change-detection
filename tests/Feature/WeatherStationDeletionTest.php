@@ -476,7 +476,7 @@ describe('weather station deletion scenarios', function () {
 
         // Hash is completely removed
         expect(getStationHash($station2->id))->toBeNull();
-    })->skip();
+    });
 
     // 15. Hash Dependents Cascade Deletion
     it('cascades hash_dependents records when hash is purged', function () {
@@ -569,7 +569,7 @@ describe('weather station deletion scenarios', function () {
         runSyncAutoDiscover();
         $station2Hash = getStationHash($station2->id);
 
-        $publish2 = \Ameax\LaravelChangeDetection\Models\Publish::create([
+        $publish2 = Publish::create([
             'hash_id' => $station2Hash->id,
             'publisher_id' => $publisher->id,
             'status' => 'pending',
@@ -608,7 +608,7 @@ describe('weather station deletion scenarios', function () {
             ->update(['deleted_at' => $oldDate]);
 
         // Use HashPurger to clean up old soft-deleted hashes
-        $purger = app(\Ameax\LaravelChangeDetection\Services\HashPurger::class);
+        $purger = app(HashPurger::class);
         $stats = $purger->purge(30); // Purge records older than 30 days
 
         expect($stats['total_purged'])->toBe(1);
@@ -694,7 +694,7 @@ describe('weather station deletion scenarios', function () {
         $stationHash = getStationHash($station->id);
 
         // Create failed publish records
-        $failedPublish = \Ameax\LaravelChangeDetection\Models\Publish::create([
+        $failedPublish = Publish::create([
             'hash_id' => $stationHash->id,
             'publisher_id' => $publisher->id,
             'status' => 'failed',
@@ -721,7 +721,7 @@ describe('weather station deletion scenarios', function () {
 
         // Now publish record is cascade deleted with hash
         expect(Publish::find($failedPublish->id))->toBeNull();
-    })->skip();
+    });
 
     // 22. Multiple Publishers During Deletion
     it('handles deletion with multiple active publishers', function () {
@@ -739,11 +739,11 @@ describe('weather station deletion scenarios', function () {
         $stationHash = getStationHash($station->id);
 
         // Verify publish records for active publishers only
-        expect(\Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $stationHash->id)
+        expect(Publish::where('hash_id', $stationHash->id)
             ->where('publisher_id', $logPublisher->id)->exists())->toBeTrue();
-        expect(\Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $stationHash->id)
+        expect(Publish::where('hash_id', $stationHash->id)
             ->where('publisher_id', $apiPublisher->id)->exists())->toBeTrue();
-        expect(\Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $stationHash->id)
+        expect(Publish::where('hash_id', $stationHash->id)
             ->where('publisher_id', $inactivePublisher->id)->exists())->toBeFalse();
 
         // Delete one publisher
