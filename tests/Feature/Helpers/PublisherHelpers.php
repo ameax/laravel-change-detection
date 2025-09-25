@@ -1,12 +1,11 @@
 <?php
 
-use Ameax\LaravelChangeDetection\Models\Publisher;
-use Ameax\LaravelChangeDetection\Models\Publish;
-use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 use Ameax\LaravelChangeDetection\Contracts\Publisher as PublisherContract;
+use Ameax\LaravelChangeDetection\Models\Publish;
+use Ameax\LaravelChangeDetection\Models\Publisher;
+use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Carbon;
 
 // ===== PUBLISHER CREATION HELPERS =====
 
@@ -356,6 +355,7 @@ class MockWebhookPublisher implements PublisherContract
 class BulkPublishJob
 {
     public $timeout = 600;
+
     public $tries = 3;
 
     public function shouldStopForValidationErrors(Publisher $publisher, int $errorCount): bool

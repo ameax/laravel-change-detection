@@ -1,13 +1,11 @@
 <?php
 
-use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
-use Ameax\LaravelChangeDetection\Services\ChangeDetector;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Models\Publish;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
+use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
+use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -91,7 +89,7 @@ function createBulkWeatherStationsWithSensors(int $stationCount, int $sensorsPer
         }
 
         // Insert remaining
-        if (!empty($windvaneData)) {
+        if (! empty($windvaneData)) {
             TestWindvane::insert($windvaneData);
             TestAnemometer::insert($anemometerData);
         }

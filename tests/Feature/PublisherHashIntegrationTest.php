@@ -1,20 +1,20 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Models\Hash;
-use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Models\Publish;
-use Ameax\LaravelChangeDetection\Services\HashUpdater;
+use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\HashUpdater;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 
 // Include helper files
-require_once __DIR__ . '/Helpers/WeatherStationHelpers.php';
-require_once __DIR__ . '/Helpers/HashSyncHelpers.php';
-require_once __DIR__ . '/Helpers/PublisherHelpers.php';
+require_once __DIR__.'/Helpers/WeatherStationHelpers.php';
+require_once __DIR__.'/Helpers/HashSyncHelpers.php';
+require_once __DIR__.'/Helpers/PublisherHelpers.php';
 
 beforeEach(function () {
     Relation::morphMap([
@@ -57,9 +57,9 @@ describe('publisher and hash system integration', function () {
         expect($updatedHash->attribute_hash)->not->toBe($hash->attribute_hash);
 
         // Check total publish records for this station
-        $totalPublishes = Publish::whereHas('hash', function($query) use ($station) {
+        $totalPublishes = Publish::whereHas('hash', function ($query) use ($station) {
             $query->where('hashable_type', 'test_weather_station')
-                  ->where('hashable_id', $station->id);
+                ->where('hashable_id', $station->id);
         })->get();
 
         expect($totalPublishes)->toHaveCount(2);
@@ -248,7 +248,7 @@ describe('publisher and hash system integration', function () {
         $processed = $processor->processChangedModels(TestWeatherStation::class);
 
         // Should have created publish records for all stations
-        $publishes = Publish::whereHas('hash', function($query) {
+        $publishes = Publish::whereHas('hash', function ($query) {
             $query->where('hashable_type', 'test_weather_station');
         })->where('publisher_id', $publisher->id)->get();
 
@@ -346,7 +346,7 @@ describe('publisher and hash system integration', function () {
 
         // Update station name to ensure hash changes
         $station->refresh();
-        $station->name = 'Completely New Station Name ' . uniqid();
+        $station->name = 'Completely New Station Name '.uniqid();
         $station->save();
 
         $newHash = $hashUpdater->updateHash($station);
@@ -449,7 +449,7 @@ describe('publisher and hash system integration', function () {
         // Add custom metadata
         $publish->metadata = array_merge($publish->metadata, [
             'custom_field' => 'custom_value',
-            'timestamp' => now()->toIsoString()
+            'timestamp' => now()->toIsoString(),
         ]);
         $publish->save();
 

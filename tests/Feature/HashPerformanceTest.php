@@ -5,9 +5,9 @@ use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
 use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\MySQLHashCalculator;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 
@@ -90,6 +90,7 @@ describe('hash system performance optimization', function () {
         // Find optimal batch size
         $optimalBatch = array_key_first(array_filter($results, function ($metrics) use ($results) {
             $avgEfficiency = array_sum(array_column($results, 'efficiency')) / count($results);
+
             return $metrics['efficiency'] > $avgEfficiency;
         }));
 
@@ -169,7 +170,7 @@ describe('hash system performance optimization', function () {
     // 5. Cross-Database Query Performance
     it('measures cross-database operation overhead', function () {
         // Skip if not configured for cross-database
-        if (!isConfiguredForCrossDatabase()) {
+        if (! isConfiguredForCrossDatabase()) {
             $this->markTestSkipped('Cross-database not configured');
         }
 
@@ -231,7 +232,7 @@ describe('hash system performance optimization', function () {
         expect($totalTime)->toBeLessThan(10); // 5 concurrent operations in under 10 seconds
 
         // Check for deadlocks
-        $deadlocks = DB::select("SHOW ENGINE INNODB STATUS");
+        $deadlocks = DB::select('SHOW ENGINE INNODB STATUS');
         expect($deadlocks)->not->toContain('LATEST DETECTED DEADLOCK');
 
         logConcurrentPerformance($concurrentJobs, $totalTime);
@@ -381,7 +382,7 @@ describe('hash system performance optimization', function () {
             if ($row->type === 'ALL') {
                 $hasTableScan = true;
             }
-            if (!empty($row->key)) {
+            if (! empty($row->key)) {
                 $hasIndexUsage = true;
             }
         }
@@ -458,10 +459,10 @@ describe('hash system performance optimization', function () {
             $lockTime = microtime(true) - $lockStart;
 
             // Check for lock waits
-            $lockWaits = DB::select("
+            $lockWaits = DB::select('
                 SELECT COUNT(*) as wait_count
                 FROM information_schema.INNODB_LOCK_WAITS
-            ");
+            ');
 
             $lockMetrics[$batchSize] = [
                 'total_time' => $lockTime,

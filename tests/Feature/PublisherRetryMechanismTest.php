@@ -1,19 +1,18 @@
 <?php
 
-use Ameax\LaravelChangeDetection\Models\Hash;
-use Ameax\LaravelChangeDetection\Models\Publisher;
-use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Jobs\BulkPublishJob;
+use Ameax\LaravelChangeDetection\Models\Publish;
+use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
+use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
-use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Relation::morphMap([
@@ -195,7 +194,7 @@ describe('publisher retry mechanism and error handling', function () {
             'api.example.com/webhook' => Http::sequence()
                 ->push(null, 408) // Request Timeout
                 ->push(null, 504) // Gateway Timeout
-                ->push(['success' => true], 200) // Success on third try
+                ->push(['success' => true], 200), // Success on third try
         ]);
 
         $station = createStationInBayern();
@@ -293,7 +292,7 @@ describe('publisher retry mechanism and error handling', function () {
         }
 
         // Process with job
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $jobShouldStop = $job->shouldStopForValidationErrors($publisher, $validationErrorCount);
 
         expect($jobShouldStop)->toBeTrue();
@@ -540,7 +539,7 @@ describe('publisher retry mechanism and error handling', function () {
 
         foreach ($testCases as $errorMessage => $expectedCode) {
             $publish = createPendingPublish($hash->id, $publisher->id, [
-                'metadata' => ['test_case' => $errorMessage]
+                'metadata' => ['test_case' => $errorMessage],
             ]);
 
             $extractedCode = extractHttpCodeFromError($errorMessage);
