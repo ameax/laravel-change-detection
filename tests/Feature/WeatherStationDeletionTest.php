@@ -155,29 +155,29 @@ describe('weather station deletion scenarios', function () {
         dump($station->getKey());
         expect(getStationHash($station->getKey()))->toBeNull();
 
-//
-//        // Recreate with same ID but different data
-//        $newStation = TestWeatherStation::withoutEvents(function () {
-//            return TestWeatherStation::create([
-//                'id' => 999,
-//                'name' => 'New Station',
-//                'location' => 'Bayern',
-//                'latitude' => 48.2000,
-//                'longitude' => 11.6000,
-//                'status' => 'active',
-//                'is_operational' => true,
-//            ]);
-//        });
-//
-//        createWindvaneForStation(999);
-//        createAnemometerForStation(999, 30.0);
-//
-//        runSyncAutoDiscover();
-//
-//        // Should have new hash
-//        $newHash = getStationHash(999);
-//        expect($newHash->deleted_at)->toBeNull();
-//        expect($newHash->attribute_hash)->not->toBe($originalHash);
+        //
+        //        // Recreate with same ID but different data
+        //        $newStation = TestWeatherStation::withoutEvents(function () {
+        //            return TestWeatherStation::create([
+        //                'id' => 999,
+        //                'name' => 'New Station',
+        //                'location' => 'Bayern',
+        //                'latitude' => 48.2000,
+        //                'longitude' => 11.6000,
+        //                'status' => 'active',
+        //                'is_operational' => true,
+        //            ]);
+        //        });
+        //
+        //        createWindvaneForStation(999);
+        //        createAnemometerForStation(999, 30.0);
+        //
+        //        runSyncAutoDiscover();
+        //
+        //        // Should have new hash
+        //        $newHash = getStationHash(999);
+        //        expect($newHash->deleted_at)->toBeNull();
+        //        expect($newHash->attribute_hash)->not->toBe($originalHash);
     });
 
     // 6. Database CASCADE Deletion
