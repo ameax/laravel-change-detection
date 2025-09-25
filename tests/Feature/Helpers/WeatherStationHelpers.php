@@ -319,7 +319,6 @@ function setupCalibrationTestScenario(): array
     });
 }
 
-// ===== WEATHER STATION-SPECIFIC TEST SCENARIOS =====
 
 function simulateStormConditions(int $stationId): array
 {
@@ -391,6 +390,20 @@ function createStationInBayern(array $overrides = []): TestWeatherStation
         'status' => 'active',
         'is_operational' => true,
     ], $overrides));
+}
+
+function createStationInBayernWithoutEvt(array $overrides = []): TestWeatherStation
+{
+    return TestWeatherStation::withoutEvents(function() use ($overrides) {
+    return TestWeatherStation::create(array_merge([
+        'name' => 'Bayern Station '.uniqid(),
+        'location' => 'Bayern',
+        'latitude' => 48.1351 + (rand(0, 100) / 1000),
+        'longitude' => 11.5820 + (rand(0, 100) / 1000),
+        'status' => 'active',
+        'is_operational' => true,
+    ], $overrides));
+    });
 }
 
 function createWindvaneForStation(int $stationId, float $direction = 90.0): TestWindvane
