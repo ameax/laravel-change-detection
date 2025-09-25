@@ -211,7 +211,7 @@ php artisan change-detection:sync --report
 # Limit processing per model (useful for large datasets)
 php artisan change-detection:sync --limit=1000
 
-# Immediately purge orphaned hashes instead of soft-deleting
+# Hard delete orphaned and soft-deleted hashes from database
 php artisan change-detection:sync --purge
 
 # Sync specific models only
@@ -219,6 +219,11 @@ php artisan change-detection:sync --models="App\Models\User,App\Models\Post"
 ```
 
 This command combines auto-discovery, change detection, orphan cleanup, and hash updates in one operation.
+
+**Note about --purge option**: By default, the sync command soft-deletes hashes (marks them with a `deleted_at` timestamp) when models are deleted or go out of scope. Using the `--purge` flag will:
+- Hard delete (completely remove) orphaned hashes where the model record no longer exists
+- Hard delete any previously soft-deleted hashes (where `deleted_at` is not null)
+- This permanently removes the hash records and their related data via cascade deletion
 
 #### Model Discovery
 

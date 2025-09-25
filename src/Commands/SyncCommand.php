@@ -19,7 +19,7 @@ class SyncCommand extends Command
 {
     public $signature = 'change-detection:sync
                         {--limit= : Limit number of records to process per model}
-                        {--purge : Immediately purge orphaned hashes instead of marking as deleted}
+                        {--purge : Hard delete orphaned and soft-deleted hashes from database}
                         {--report : Show detailed report of all operations}
                         {--dry-run : Preview changes without making modifications}
                         {--models=* : Specific model classes to sync (defaults to auto-discovery)}';

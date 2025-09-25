@@ -266,6 +266,40 @@ class OrphanedHashDetector
     }
 
     /**
+     * Detect hashes that are already soft-deleted.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @return array<int, array{hash_id: int}>
+     */
+    private function detectSoftDeletedHashes(string $modelClass, ?int $limit = null): array
+    {
+        /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
+        $model = new $modelClass;
+        $morphClass = $model->getMorphClass();
+
+        $hashesTable = config('change-detection.tables.hashes', 'hashes');
+        $hashesTableName = $this->crossDbBuilder->buildHashTableName($hashesTable);
+
+        $limitClause = $limit ? "LIMIT {$limit}" : '';
+
+        $sql = "
+            SELECT h.id as hash_id
+            FROM {$hashesTableName} h
+            WHERE h.hashable_type = ?
+              AND h.deleted_at IS NOT NULL
+            {$limitClause}
+        ";
+
+        $results = $this->crossDbBuilder->executeCrossDatabaseQuery($sql, [$morphClass]);
+
+        return array_map(function ($result) {
+            return [
+                'hash_id' => $result->hash_id,
+            ];
+        }, $results);
+    }
+
+    /**
      * Immediately purge orphaned hashes (delete from database).
      * This is different from cleanupOrphanedHashes which only marks them as deleted.
      *
@@ -274,13 +308,22 @@ class OrphanedHashDetector
      */
     public function purgeOrphanedHashes(string $modelClass, ?int $limit = null): int
     {
+        // Get both orphaned hashes and already soft-deleted hashes
         $orphanedHashes = $this->detectOrphanedHashes($modelClass, $limit);
+        $softDeletedHashes = $this->detectSoftDeletedHashes($modelClass, $limit);
 
-        if (empty($orphanedHashes)) {
+        // Combine hash IDs from both sources
+        $hashIds = array_merge(
+            array_column($orphanedHashes, 'hash_id'),
+            array_column($softDeletedHashes, 'hash_id')
+        );
+
+        // Remove duplicates
+        $hashIds = array_unique($hashIds);
+
+        if (empty($hashIds)) {
             return 0;
         }
-
-        $hashIds = array_column($orphanedHashes, 'hash_id');
 
         return $this->deleteHashes($hashIds);
     }
