@@ -2,8 +2,8 @@
 
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
-use Ameax\LaravelChangeDetection\Services\HashPurger;
 use Ameax\LaravelChangeDetection\Models\Publish;
+use Ameax\LaravelChangeDetection\Services\HashPurger;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
@@ -114,7 +114,6 @@ describe('weather station deletion scenarios', function () {
 
         expectStationHashActive($station->id);
 
-
         // Bulk delete all sensors
         TestWindvane::where('weather_station_id', $station->id)->delete();
         TestAnemometer::where('weather_station_id', $station->id)->delete();
@@ -127,16 +126,16 @@ describe('weather station deletion scenarios', function () {
     // 5. Delete and Recreate Station with Same ID
     it('handles station deletion and recreation with same ID', function () {
 
-        $station = TestWeatherStation::withoutEvents(function() {
+        $station = TestWeatherStation::withoutEvents(function () {
             return TestWeatherStation::create([
-            'id' => 999,
-            'name' => 'Original Station',
-            'location' => 'Bayern',
-            'latitude' => 48.1351,
-            'longitude' => 11.5820,
-            'status' => 'active',
-            'is_operational' => true,
-        ]);
+                'id' => 999,
+                'name' => 'Original Station',
+                'location' => 'Bayern',
+                'latitude' => 48.1351,
+                'longitude' => 11.5820,
+                'status' => 'active',
+                'is_operational' => true,
+            ]);
         });
         createWindvaneForStation(999);
         createAnemometerForStation(999, 25.0);
@@ -152,11 +151,11 @@ describe('weather station deletion scenarios', function () {
 
         // Use purge to completely remove the hash
         runSyncAutoDiscover(['--purge' => true]);
-        //runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
+        // runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
         expect(getStationHash(999))->toBeNull();
 
         // Recreate with same ID but different data
-        $newStation =  TestWeatherStation::withoutEvents(function() {
+        $newStation = TestWeatherStation::withoutEvents(function () {
             return TestWeatherStation::create([
                 'id' => 999,
                 'name' => 'New Station',
@@ -233,7 +232,7 @@ describe('weather station deletion scenarios', function () {
 
         // Non-qualifying anemometer still has its hash
         expectHashActive('test_anemometer', $nonQualifyingAnemometer->id);
-    });;
+    });
 
     // 8. Rapid Delete and Restore Cycles
     it('handles rapid deletion and restoration cycles', function () {
@@ -337,13 +336,13 @@ describe('weather station deletion scenarios', function () {
         // Station not in Bayern (out of scope)
         $station = TestWeatherStation::withoutEvents(function () {
             return TestWeatherStation::create([
-            'name' => 'Berlin Station',
-            'location' => 'Berlin',
-            'latitude' => 52.5200,
-            'longitude' => 13.4050,
-            'status' => 'active',
-            'is_operational' => true,
-        ]);
+                'name' => 'Berlin Station',
+                'location' => 'Berlin',
+                'latitude' => 52.5200,
+                'longitude' => 13.4050,
+                'status' => 'active',
+                'is_operational' => true,
+            ]);
         });
 
         $windvane = createWindvaneForStation($station->id);
@@ -393,7 +392,7 @@ describe('weather station deletion scenarios', function () {
         $windvane->delete();
         $anemometer->delete();
         runSyncAutoDiscover(['--purge' => true]);
-        //runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
+        // runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
 
         // Now sensor hashes should be soft-deleted
         expectHashSoftDeleted('test_windvane', $windvane->id);
@@ -446,10 +445,9 @@ describe('weather station deletion scenarios', function () {
         // Move station out of scope
         updateStationAttribute($station->id, 'location', 'Berlin');
 
-
         // First sync with soft delete (default)
         runSyncAutoDiscover();
-        //runSyncForModel(TestWeatherStation::class);
+        // runSyncForModel(TestWeatherStation::class);
 
         // Hash exists but is soft-deleted
 
@@ -457,7 +455,7 @@ describe('weather station deletion scenarios', function () {
         expect($hash)->not->toBeNull();
         expect($hash->deleted_at)->not->toBeNull();
 
-        //Scenario2: The purge feature is designed to find and remove active hashes for non-existent records,
+        // Scenario2: The purge feature is designed to find and remove active hashes for non-existent records,
         // NOT to hard-delete already soft-deleted hashes.
 
         $station2 = createStationInBayern();
@@ -472,7 +470,7 @@ describe('weather station deletion scenarios', function () {
 
         // Now sync with purge, it should remove it
         runSyncAutoDiscover(['--purge' => true]);
-        //runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
+        // runSyncForModel(TestWeatherStation::class, ['--purge' => true]);
 
         // Hash is completely removed
         expect(getStationHash($station2->id))->toBeNull();
@@ -492,7 +490,7 @@ describe('weather station deletion scenarios', function () {
         expect($stationHash->has_dependencies_built)->toBeTrue();
 
         // Check hash_dependents records exist
-        $dependentsCount =HashDependent::where('hash_id', $stationHash->id)->count();
+        $dependentsCount = HashDependent::where('hash_id', $stationHash->id)->count();
         expect($dependentsCount)->toBeGreaterThan(0);
 
         // Hard delete the station to orphan the hash
