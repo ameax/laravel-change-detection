@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
@@ -52,13 +53,13 @@ describe('publish retry functionality', function () {
         ]);
 
         // Simulate first failure
-        $publish->markAsDeferred('Connection timeout', 408, 'infrastructure');
+        $publish->markAsDeferred('Connection timeout', 408, PublishErrorTypeEnum::INFRASTRUCTURE);
 
         expect($publish->status)->toBe(PublishStatusEnum::DEFERRED);
         expect($publish->attempts)->toBe(1);
         expect($publish->last_error)->toBe('Connection timeout');
         expect($publish->last_response_code)->toBe(408);
-        expect($publish->error_type)->toBe('infrastructure');
+        expect($publish->error_type)->toBe(PublishErrorTypeEnum::INFRASTRUCTURE);
         expect($publish->next_try)->not->toBeNull();
 
         // Next retry should be approximately 30 seconds from now
@@ -157,13 +158,13 @@ describe('publish retry functionality', function () {
         ]);
 
         // This should mark as failed since we're at max retries
-        $publish->markAsDeferred('Final error', 500, 'infrastructure');
+        $publish->markAsDeferred('Final error', 500, PublishErrorTypeEnum::INFRASTRUCTURE);
 
         expect($publish->status)->toBe(PublishStatusEnum::FAILED);
         expect($publish->attempts)->toBe(4); // Incremented to 4
         expect($publish->last_error)->toBe('Final error');
         expect($publish->last_response_code)->toBe(500);
-        expect($publish->error_type)->toBe('infrastructure');
+        expect($publish->error_type)->toBe(PublishErrorTypeEnum::INFRASTRUCTURE);
         expect($publish->next_try)->toBeNull();
     });
 
@@ -426,20 +427,20 @@ describe('publish retry functionality', function () {
         ]);
 
         // First error
-        $publish->markAsDeferred('Connection refused', 503, 'infrastructure');
+        $publish->markAsDeferred('Connection refused', 503, PublishErrorTypeEnum::INFRASTRUCTURE);
         $publish->refresh();
 
         expect($publish->last_error)->toBe('Connection refused');
         expect($publish->last_response_code)->toBe(503);
-        expect($publish->error_type)->toBe('infrastructure');
+        expect($publish->error_type)->toBe(PublishErrorTypeEnum::INFRASTRUCTURE);
 
         // Second error (overwrites previous)
-        $publish->markAsDeferred('Rate limit exceeded', 429, 'validation');
+        $publish->markAsDeferred('Rate limit exceeded', 429, PublishErrorTypeEnum::VALIDATION);
         $publish->refresh();
 
         expect($publish->last_error)->toBe('Rate limit exceeded');
         expect($publish->last_response_code)->toBe(429);
-        expect($publish->error_type)->toBe('validation');
+        expect($publish->error_type)->toBe(PublishErrorTypeEnum::VALIDATION);
         expect($publish->attempts)->toBe(2);
     });
 

@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
@@ -89,7 +90,7 @@ describe('car concurrent publishing', function () {
             'status' => PublishStatusEnum::FAILED,
             'attempts' => 3,
             'last_error' => 'Connection timeout',
-            'error_type' => 'infrastructure',
+            'error_type' => PublishErrorTypeEnum::INFRASTRUCTURE,
             'failed_at' => now(),
         ]);
 
@@ -97,7 +98,7 @@ describe('car concurrent publishing', function () {
             'status' => PublishStatusEnum::FAILED,
             'attempts' => 1,
             'last_error' => 'Invalid payload',
-            'error_type' => 'validation',
+            'error_type' => PublishErrorTypeEnum::VALIDATION,
             'failed_at' => now()->subMinutes(5),
         ]);
 

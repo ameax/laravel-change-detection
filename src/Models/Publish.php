@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $attempts
  * @property string|null $last_error
  * @property int|null $last_response_code
- * @property string|null $error_type
+ * @property PublishErrorTypeEnum|null $error_type
  * @property \Illuminate\Support\Carbon|null $next_try
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
@@ -49,6 +50,7 @@ class Publish extends Model
         'attempts' => 'integer',
         'last_response_code' => 'integer',
         'status' => PublishStatusEnum::class,
+        'error_type' => PublishErrorTypeEnum::class,
         'metadata' => 'array',
     ];
 
@@ -133,10 +135,15 @@ class Publish extends Model
         ]);
     }
 
-    public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
+    public function markAsDeferred(string $error, ?int $responseCode = null, PublishErrorTypeEnum|string|null $errorType = null): void
     {
         // Increment attempts counter
         $currentAttempts = $this->attempts + 1;
+
+        // Convert string error type to enum if needed
+        if (is_string($errorType)) {
+            $errorType = PublishErrorTypeEnum::tryFrom($errorType);
+        }
 
         // Get retry intervals from publisher if available, otherwise use config
         $retryIntervals = $this->getPublisherRetryIntervals();
@@ -174,10 +181,15 @@ class Publish extends Model
      *
      * @param  string  $error  The error message
      * @param  int|null  $responseCode  Optional HTTP response code
-     * @param  string|null  $errorType  Optional error type for categorization
+     * @param  PublishErrorTypeEnum|string|null  $errorType  Optional error type for categorization
      */
-    public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
+    public function markAsFailed(string $error, ?int $responseCode = null, PublishErrorTypeEnum|string|null $errorType = null): void
     {
+        // Convert string error type to enum if needed
+        if (is_string($errorType)) {
+            $errorType = PublishErrorTypeEnum::tryFrom($errorType);
+        }
+
         $this->update([
             'status' => PublishStatusEnum::FAILED,
             'last_error' => $error,

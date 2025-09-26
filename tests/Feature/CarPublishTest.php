@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
@@ -821,7 +822,7 @@ describe('car publishing', function () {
             'attempts' => 1,
             'last_error' => 'Connection timeout',
             'last_response_code' => null,
-            'error_type' => 'infrastructure',
+            'error_type' => PublishErrorTypeEnum::INFRASTRUCTURE,
             'next_try' => now()->addSeconds(60),
         ]);
 
@@ -839,7 +840,7 @@ describe('car publishing', function () {
             'attempts' => 2,
             'last_error' => 'Server error',
             'last_response_code' => 500,
-            'error_type' => 'infrastructure',
+            'error_type' => PublishErrorTypeEnum::INFRASTRUCTURE,
         ]);
 
         // Car changes while in failed state
