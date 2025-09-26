@@ -8,6 +8,7 @@ use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\BulkPublishProcessor;
 use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Illuminate\Console\Command;
@@ -21,7 +22,6 @@ class SyncCommand extends Command
                         {--limit= : Limit number of records to process per model}
                         {--purge : Hard delete orphaned and soft-deleted hashes from database}
                         {--report : Show detailed report of all operations}
-                        {--dry-run : Preview changes without making modifications}
                         {--models=* : Specific model classes to sync (defaults to auto-discovery)}';
 
     public $description = 'Synchronize all hash records (auto-discover, detect, cleanup, and update)';
@@ -52,11 +52,6 @@ class SyncCommand extends Command
         }
 
         $this->info("Found {$models->count()} hashable model(s) to process");
-
-        if ($this->option('dry-run')) {
-            $this->warn('🔍 DRY RUN MODE - No changes will be made');
-        }
-
         $this->line('');
 
         // Step 1: Detect changes
@@ -65,10 +60,13 @@ class SyncCommand extends Command
         // Step 2: Clean up orphaned hashes
         $this->cleanupOrphans($models);
 
-        // Step 3: Update changed hashes (if not dry run)
-        if (! $this->option('dry-run') && $this->totalChangesDetected > 0) {
+        // Step 3: Update changed hashes
+        if ($this->totalChangesDetected > 0) {
             $this->updateHashes($models);
         }
+
+        // Step 4: Sync publish records for all models
+        $this->syncPublishRecords($models);
 
         // Show summary
         $this->showSummary($startTime);
@@ -154,13 +152,6 @@ class SyncCommand extends Command
     {
         $this->info('🧹 Cleaning up orphaned hashes...');
 
-        if ($this->option('dry-run')) {
-            $this->line('  (Skipped in dry-run mode)');
-            $this->line('');
-
-            return;
-        }
-
         $orphanDetector = app(OrphanedHashDetector::class);
         $isPurge = $this->option('purge');
         $action = $isPurge ? 'purged' : 'cleaned';
@@ -239,6 +230,48 @@ class SyncCommand extends Command
     }
 
     /**
+     * Sync publish records for all models.
+     *
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     */
+    private function syncPublishRecords(\Illuminate\Support\Collection $models): void
+    {
+        $this->info('📤 Syncing publish records...');
+
+        $publishProcessor = app(BulkPublishProcessor::class);
+        $totalCreated = 0;
+        $totalUpdated = 0;
+
+        foreach ($models as $modelClass) {
+            $modelName = class_basename($modelClass);
+            $this->line("  Processing {$modelName}...");
+
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $result = $publishProcessor->syncAllPublishRecords($modelClass);
+
+            if ($result['created'] > 0 || $result['updated'] > 0) {
+                if ($result['created'] > 0) {
+                    $this->info("    → Created {$result['created']} publish records");
+                    $totalCreated += $result['created'];
+                }
+                if ($result['updated'] > 0) {
+                    $this->info("    → Updated {$result['updated']} publish records");
+                    $totalUpdated += $result['updated'];
+                }
+            } else {
+                $this->line('    → No publish changes needed');
+            }
+        }
+
+        if ($totalCreated > 0 || $totalUpdated > 0) {
+            $this->line('');
+            $this->info("Total: Created {$totalCreated}, Updated {$totalUpdated} publish records");
+        }
+
+        $this->line('');
+    }
+
+    /**
      * Show summary of operations.
      */
     private function showSummary(float $startTime): void
@@ -249,27 +282,17 @@ class SyncCommand extends Command
         $this->info('📈 Synchronization Summary');
         $this->info('═══════════════════════════════════════════');
 
-        if ($this->option('dry-run')) {
-            $this->warn('Mode: DRY RUN (no changes made)');
-        }
-
         $this->line('Models processed: '.count($this->modelStats));
         $this->line("Changes detected: {$this->totalChangesDetected}");
-
-        if (! $this->option('dry-run')) {
-            $this->line("Hashes updated: {$this->totalHashesUpdated}");
-            $action = $this->option('purge') ? 'purged' : 'marked as deleted';
-            $this->line("Orphaned hashes {$action}: {$this->totalOrphansProcessed}");
-        }
-
+        $this->line("Hashes updated: {$this->totalHashesUpdated}");
+        $action = $this->option('purge') ? 'purged' : 'marked as deleted';
+        $this->line("Orphaned hashes {$action}: {$this->totalOrphansProcessed}");
         $this->line("Execution time: {$duration} seconds");
 
         $this->line('');
 
         if ($this->totalChangesDetected === 0 && $this->totalOrphansProcessed === 0) {
             $this->info('✨ All hash records are up to date!');
-        } elseif ($this->option('dry-run')) {
-            $this->warn('Run without --dry-run to apply these changes.');
         } else {
             $this->info('✅ Synchronization completed successfully!');
         }
@@ -294,8 +317,8 @@ class SyncCommand extends Command
             $tableData[] = [
                 'Model' => $stats['name'],
                 'Changes Detected' => $stats['changes_detected'],
-                'Hashes Updated' => $this->option('dry-run') ? 'N/A' : $stats['hashes_updated'],
-                'Orphans Processed' => $this->option('dry-run') ? 'N/A' : $stats['orphans_processed'],
+                'Hashes Updated' => $stats['hashes_updated'],
+                'Orphans Processed' => $stats['orphans_processed'],
             ];
         }
 

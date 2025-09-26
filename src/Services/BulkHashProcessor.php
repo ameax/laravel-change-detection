@@ -182,9 +182,6 @@ class BulkHashProcessor
         // Recalculate composite hashes now that dependencies are in place
         $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
 
-        // Create publish records for models that have publishers
-        $this->createPublishRecordsForIds($modelClass, $modelIds);
-
         return count($modelIds); // Return count of processed IDs
     }
 
@@ -538,83 +535,6 @@ class BulkHashProcessor
         }
     }
 
-    /**
-     * Create publish records for model IDs that have active publishers.
-     *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
-     * @param  array<int>  $modelIds
-     */
-    private function createPublishRecordsForIds(string $modelClass, array $modelIds): void
-    {
-        if (empty($modelIds)) {
-            return;
-        }
-
-        $model = new $modelClass;
-        $morphClass = $model->getMorphClass();
-
-        // Get all active publishers for this model type
-        $publishers = \Ameax\LaravelChangeDetection\Models\Publisher::where('model_type', $morphClass)
-            ->where('status', 'active')
-            ->get();
-
-        if ($publishers->isEmpty()) {
-            return; // No publishers configured for this model type
-        }
-
-        // Get all hashes for these model IDs (fresh from database to get latest values)
-        $hashes = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
-            ->whereIn('hashable_id', $modelIds)
-            ->whereNull('deleted_at')
-            ->get();
-
-        foreach ($hashes as $hash) {
-            foreach ($publishers as $publisher) {
-                // Check if a publish record already exists for this hash and publisher
-                $existingPublish = \Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $hash->id)
-                    ->where('publisher_id', $publisher->id)
-                    ->first();
-
-                if (! $existingPublish) {
-                    // Create new publish record
-                    \Ameax\LaravelChangeDetection\Models\Publish::create([
-                        'hash_id' => $hash->id,
-                        'publisher_id' => $publisher->id,
-                        'published_hash' => null, // Initially null, will be set when publishing is successful
-                        'status' => 'pending',
-                        'attempts' => 0,
-                        'metadata' => [
-                            'model_type' => $morphClass,
-                            'model_id' => $hash->hashable_id,
-                        ],
-                    ]);
-                } elseif ($existingPublish->status === 'published' || $existingPublish->status === 'failed') {
-                    // For published records: check if content has changed since last successful publish
-                    // For failed records: always reset to retry with latest content
-                    $shouldReset = false;
-
-                    if ($existingPublish->status === 'published') {
-                        // Reset if hash changed since last publish
-                        $shouldReset = $existingPublish->published_hash !== $hash->composite_hash;
-                    } else {
-                        // For failed status, always reset to retry with current content
-                        $shouldReset = true;
-                    }
-
-                    if ($shouldReset) {
-                        $existingPublish->update([
-                            'status' => 'pending',
-                            'attempts' => 0,
-                            'last_error' => null,
-                            'last_response_code' => null,
-                            'error_type' => null,
-                            'next_try' => null,
-                        ]);
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * Update models that depend on the cleaned up (deleted) hashes of the given model class.

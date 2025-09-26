@@ -138,6 +138,7 @@ describe('car publishing', function () {
         $publish->update([
             'status' => 'published',
             'published_at' => now(),
+            'published_hash' => $originalCompositeHash, // Set the published hash
             'attempts' => 1,
             'hash_id' => $firstHash->id
         ]);
@@ -213,6 +214,7 @@ describe('car publishing', function () {
         $apiPublish->update([
             'status' => 'published',
             'published_at' => now(),
+            'published_hash' => $hash->composite_hash, // Set the published hash
             'attempts' => 1
         ]);
 
@@ -259,6 +261,111 @@ describe('car publishing', function () {
 
         // Still only 3 publish records (no duplicates created)
         expect(Publish::count())->toBe(3);
+    });
+
+    it('respects publisher activation status during sync', function () {
+        // Create two cars
+        $car1 = createCar(['model' => 'Tesla Model X', 'price' => 90000]);
+        $car2 = createCar(['model' => 'Tesla Model Y', 'price' => 50000]);
+
+        // Create an active publisher
+        $publisher = createCarPublisher([
+            'name' => 'Primary Publisher',
+            'status' => 'active'
+        ]);
+
+        // Initial sync - publisher is active
+        syncCars();
+
+        // Verify publish records were created for both cars
+        expect(Publish::count())->toBe(2);
+
+        $car1->refresh();
+        $car2->refresh();
+        $hash1 = $car1->getCurrentHash();
+        $hash2 = $car2->getCurrentHash();
+
+        $publish1 = Publish::where('hash_id', $hash1->id)->first();
+        $publish2 = Publish::where('hash_id', $hash2->id)->first();
+
+        expect($publish1)->not->toBeNull();
+        expect($publish2)->not->toBeNull();
+        expect($publish1->status)->toBe('pending');
+        expect($publish2->status)->toBe('pending');
+
+        // Deactivate the publisher
+        $publisher->update(['status' => 'inactive']);
+
+        // Update both cars
+        $car1->update(['price' => 95000]);
+        $car2->update(['price' => 55000]);
+
+        // Run sync with deactivated publisher
+        syncCars();
+
+        // Verify no new publish records were created
+        expect(Publish::count())->toBe(2); // Still only 2 records
+
+        // Verify existing publish records were NOT modified (still pending with original hash)
+        $publish1->refresh();
+        $publish2->refresh();
+        expect($publish1->status)->toBe('pending');
+        expect($publish2->status)->toBe('pending');
+        expect($publish1->hash_id)->toBe($hash1->id);
+        expect($publish2->hash_id)->toBe($hash2->id);
+
+        // Create a third car while publisher is inactive
+        $car3 = createCar(['model' => 'Tesla Roadster', 'price' => 200000]);
+
+        // Run sync - should not create publish for new car
+        syncCars();
+        expect(Publish::count())->toBe(2); // Still only 2 records
+
+        // Reactivate the publisher
+        $publisher->update(['status' => 'active']);
+
+        // Run sync with reactivated publisher
+        syncCars();
+
+        // Now we should have 3 publish records (added one for car3)
+        expect(Publish::count())->toBe(3);
+
+        // Verify car3 now has a publish record
+        $car3->refresh();
+        $hash3 = $car3->getCurrentHash();
+        $publish3 = Publish::where('hash_id', $hash3->id)->first();
+        expect($publish3)->not->toBeNull();
+        expect($publish3->status)->toBe('pending');
+
+        // Verify car1 and car2 publish records were reset due to hash changes
+        $publish1->refresh();
+        $publish2->refresh();
+
+        // Since the hashes changed while publisher was inactive,
+        // they should now be reset to pending with updated content
+        expect($publish1->status)->toBe('pending');
+        expect($publish2->status)->toBe('pending');
+
+        // Update a car again with publisher active
+        $car1->update(['price' => 100000]);
+
+        // Mark publish1 as published first
+        $publish1->update([
+            'status' => 'published',
+            'published_at' => now(),
+            'published_hash' => $car1->getCurrentHash()->composite_hash
+        ]);
+
+        // Now update the car
+        $car1->update(['price' => 105000]);
+
+        // Run sync
+        syncCars();
+
+        // Verify the published record was properly reset
+        $publish1->refresh();
+        expect($publish1->status)->toBe('pending');
+        expect($publish1->attempts)->toBe(0);
     });
 
 });
