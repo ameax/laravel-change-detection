@@ -18,10 +18,6 @@ class ModelDiscoveryHelper
      */
     public static function getDependencyModelsFromModel(Model $model): array
     {
-        if (! $model instanceof Hashable) {
-            return [];
-        }
-
         $dependencies = $model->getHashCompositeDependencies();
         $dependencyModels = [];
 
@@ -73,7 +69,7 @@ class ModelDiscoveryHelper
 
         $model = new $modelClass;
 
-        if (! $model instanceof Model) {
+        if (! $model instanceof Model || ! $model instanceof Hashable) {
             return [];
         }
 

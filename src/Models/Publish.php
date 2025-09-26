@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $publisher_id
  * @property string|null $published_hash
  * @property \Illuminate\Support\Carbon|null $published_at
- * @property string $status
+ * @property PublishStatusEnum $status
  * @property int $attempts
  * @property string|null $last_error
  * @property int|null $last_response_code

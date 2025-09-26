@@ -557,7 +557,7 @@ class BulkHashProcessor
                 $mainModelClass = get_class($model);
                 $mainScope = $model->getHashableScope();
 
-                if ($mainScope && $relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                if ($mainScope && $relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable && $relatedModel instanceof \Illuminate\Database\Eloquent\Model) {
                     // Get the inverse relationship name (e.g., 'weatherStation' for 'anemometers')
                     $inverseRelation = $this->getInverseRelationName($relatedModel, $mainModelClass, $model);
 
