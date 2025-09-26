@@ -182,9 +182,8 @@ describe('publisher and hash system integration', function () {
         $inactivePublisher = createInactivePublisher('test_weather_station', 'Inactive');
 
         // Test with sync command first using specific model
-        //runSyncForModel(TestWeatherStation::class);
+        // runSyncForModel(TestWeatherStation::class);
         runSyncAutoDiscover();
-
 
         // Get the hash created by sync
         $hashAfterSync = getStationHash($station->id);
@@ -219,7 +218,7 @@ describe('publisher and hash system integration', function () {
         // Test both methods with deactivated publisher
         // First with sync command using specific model
         runSyncForModel(TestWeatherStation::class);
-        //runSyncAutoDiscover();
+        // runSyncAutoDiscover();
         $hashAfterDeactivation = getStationHash($station->id);
 
         // Then with HashUpdater (should update to same hash)
@@ -244,8 +243,8 @@ describe('publisher and hash system integration', function () {
 
         $publisher = createPublisherForModel('test_weather_station');
         runSyncForModel(TestWeatherStation::class);
-        //$hashUpdater = app(HashUpdater::class);
-        //runSyncAutoDiscover();
+        // $hashUpdater = app(HashUpdater::class);
+        // runSyncAutoDiscover();
 
         $processor = app(BulkHashProcessor::class);
 
@@ -348,17 +347,17 @@ describe('publisher and hash system integration', function () {
         createPublisherForModel('test_weather_station');
         runSyncAutoDiscover();
 
-//      $hashUpdater = app(HashUpdater::class);
-//      $hash = $hashUpdater->updateHash($station);
+        //      $hashUpdater = app(HashUpdater::class);
+        //      $hash = $hashUpdater->updateHash($station);
 
         $hash = Hash::where('hashable_type', 'test_weather_station')->where('hashable_id', $station->id)->first();
         dump($hash->toArray());
 
         $publish = Publish::where('hash_id', $hash->id)->first();
         $publish->publishNow();
-      // expect($publish)->toBeNull();
+        // expect($publish)->toBeNull();
 
-       // $publish->markAsPublished(['success' => true]);
+        // $publish->markAsPublished(['success' => true]);
 
         // Update station name to ensure hash changes
         $station->refresh();
@@ -366,7 +365,7 @@ describe('publisher and hash system integration', function () {
         $station->save();
 
         runSyncAutoDiscover();
-//        $newHash = $hashUpdater->updateHash($station);
+        //        $newHash = $hashUpdater->updateHash($station);
 
         // Verify hash actually changed
         $newHash = Hash::where('hashable_type', 'test_weather_station')->where('hashable_id', $station->id)->first();
@@ -375,7 +374,7 @@ describe('publisher and hash system integration', function () {
         // Should create new publish record for new hash
         $newPublish = Publish::where('hash_id', $newHash->id)->first();
         expect($newPublish)->not->toBeNull();
-dump($newPublish);
+        dump($newPublish);
         expect($newPublish->status)->toBe('pending');
     })->only();
 
