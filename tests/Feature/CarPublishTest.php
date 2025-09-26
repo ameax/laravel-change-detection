@@ -13,7 +13,7 @@ beforeEach(function () {
     ]);
 
     // Load helper functions
-    require_once __DIR__ . '/Helpers/CarHelpers.php';
+    require_once __DIR__.'/Helpers/CarHelpers.php';
 });
 
 describe('car publishing', function () {
@@ -22,7 +22,7 @@ describe('car publishing', function () {
         // Create a car
         $car = createCar([
             'model' => 'Tesla Model S',
-            'price' => 80000
+            'price' => 80000,
         ]);
 
         // Create an active publisher for cars
@@ -53,13 +53,13 @@ describe('car publishing', function () {
         $car = createCar([
             'model' => 'BMW M3',
             'price' => 70000,
-            'is_electric' => false
+            'is_electric' => false,
         ]);
 
         // Create an inactive publisher (should be ignored)
         $inactivePublisher = createCarPublisher([
             'name' => 'Inactive Car Publisher',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
 
         // Verify initial state
@@ -142,7 +142,7 @@ describe('car publishing', function () {
             'published_at' => now(),
             'published_hash' => $originalCompositeHash, // Set the published hash
             'attempts' => 1,
-            'hash_id' => $firstHash->id
+            'hash_id' => $firstHash->id,
         ]);
 
         // Update the car
@@ -174,17 +174,17 @@ describe('car publishing', function () {
         // Create multiple publishers for cars (different endpoints/platforms)
         $apiPublisher = createCarPublisher([
             'name' => 'Main API Publisher',
-            'config' => ['endpoint' => 'https://api.main.com/cars']
+            'config' => ['endpoint' => 'https://api.main.com/cars'],
         ]);
 
         $backupPublisher = createCarPublisher([
             'name' => 'Backup API Publisher',
-            'config' => ['endpoint' => 'https://api.backup.com/cars']
+            'config' => ['endpoint' => 'https://api.backup.com/cars'],
         ]);
 
         $analyticsPublisher = createCarPublisher([
             'name' => 'Analytics Publisher',
-            'config' => ['endpoint' => 'https://analytics.example.com/cars']
+            'config' => ['endpoint' => 'https://analytics.example.com/cars'],
         ]);
 
         // Initial sync to create hash and publish records for all publishers
@@ -217,14 +217,14 @@ describe('car publishing', function () {
             'status' => 'published',
             'published_at' => now(),
             'published_hash' => $hash->composite_hash, // Set the published hash
-            'attempts' => 1
+            'attempts' => 1,
         ]);
 
         // Backup publisher fails
         $backupPublish->update([
             'status' => 'failed',
             'attempts' => 3,
-            'last_error' => 'Connection timeout'
+            'last_error' => 'Connection timeout',
         ]);
 
         // Analytics publisher remains pending
@@ -273,7 +273,7 @@ describe('car publishing', function () {
         // Create an active publisher
         $publisher = createCarPublisher([
             'name' => 'Primary Publisher',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Initial sync - publisher is active
@@ -355,7 +355,7 @@ describe('car publishing', function () {
         $publish1->update([
             'status' => 'published',
             'published_at' => now(),
-            'published_hash' => $car1->getCurrentHash()->composite_hash
+            'published_hash' => $car1->getCurrentHash()->composite_hash,
         ]);
 
         // Now update the car
@@ -469,7 +469,7 @@ describe('car publishing', function () {
         // Verify NO publish record was created for the soft-deleted model
         $publishCount = Publish::whereHas('hash', function ($query) use ($car) {
             $query->where('hashable_type', 'test_car')
-                  ->where('hashable_id', $car->id);
+                ->where('hashable_id', $car->id);
         })->count();
 
         expect($publishCount)->toBe(0);
@@ -489,7 +489,7 @@ describe('car publishing', function () {
                 'year' => 2020 + ($i % 4),
                 'price' => 30000 + ($i * 1000),
                 'is_electric' => $i % 2 === 0,
-                'features' => ['feature_' . $i => true],
+                'features' => ['feature_'.$i => true],
             ]);
         }
 
@@ -531,7 +531,7 @@ describe('car publishing', function () {
         $pendingCount = Publish::where('status', 'pending')
             ->whereHas('hash', function ($query) use ($carsToUpdate) {
                 $query->where('hashable_type', 'test_car')
-                      ->whereIn('hashable_id', collect($carsToUpdate)->pluck('id'));
+                    ->whereIn('hashable_id', collect($carsToUpdate)->pluck('id'));
             })->count();
         expect($pendingCount)->toBe(50);
 
@@ -574,7 +574,7 @@ describe('car publishing', function () {
         expect($finalSyncTime)->toBeLessThan(3.0);
 
         // Log performance metrics for visibility
-        dump("Performance Metrics:");
+        dump('Performance Metrics:');
         dump("  Create 100 cars: {$createTime}s");
         dump("  Initial sync (100 records): {$syncTime}s");
         dump("  Update sync (50 changes): {$updateSyncTime}s");
@@ -607,9 +607,9 @@ describe('car publishing', function () {
         DB::disableQueryLog();
 
         // Count different types of queries
-        $selectQueries = count(array_filter($queries, fn($q) => str_starts_with(strtolower($q['query']), 'select')));
-        $insertQueries = count(array_filter($queries, fn($q) => str_starts_with(strtolower($q['query']), 'insert')));
-        $updateQueries = count(array_filter($queries, fn($q) => str_starts_with(strtolower($q['query']), 'update')));
+        $selectQueries = count(array_filter($queries, fn ($q) => str_starts_with(strtolower($q['query']), 'select')));
+        $insertQueries = count(array_filter($queries, fn ($q) => str_starts_with(strtolower($q['query']), 'insert')));
+        $updateQueries = count(array_filter($queries, fn ($q) => str_starts_with(strtolower($q['query']), 'update')));
 
         // With bulk operations, we should have very few queries even for 50 records
         // Should be less than 20 total queries (not 50+ which would indicate N+1)
@@ -617,7 +617,7 @@ describe('car publishing', function () {
         expect($totalQueries)->toBeLessThan(20);
 
         // Log for visibility
-        dump("Query Analysis for 50 records:");
+        dump('Query Analysis for 50 records:');
         dump("  Total queries: {$totalQueries}");
         dump("  SELECT queries: {$selectQueries}");
         dump("  INSERT queries: {$insertQueries}");
@@ -692,10 +692,10 @@ describe('car publishing', function () {
         expect($publishCount)->toBe(5000);
 
         // Performance check: even with 5000 records, should complete reasonably fast
-        dump("Performance for 5000 cars:");
+        dump('Performance for 5000 cars:');
         dump("  Sync time: {$syncTime}s");
-        dump("  Total queries: " . count($queries));
-        dump("  Queries per record: " . (count($queries) / 5000));
+        dump('  Total queries: '.count($queries));
+        dump('  Queries per record: '.(count($queries) / 5000));
 
         // Should complete in under 30 seconds even with 5000 records
         expect($syncTime)->toBeLessThan(30.0);
@@ -723,7 +723,7 @@ describe('car publishing', function () {
         $pendingCount = Publish::where('status', 'pending')
             ->whereHas('hash', function ($query) use ($carsToUpdate) {
                 $query->where('hashable_type', 'test_car')
-                      ->whereIn('hashable_id', $carsToUpdate);
+                    ->whereIn('hashable_id', $carsToUpdate);
             })->count();
         expect($pendingCount)->toBeGreaterThanOrEqual(1000);
     })->skip(env('SKIP_LARGE_TESTS', true), 'Skipping large dataset test - set SKIP_LARGE_TESTS=false to run');
@@ -929,8 +929,10 @@ describe('car publishing', function () {
                     'status' => 'dispatched',
                     'started_at' => now(),
                 ]);
+
                 return true;
             }
+
             return false;
         });
 
@@ -947,8 +949,10 @@ describe('car publishing', function () {
                     'status' => 'dispatched',
                     'started_at' => now(),
                 ]);
+
                 return true;
             }
+
             return false;
         });
 

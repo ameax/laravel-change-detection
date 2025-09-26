@@ -13,7 +13,7 @@ beforeEach(function () {
     ]);
 
     // Load helper functions
-    require_once __DIR__ . '/../Helpers/CarHelpers.php';
+    require_once __DIR__.'/../Helpers/CarHelpers.php';
 });
 
 describe('car concurrent publishing', function () {
@@ -89,7 +89,7 @@ describe('car concurrent publishing', function () {
             'attempts' => 3,
             'last_error' => 'Connection timeout',
             'error_type' => 'infrastructure',
-            'failed_at' => now()
+            'failed_at' => now(),
         ]);
 
         $publish2->update([
@@ -97,7 +97,7 @@ describe('car concurrent publishing', function () {
             'attempts' => 1,
             'last_error' => 'Invalid payload',
             'error_type' => 'validation',
-            'failed_at' => now()->subMinutes(5)
+            'failed_at' => now()->subMinutes(5),
         ]);
 
         // Update car1 to trigger reset

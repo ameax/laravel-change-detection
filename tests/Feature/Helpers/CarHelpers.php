@@ -63,7 +63,7 @@ function createPublishForCar(TestCar $car, Publisher $publisher, array $attribut
 {
     $hash = $car->getCurrentHash();
 
-    if (!$hash) {
+    if (! $hash) {
         throw new \Exception('Car does not have a hash. Run sync first.');
     }
 

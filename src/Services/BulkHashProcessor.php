@@ -535,7 +535,6 @@ class BulkHashProcessor
         }
     }
 
-
     /**
      * Update models that depend on the cleaned up (deleted) hashes of the given model class.
      *

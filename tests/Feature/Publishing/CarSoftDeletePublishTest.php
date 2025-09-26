@@ -12,7 +12,7 @@ beforeEach(function () {
     ]);
 
     // Load helper functions
-    require_once __DIR__ . '/../Helpers/CarHelpers.php';
+    require_once __DIR__.'/../Helpers/CarHelpers.php';
 });
 
 describe('car soft-delete publishing', function () {
@@ -116,7 +116,7 @@ describe('car soft-delete publishing', function () {
         // Verify NO publish record was created for the soft-deleted model
         $publishCount = Publish::whereHas('hash', function ($query) use ($car) {
             $query->where('hashable_type', 'test_car')
-                  ->where('hashable_id', $car->id);
+                ->where('hashable_id', $car->id);
         })->count();
 
         expect($publishCount)->toBe(0);

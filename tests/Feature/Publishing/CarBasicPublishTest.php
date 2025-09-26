@@ -12,7 +12,7 @@ beforeEach(function () {
     ]);
 
     // Load helper functions
-    require_once __DIR__ . '/../Helpers/CarHelpers.php';
+    require_once __DIR__.'/../Helpers/CarHelpers.php';
 });
 
 describe('car basic publishing', function () {
@@ -21,7 +21,7 @@ describe('car basic publishing', function () {
         // Create a car
         $car = createCar([
             'model' => 'Tesla Model S',
-            'price' => 80000
+            'price' => 80000,
         ]);
 
         // Create an active publisher for cars
@@ -51,7 +51,7 @@ describe('car basic publishing', function () {
         // Create a car
         $car = createCar([
             'model' => 'Honda Civic',
-            'price' => 25000
+            'price' => 25000,
         ]);
 
         // Verify no hash or publish records exist yet
@@ -136,7 +136,7 @@ describe('car basic publishing', function () {
             'published_at' => now(),
             'published_hash' => $originalCompositeHash, // Set the published hash
             'attempts' => 1,
-            'hash_id' => $firstHash->id
+            'hash_id' => $firstHash->id,
         ]);
 
         // Update the car

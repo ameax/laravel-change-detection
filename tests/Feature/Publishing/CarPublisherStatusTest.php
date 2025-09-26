@@ -12,7 +12,7 @@ beforeEach(function () {
     ]);
 
     // Load helper functions
-    require_once __DIR__ . '/../Helpers/CarHelpers.php';
+    require_once __DIR__.'/../Helpers/CarHelpers.php';
 });
 
 describe('car publisher status', function () {
@@ -24,17 +24,17 @@ describe('car publisher status', function () {
         // Create multiple publishers for cars (different endpoints/platforms)
         $apiPublisher = createCarPublisher([
             'name' => 'Main API Publisher',
-            'config' => ['endpoint' => 'https://api.main.com/cars']
+            'config' => ['endpoint' => 'https://api.main.com/cars'],
         ]);
 
         $backupPublisher = createCarPublisher([
             'name' => 'Backup API Publisher',
-            'config' => ['endpoint' => 'https://api.backup.com/cars']
+            'config' => ['endpoint' => 'https://api.backup.com/cars'],
         ]);
 
         $analyticsPublisher = createCarPublisher([
             'name' => 'Analytics Publisher',
-            'config' => ['endpoint' => 'https://analytics.example.com/cars']
+            'config' => ['endpoint' => 'https://analytics.example.com/cars'],
         ]);
 
         // Initial sync to create hash and publish records for all publishers
@@ -67,14 +67,14 @@ describe('car publisher status', function () {
             'status' => 'published',
             'published_at' => now(),
             'published_hash' => $hash->composite_hash, // Set the published hash
-            'attempts' => 1
+            'attempts' => 1,
         ]);
 
         // Backup publisher fails
         $backupPublish->update([
             'status' => 'failed',
             'attempts' => 3,
-            'last_error' => 'Connection timeout'
+            'last_error' => 'Connection timeout',
         ]);
 
         // Analytics publisher remains pending
@@ -123,7 +123,7 @@ describe('car publisher status', function () {
         // Create an active publisher
         $publisher = createCarPublisher([
             'name' => 'Primary Publisher',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Initial sync - publisher is active
@@ -205,7 +205,7 @@ describe('car publisher status', function () {
         $publish1->update([
             'status' => 'published',
             'published_at' => now(),
-            'published_hash' => $car1->getCurrentHash()->composite_hash
+            'published_hash' => $car1->getCurrentHash()->composite_hash,
         ]);
 
         // Now update the car
