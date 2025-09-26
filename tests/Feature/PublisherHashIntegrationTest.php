@@ -140,9 +140,9 @@ describe('publisher and hash system integration', function () {
 
         expect($publish->status)->toBe('failed');
         expect($publish->attempts)->toBe(1);
-        expect($publish->error_message)->toContain('Connection timeout');
-        expect($publish->error_code)->toBe(504);
-    })->only();
+        expect($publish->last_error)->toContain('Connection timeout');
+        expect($publish->last_response_code)->toBe(504);
+    });
 
     // 5. Prevent Duplicate Publish Records
     it('prevents duplicate publish records for same hash-publisher pair', function () {

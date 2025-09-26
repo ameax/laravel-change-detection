@@ -106,7 +106,10 @@ class Publish extends Model
 
     public function markAsDispatched(): void
     {
-        $this->update(['status' => 'dispatched']);
+        $this->update([
+            'status' => 'dispatched',
+            'attempts' => $this->attempts + 1,
+        ]);
     }
 
     public function markAsPublished(): void
@@ -121,8 +124,6 @@ class Publish extends Model
 
     public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
-        $this->attempts++;
-
         // Get retry intervals from publisher if available, otherwise use config
         $retryIntervals = $this->getPublisherRetryIntervals();
 
@@ -134,7 +135,6 @@ class Publish extends Model
 
         $this->update([
             'status' => 'deferred',
-            'attempts' => $this->attempts,
             'last_error' => $error,
             'last_response_code' => $responseCode,
             'error_type' => $errorType,
