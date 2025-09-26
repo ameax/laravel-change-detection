@@ -377,6 +377,52 @@ function simulateMaintenanceCycle(int $stationId): array
     return $lifecycle;
 }
 
+// ===== WEATHER STATION ASSERTIONS =====
+
+function assertStationHasHash(TestWeatherStation $station): Hash
+{
+    $hash = Hash::where('hashable_type', 'test_weather_station')
+        ->where('hashable_id', $station->id)
+        ->first();
+
+    expect($hash)->not->toBeNull();
+    expect($hash->attribute_hash)->not->toBeNull();
+    expect($hash->composite_hash)->not->toBeNull();
+
+    return $hash;
+}
+
+function assertStationInScope(TestWeatherStation $station): void
+{
+    expect($station->location)->toBe('Bayern', 'Station should be in Bayern');
+    expect($station->status)->toBe('active', 'Station should be active');
+
+    $hasQualifyingAnemometer = $station->anemometers()
+        ->where('max_speed', '>', 20.0)
+        ->exists();
+
+    expect($hasQualifyingAnemometer)->toBeTrue('Station should have anemometer with max_speed > 20');
+}
+
+function assertStationOutOfScope(TestWeatherStation $station): void
+{
+    $inBayern = $station->location === 'Bayern';
+    $isActive = $station->status === 'active';
+    $hasQualifyingAnemometer = $station->anemometers()
+        ->where('max_speed', '>', 20.0)
+        ->exists();
+
+    expect($inBayern && $isActive && $hasQualifyingAnemometer)->toBeFalse(
+        'Station should not meet all scope criteria'
+    );
+}
+
+function assertStationHasCompleteSensorSetup(TestWeatherStation $station): void
+{
+    expect($station->windvanes()->exists())->toBeTrue('Station should have at least one windvane');
+    expect($station->anemometers()->exists())->toBeTrue('Station should have at least one anemometer');
+}
+
 // ===== QUICK STATION CREATION HELPERS =====
 
 function createStationInBayern(array $overrides = []): TestWeatherStation
@@ -427,4 +473,79 @@ function createAnemometerForStation(int $stationId, float $maxSpeed = 25.0): Tes
             'sensor_type' => 'ultrasonic',
         ]);
     });
+}
+
+// ===== COMPLETE STATION SETUP HELPERS =====
+
+function createCompleteWeatherStation(string $location = 'Bayern', float $maxSpeed = 25.0): array
+{
+    $station = TestWeatherStation::withoutEvents(function () use ($location) {
+        return TestWeatherStation::create([
+            'name' => "{$location} Station " . uniqid(),
+            'location' => $location,
+            'latitude' => 48.1351 + (rand(0, 100) / 1000),
+            'longitude' => 11.5820 + (rand(0, 100) / 1000),
+            'status' => 'active',
+            'is_operational' => true,
+        ]);
+    });
+
+    $windvane = createWindvaneForStation($station->id);
+    $anemometer = createAnemometerForStation($station->id, $maxSpeed);
+
+    return [
+        'station' => $station,
+        'windvane' => $windvane,
+        'anemometer' => $anemometer,
+    ];
+}
+
+function createStationWithMultipleSensors(int $windvaneCount = 2, int $anemometerCount = 2): array
+{
+    $station = createStationInBayernWithoutEvt();
+
+    $windvanes = [];
+    for ($i = 0; $i < $windvaneCount; $i++) {
+        $windvanes[] = createWindvaneForStation($station->id, $i * 90.0);
+    }
+
+    $anemometers = [];
+    for ($i = 0; $i < $anemometerCount; $i++) {
+        $anemometers[] = createAnemometerForStation($station->id, 20.0 + ($i * 5));
+    }
+
+    return [
+        'station' => $station,
+        'windvanes' => $windvanes,
+        'anemometers' => $anemometers,
+    ];
+}
+
+function createQualifyingStation(): TestWeatherStation
+{
+    $data = createCompleteWeatherStation('Bayern', 25.0); // max_speed > 20
+    return $data['station'];
+}
+
+function createNonQualifyingStation(string $reason = 'location'): TestWeatherStation
+{
+    switch ($reason) {
+        case 'location':
+            $data = createCompleteWeatherStation('Berlin', 25.0);
+            break;
+        case 'status':
+            $station = createStationInBayernWithoutEvt(['status' => 'inactive']);
+            createWindvaneForStation($station->id);
+            createAnemometerForStation($station->id, 25.0);
+            return $station;
+        case 'speed':
+            $data = createCompleteWeatherStation('Bayern', 15.0); // max_speed < 20
+            break;
+        case 'no_sensors':
+            return createStationInBayernWithoutEvt();
+        default:
+            $data = createCompleteWeatherStation('Berlin', 15.0);
+    }
+
+    return $data['station'] ?? createStationInBayernWithoutEvt();
 }

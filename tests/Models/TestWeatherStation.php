@@ -45,11 +45,7 @@ class TestWeatherStation extends Model implements Hashable
         return function ($query) {
             $query->where('location', 'Bayern')
                 ->where('status', 'active')
-                ->whereIn('id', function ($subquery) {
-                    $subquery->select('weather_station_id')
-                        ->from('test_anemometers')
-                        ->where('max_speed', '>', 20.0);
-                });
+                ->where('is_operational', true);
         };
     }
 
