@@ -279,7 +279,7 @@ function logPerformanceMetrics(array $metrics): void
     Log::channel('testing')->info('Performance Metrics', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Performance Metrics:', $metrics);
+        // dump('Performance Metrics:', $metrics);
     }
 }
 
@@ -298,7 +298,7 @@ function logBatchSizeComparison(array $results): void
     Log::channel('testing')->info('Batch Size Comparison', $formatted);
 
     if (app()->environment('testing')) {
-        dump('Batch Size Comparison:', $formatted);
+        // dump('Batch Size Comparison:', $formatted);
     }
 }
 
@@ -314,7 +314,7 @@ function logMemoryPattern(array $snapshots): void
     Log::channel('testing')->info('Memory Usage Pattern', $formatted);
 
     if (app()->environment('testing')) {
-        dump('Memory Pattern:', $formatted);
+        // dump('Memory Pattern:', $formatted);
     }
 }
 
@@ -330,7 +330,7 @@ function logIndexPerformance(float $withoutIndex, float $withIndex, float $impro
     Log::channel('testing')->info('Index Performance Impact', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Index Performance:', $metrics);
+        // dump('Index Performance:', $metrics);
     }
 }
 
@@ -346,7 +346,7 @@ function logCrossDatabasePerformance(float $sameDb, float $crossDb, float $overh
     Log::channel('testing')->info('Cross-Database Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Cross-Database Performance:', $metrics);
+        // dump('Cross-Database Performance:', $metrics);
     }
 }
 
@@ -362,7 +362,7 @@ function logConcurrentPerformance(array $jobs, float $totalTime): void
     Log::channel('testing')->info('Concurrent Operations Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Concurrent Performance:', $metrics);
+        // dump('Concurrent Performance:', $metrics);
     }
 }
 
@@ -378,7 +378,7 @@ function logDependencyPerformance(float $time, float $memory, int $dependents): 
     Log::channel('testing')->info('Dependency Processing Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Dependency Performance:', $metrics);
+        // dump('Dependency Performance:', $metrics);
     }
 }
 
@@ -394,7 +394,7 @@ function logBulkDeletePerformance(float $deleteTime, float $purgeTime): void
     Log::channel('testing')->info('Bulk Delete Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Bulk Delete Performance:', $metrics);
+        // dump('Bulk Delete Performance:', $metrics);
     }
 }
 
@@ -410,7 +410,7 @@ function logHashCalculationPerformance(float $single, float $bulk, float $speedu
     Log::channel('testing')->info('Hash Calculation Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Hash Calculation Performance:', $metrics);
+        // dump('Hash Calculation Performance:', $metrics);
     }
 }
 
@@ -426,7 +426,7 @@ function logSyncComparison(float $full, float $incremental, float $forced): void
     Log::channel('testing')->info('Sync Strategy Comparison', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Sync Comparison:', $metrics);
+        // dump('Sync Comparison:', $metrics);
     }
 }
 
@@ -446,7 +446,7 @@ function logQueryPlan(array $explainResult): void
     Log::channel('testing')->info('Query Execution Plan', $formatted);
 
     if (app()->environment('testing')) {
-        dump('Query Plan:', $formatted);
+        // dump('Query Plan:', $formatted);
     }
 }
 
@@ -463,7 +463,7 @@ function logMemoryLeakAnalysis(array $checkpoints, float $growth): void
     Log::channel('testing')->info('Memory Leak Analysis', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Memory Leak Analysis:', $metrics);
+        // dump('Memory Leak Analysis:', $metrics);
     }
 }
 
@@ -482,7 +482,7 @@ function logLockMetrics(array $metrics): void
     Log::channel('testing')->info('Database Lock Metrics', $formatted);
 
     if (app()->environment('testing')) {
-        dump('Lock Metrics:', $formatted);
+        // dump('Lock Metrics:', $formatted);
     }
 }
 
@@ -499,7 +499,7 @@ function logCompositeHashPerformance(float $time, float $memory, int $totalRelat
     Log::channel('testing')->info('Composite Hash Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Composite Hash Performance:', $metrics);
+        // dump('Composite Hash Performance:', $metrics);
     }
 }
 
@@ -515,6 +515,6 @@ function logConstrainedPerformance(float $time, float $peakMemory): void
     Log::channel('testing')->info('Resource-Constrained Performance', $metrics);
 
     if (app()->environment('testing')) {
-        dump('Constrained Performance:', $metrics);
+        // dump('Constrained Performance:', $metrics);
     }
 }

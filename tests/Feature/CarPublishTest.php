@@ -575,11 +575,11 @@ describe('car publishing', function () {
         expect($finalSyncTime)->toBeLessThan(3.0);
 
         // Log performance metrics for visibility
-        dump('Performance Metrics:');
-        dump("  Create 100 cars: {$createTime}s");
-        dump("  Initial sync (100 records): {$syncTime}s");
-        dump("  Update sync (50 changes): {$updateSyncTime}s");
-        dump("  Final sync (mixed ops): {$finalSyncTime}s");
+        // dump('Performance Metrics:');
+        // dump("  Create 100 cars: {$createTime}s");
+        // dump("  Initial sync (100 records): {$syncTime}s");
+        // dump("  Update sync (50 changes): {$updateSyncTime}s");
+        // dump("  Final sync (mixed ops): {$finalSyncTime}s");
     });
 
     it('uses bulk SQL operations instead of individual queries', function () {
@@ -618,11 +618,11 @@ describe('car publishing', function () {
         expect($totalQueries)->toBeLessThan(20);
 
         // Log for visibility
-        dump('Query Analysis for 50 records:');
-        dump("  Total queries: {$totalQueries}");
-        dump("  SELECT queries: {$selectQueries}");
-        dump("  INSERT queries: {$insertQueries}");
-        dump("  UPDATE queries: {$updateQueries}");
+        // dump('Query Analysis for 50 records:');
+        // dump("  Total queries: {$totalQueries}");
+        // dump("  SELECT queries: {$selectQueries}");
+        // dump("  INSERT queries: {$insertQueries}");
+        // dump("  UPDATE queries: {$updateQueries}");
 
         // Verify results are correct despite using bulk operations
         $hashCount = Hash::where('hashable_type', 'test_car')
@@ -663,7 +663,7 @@ describe('car publishing', function () {
         }
 
         $createTime = microtime(true) - $startTime;
-        dump("Created 5000 cars in: {$createTime}s");
+        // dump("Created 5000 cars in: {$createTime}s");
 
         // Get all car IDs for verification
         $carIds = TestCar::pluck('id')->toArray();
@@ -693,10 +693,10 @@ describe('car publishing', function () {
         expect($publishCount)->toBe(5000);
 
         // Performance check: even with 5000 records, should complete reasonably fast
-        dump('Performance for 5000 cars:');
-        dump("  Sync time: {$syncTime}s");
-        dump('  Total queries: '.count($queries));
-        dump('  Queries per record: '.(count($queries) / 5000));
+        // dump('Performance for 5000 cars:');
+        // dump("  Sync time: {$syncTime}s");
+        // dump('  Total queries: '.count($queries));
+        // dump('  Queries per record: '.(count($queries) / 5000));
 
         // Should complete in under 30 seconds even with 5000 records
         expect($syncTime)->toBeLessThan(30.0);
@@ -715,7 +715,7 @@ describe('car publishing', function () {
         syncCars();
         $updateSyncTime = microtime(true) - $startTime;
 
-        dump("  Update sync time (1000 changes): {$updateSyncTime}s");
+        // dump("  Update sync time (1000 changes): {$updateSyncTime}s");
 
         // Update sync should also be fast
         expect($updateSyncTime)->toBeLessThan(10.0);

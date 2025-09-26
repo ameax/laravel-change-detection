@@ -39,13 +39,13 @@ it('debugs the sync process with dependencies', function () {
     // Check what dependencies are discovered
     $stationInstance = new TestWeatherStation;
     $dependencies = ModelDiscoveryHelper::getDependencyModelsFromModel($stationInstance);
-    dump('Discovered dependencies for WeatherStation: '.json_encode($dependencies));
+    // dump('Discovered dependencies for WeatherStation: '.json_encode($dependencies));
 
     // Create publisher
     $publisher = createWeatherStationPublisher();
 
     // First, sync the dependent models explicitly
-    dump('=== Step 1: Sync dependent models ===');
+    // dump('=== Step 1: Sync dependent models ===');
     test()->artisan('change-detection:sync', [
         '--models' => [TestAnemometer::class, TestWindvane::class],
     ])->assertExitCode(0);
@@ -54,10 +54,10 @@ it('debugs the sync process with dependencies', function () {
     $anemometerHash = Hash::where('hashable_type', 'test_anemometer')
         ->where('hashable_id', $anemometer->id)
         ->first();
-    dump('Anemometer hash after dep sync: '.($anemometerHash ? 'exists' : 'missing'));
+    // dump('Anemometer hash after dep sync: '.($anemometerHash ? 'exists' : 'missing'));
 
     // Now sync the main model with verbose output
-    dump('=== Step 2: Sync main model ===');
+    // dump('=== Step 2: Sync main model ===');
     test()->artisan('change-detection:sync', [
         '--models' => [TestWeatherStation::class],
         '--report' => true,
@@ -67,22 +67,22 @@ it('debugs the sync process with dependencies', function () {
     $stationHash = Hash::where('hashable_type', 'test_weather_station')
         ->where('hashable_id', $station->id)
         ->first();
-    dump('Station hash: '.($stationHash ? 'exists' : 'missing'));
+    // dump('Station hash: '.($stationHash ? 'exists' : 'missing'));
     if ($stationHash) {
-        dump('has_dependencies_built: '.($stationHash->has_dependencies_built ? 'yes' : 'no'));
+        // dump('has_dependencies_built: '.($stationHash->has_dependencies_built ? 'yes' : 'no'));
     }
 
     // Check hash_dependents
     if ($stationHash) {
         $dependents = HashDependent::where('hash_id', $stationHash->id)->get();
-        dump('Hash dependents count: '.$dependents->count());
+        // dump('Hash dependents count: '.$dependents->count());
         foreach ($dependents as $dep) {
-            dump('Dependent: type='.$dep->dependent_type.', id='.$dep->dependent_id);
+            // dump('Dependent: type='.$dep->dependent_type.', id='.$dep->dependent_id);
         }
     }
 
     // Now try the alternative: let autodiscovery handle it
-    dump('=== Alternative: Autodiscovery ===');
+    // dump('=== Alternative: Autodiscovery ===');
 
     // Truncate and start fresh (disable foreign key checks)
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
@@ -96,13 +96,13 @@ it('debugs the sync process with dependencies', function () {
 
     // Check results
     $allHashes = Hash::all();
-    dump('Total hashes created: '.$allHashes->count());
+    // dump('Total hashes created: '.$allHashes->count());
     foreach ($allHashes as $hash) {
-        dump('Hash: type='.$hash->hashable_type.', id='.$hash->hashable_id.', deps_built='.($hash->has_dependencies_built ? 'yes' : 'no'));
+        // dump('Hash: type='.$hash->hashable_type.', id='.$hash->hashable_id.', deps_built='.($hash->has_dependencies_built ? 'yes' : 'no'));
     }
 
     $allDependents = HashDependent::all();
-    dump('Total hash_dependents: '.$allDependents->count());
+    // dump('Total hash_dependents: '.$allDependents->count());
 
     expect(true)->toBeTrue();
 });

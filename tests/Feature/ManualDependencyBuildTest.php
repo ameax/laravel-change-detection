@@ -50,30 +50,30 @@ it('manually builds dependencies for weather station', function () {
         'has_dependencies_built' => false,
     ]);
 
-    dump('Initial state:');
-    dump('Station hash exists: yes');
-    dump('Anemometer hash exists: yes');
-    dump('Hash dependents count: '.HashDependent::count());
+    // dump('Initial state:');
+    // dump('Station hash exists: yes');
+    // dump('Anemometer hash exists: yes');
+    // dump('Hash dependents count: '.HashDependent::count());
 
     // Now manually call buildPendingDependencies
     $processor = app(BulkHashProcessor::class);
     $result = $processor->buildPendingDependencies(TestWeatherStation::class);
-    dump('Built dependencies for '.$result.' models');
+    // dump('Built dependencies for '.$result.' models');
 
     // Check hash_dependents
     $dependents = HashDependent::all();
-    dump('Hash dependents after build: '.$dependents->count());
+    // dump('Hash dependents after build: '.$dependents->count());
     foreach ($dependents as $dep) {
-        dump('Dependent record:');
-        dump('  hash_id: '.$dep->hash_id);
-        dump('  dependent_model_type: '.$dep->dependent_model_type);
-        dump('  dependent_model_id: '.$dep->dependent_model_id);
-        dump('  relation_name: '.$dep->relation_name);
+        // dump('Dependent record:');
+        // dump('  hash_id: '.$dep->hash_id);
+        // dump('  dependent_model_type: '.$dep->dependent_model_type);
+        // dump('  dependent_model_id: '.$dep->dependent_model_id);
+        // dump('  relation_name: '.$dep->relation_name);
 
         // Look up what the hash_id points to
         $hash = Hash::find($dep->hash_id);
         if ($hash) {
-            dump('  hash points to: '.$hash->hashable_type.'#'.$hash->hashable_id);
+            // dump('  hash points to: '.$hash->hashable_type.'#'.$hash->hashable_id);
         }
     }
 
@@ -81,7 +81,7 @@ it('manually builds dependencies for weather station', function () {
     $stationHashAfter = Hash::where('hashable_type', 'test_weather_station')
         ->where('hashable_id', $station->id)
         ->first();
-    dump('Station has_dependencies_built after: '.($stationHashAfter->has_dependencies_built ? 'yes' : 'no'));
+    // dump('Station has_dependencies_built after: '.($stationHashAfter->has_dependencies_built ? 'yes' : 'no'));
 
     expect($dependents->count())->toBeGreaterThan(0);
 });

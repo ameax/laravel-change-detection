@@ -44,25 +44,25 @@ it('debugs composite hash calculation with dependencies', function () {
         ->where('hashable_id', $anemometer->id)
         ->first();
 
-    dump('Anemometer hash exists: '.($anemometerHash ? 'yes' : 'no'));
+    // dump('Anemometer hash exists: '.($anemometerHash ? 'yes' : 'no'));
     if ($anemometerHash) {
-        dump('Anemometer hash: '.$anemometerHash->attribute_hash);
+        // dump('Anemometer hash: '.$anemometerHash->attribute_hash);
     }
 
     // Check weather station hash
     $stationHash = getStationHash($station->id);
-    dump('Station hash exists: '.($stationHash ? 'yes' : 'no'));
+    // dump('Station hash exists: '.($stationHash ? 'yes' : 'no'));
     if ($stationHash) {
-        dump('Station attribute_hash: '.$stationHash->attribute_hash);
-        dump('Station composite_hash: '.$stationHash->composite_hash);
-        dump('Are they same: '.($stationHash->attribute_hash === $stationHash->composite_hash ? 'yes' : 'no'));
+        // dump('Station attribute_hash: '.$stationHash->attribute_hash);
+        // dump('Station composite_hash: '.$stationHash->composite_hash);
+        // dump('Are they same: '.($stationHash->attribute_hash === $stationHash->composite_hash ? 'yes' : 'no'));
     }
 
     // Check hash_dependents table
     $hashDependents = HashDependent::where('hash_id', $stationHash->id)->get();
-    dump('Hash dependents count: '.$hashDependents->count());
+    // dump('Hash dependents count: '.$hashDependents->count());
     foreach ($hashDependents as $dep) {
-        dump('Dependent: type='.$dep->dependent_type.', id='.$dep->dependent_id);
+        // dump('Dependent: type='.$dep->dependent_type.', id='.$dep->dependent_id);
     }
 
     // Now update the anemometer
@@ -78,17 +78,17 @@ it('debugs composite hash calculation with dependencies', function () {
         ->first();
 
     if ($anemometerHash && $anemometerHashAfter) {
-        dump('Anemometer hash changed: '.($anemometerHash->attribute_hash !== $anemometerHashAfter->attribute_hash ? 'yes' : 'no'));
-        dump('Old anemometer hash: '.$anemometerHash->attribute_hash);
-        dump('New anemometer hash: '.$anemometerHashAfter->attribute_hash);
+        // dump('Anemometer hash changed: '.($anemometerHash->attribute_hash !== $anemometerHashAfter->attribute_hash ? 'yes' : 'no'));
+        // dump('Old anemometer hash: '.$anemometerHash->attribute_hash);
+        // dump('New anemometer hash: '.$anemometerHashAfter->attribute_hash);
     }
 
     // Check if station composite hash changed
     $stationHashAfter = getStationHash($station->id);
     if ($stationHash && $stationHashAfter) {
-        dump('Station composite hash changed: '.($stationHash->composite_hash !== $stationHashAfter->composite_hash ? 'yes' : 'no'));
-        dump('Old composite: '.$stationHash->composite_hash);
-        dump('New composite: '.$stationHashAfter->composite_hash);
+        // dump('Station composite hash changed: '.($stationHash->composite_hash !== $stationHashAfter->composite_hash ? 'yes' : 'no'));
+        // dump('Old composite: '.$stationHash->composite_hash);
+        // dump('New composite: '.$stationHashAfter->composite_hash);
     }
 
     // This test is for debugging, so we'll pass it

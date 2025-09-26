@@ -27,9 +27,9 @@ it('discovers all models for weather station sync', function () {
     // Get all models that should be synced for this publisher
     $models = ModelDiscoveryHelper::getAllModelsForSync('test_weather_station');
 
-    dump('Models discovered for sync:');
+    // dump('Models discovered for sync:');
     foreach ($models as $index => $model) {
-        dump(($index + 1).'. '.$model);
+        // dump(($index + 1).'. '.$model);
     }
 
     // Verify the order is correct: dependencies first, then main model
