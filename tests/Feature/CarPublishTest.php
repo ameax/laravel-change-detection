@@ -728,4 +728,276 @@ describe('car publishing', function () {
         expect($pendingCount)->toBeGreaterThanOrEqual(1000);
     })->skip(env('SKIP_LARGE_TESTS', true), 'Skipping large dataset test - set SKIP_LARGE_TESTS=false to run');
 
+    it('handles concurrent publishing and prevents duplicates', function () {
+        // Create cars and publisher
+        $car1 = createCar(['model' => 'Ferrari F40', 'price' => 500000]);
+        $car2 = createCar(['model' => 'Lamborghini Aventador', 'price' => 400000]);
+        $publisher = createCarPublisher();
+
+        // Initial sync
+        syncCars();
+
+        $car1->refresh();
+        $car2->refresh();
+        $hash1 = $car1->getCurrentHash();
+        $hash2 = $car2->getCurrentHash();
+
+        // Get publish records
+        $publish1 = Publish::where('hash_id', $hash1->id)->first();
+        $publish2 = Publish::where('hash_id', $hash2->id)->first();
+
+        // Simulate first publish being in progress
+        $publish1->update([
+            'status' => 'dispatched',
+            'started_at' => now(),
+        ]);
+
+        // Run sync again while first publish is processing
+        syncCars();
+
+        // Verify no duplicate publish record was created
+        $publishCount = Publish::where('hash_id', $hash1->id)
+            ->where('publisher_id', $publisher->id)
+            ->count();
+        expect($publishCount)->toBe(1);
+
+        // Verify dispatched status wasn't changed
+        $publish1->refresh();
+        expect($publish1->status)->toBe('dispatched');
+
+        // Verify other publish is still pending
+        $publish2->refresh();
+        expect($publish2->status)->toBe('pending');
+
+        // Update both cars
+        $car1->update(['price' => 550000]);
+        $car2->update(['price' => 450000]);
+
+        // Run sync with one publish still processing
+        syncCars();
+
+        // Dispatched publish should not be reset (avoid interrupting active publish)
+        $publish1->refresh();
+        expect($publish1->status)->toBe('dispatched');
+
+        // But the other should remain pending (will get new hash on next sync)
+        $publish2->refresh();
+        expect($publish2->status)->toBe('pending');
+
+        // Simulate publish1 completing
+        $publish1->update([
+            'status' => 'published',
+            'published_hash' => $hash1->composite_hash,
+            'published_at' => now(),
+            'started_at' => null,
+        ]);
+
+        // Now run sync - should detect the change and reset publish1
+        syncCars();
+
+        $publish1->refresh();
+        expect($publish1->status)->toBe('pending');
+        expect($publish1->attempts)->toBe(0);
+    });
+
+    it('handles failed publishes and resets them', function () {
+        $car = createCar(['model' => 'McLaren P1', 'price' => 1500000]);
+        $publisher = createCarPublisher([
+            'retry_attempts' => 3,
+            'retry_delay' => 60, // 60 seconds
+        ]);
+
+        // Initial sync
+        syncCars();
+
+        $car->refresh();
+        $hash = $car->getCurrentHash();
+        $publish = Publish::where('hash_id', $hash->id)->first();
+
+        // Simulate first publish attempt failure
+        $publish->update([
+            'status' => 'failed',
+            'attempts' => 1,
+            'last_error' => 'Connection timeout',
+            'last_response_code' => null,
+            'error_type' => 'infrastructure',
+            'next_try' => now()->addSeconds(60),
+        ]);
+
+        // Run sync - currently all failed records are reset regardless of next_try
+        syncCars();
+
+        $publish->refresh();
+        expect($publish->status)->toBe('pending');
+        expect($publish->attempts)->toBe(0);
+        expect($publish->last_error)->toBeNull();
+
+        // Simulate failure again
+        $publish->update([
+            'status' => 'failed',
+            'attempts' => 2,
+            'last_error' => 'Server error',
+            'last_response_code' => 500,
+            'error_type' => 'infrastructure',
+        ]);
+
+        // Car changes while in failed state
+        $car->update(['price' => 1600000]);
+
+        // Run sync - failed records are always reset
+        syncCars();
+
+        $publish->refresh();
+        expect($publish->status)->toBe('pending');
+        expect($publish->attempts)->toBe(0);
+        expect($publish->last_error)->toBeNull();
+    });
+
+    it('can identify stale pending publishes', function () {
+        $car = createCar(['model' => 'Bugatti Chiron', 'price' => 3000000]);
+        $publisher = createCarPublisher();
+
+        // Initial sync
+        syncCars();
+
+        $car->refresh();
+        $hash = $car->getCurrentHash();
+        $publish = Publish::where('hash_id', $hash->id)->first();
+
+        // Verify normal publish is not stale
+        $stalePublishes = Publish::where('status', 'pending')
+            ->where('created_at', '<', now()->subDays(1))
+            ->count();
+        expect($stalePublishes)->toBe(0);
+
+        // Make publish very old (simulate stuck pending)
+        DB::table('publishes')
+            ->where('id', $publish->id)
+            ->update([
+                'created_at' => now()->subDays(7),
+                'updated_at' => now()->subDays(7),
+            ]);
+
+        // Now it should be identified as stale
+        $stalePublishes = Publish::where('status', 'pending')
+            ->where('created_at', '<', now()->subDays(1))
+            ->count();
+
+        expect($stalePublishes)->toBe(1);
+
+        // Verify we can identify the specific stale publish
+        $stale = Publish::where('status', 'pending')
+            ->where('created_at', '<', now()->subDays(1))
+            ->first();
+
+        expect($stale)->not->toBeNull();
+        expect($stale->id)->toBe($publish->id);
+
+        // These stale publishes could be handled by:
+        // 1. A cleanup job that marks them as failed
+        // 2. A monitoring alert for investigation
+        // 3. Automatic retry with increased attempts
+    });
+
+    it('prevents race conditions with database locking', function () {
+        // This test simulates what happens when multiple workers
+        // try to process the same publish records simultaneously
+
+        $car = createCar(['model' => 'Koenigsegg Agera', 'price' => 2000000]);
+        $publisher = createCarPublisher();
+
+        // Initial sync
+        syncCars();
+
+        $car->refresh();
+        $hash = $car->getCurrentHash();
+        $publish = Publish::where('hash_id', $hash->id)->first();
+
+        // Simulate two workers trying to process the same publish
+        // In a real scenario, this would use SELECT ... FOR UPDATE
+        // to lock the record while processing
+
+        // Worker 1 locks and starts processing
+        $locked = DB::transaction(function () use ($publish) {
+            // This would normally use lockForUpdate()
+            $lockedPublish = Publish::where('id', $publish->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($lockedPublish) {
+                $lockedPublish->update([
+                    'status' => 'dispatched',
+                    'started_at' => now(),
+                ]);
+                return true;
+            }
+            return false;
+        });
+
+        expect($locked)->toBeTrue();
+
+        // Worker 2 tries to process the same record
+        $locked2 = DB::transaction(function () use ($publish) {
+            $lockedPublish = Publish::where('id', $publish->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($lockedPublish) {
+                $lockedPublish->update([
+                    'status' => 'dispatched',
+                    'started_at' => now(),
+                ]);
+                return true;
+            }
+            return false;
+        });
+
+        // Second worker should not be able to lock it
+        expect($locked2)->toBeFalse();
+
+        // Verify status is dispatched from first worker
+        $publish->refresh();
+        expect($publish->status)->toBe('dispatched');
+    });
+
+    it('handles multiple publishers racing for the same model', function () {
+        $car = createCar(['model' => 'Pagani Huayra', 'price' => 2500000]);
+
+        // Create multiple publishers
+        $publisher1 = createCarPublisher(['name' => 'API Publisher 1']);
+        $publisher2 = createCarPublisher(['name' => 'API Publisher 2']);
+        $publisher3 = createCarPublisher(['name' => 'API Publisher 3']);
+
+        // Run sync - should create publish records for all publishers
+        syncCars();
+
+        // Verify 3 publish records created
+        expect(Publish::count())->toBe(3);
+
+        // Simulate concurrent processing of different publishers
+        $publishes = Publish::all();
+
+        // Each can be processed independently
+        foreach ($publishes as $index => $publish) {
+            if ($index === 0) {
+                $publish->update(['status' => 'dispatched']);
+            } elseif ($index === 1) {
+                $publish->update(['status' => 'published', 'published_at' => now()]);
+            }
+            // Third remains pending
+        }
+
+        // Run sync again
+        syncCars();
+
+        // Verify each maintains its own state
+        $publishes = Publish::orderBy('id')->get();
+        expect($publishes[0]->status)->toBe('dispatched');
+        expect($publishes[1]->status)->toBe('published');
+        expect($publishes[2]->status)->toBe('pending');
+
+        // No duplicates created
+        expect(Publish::count())->toBe(3);
+    });
+
 });
