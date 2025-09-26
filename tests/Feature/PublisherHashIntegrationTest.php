@@ -351,30 +351,24 @@ describe('publisher and hash system integration', function () {
         //      $hash = $hashUpdater->updateHash($station);
 
         $hash = Hash::where('hashable_type', 'test_weather_station')->where('hashable_id', $station->id)->first();
-        dump($hash->toArray());
 
         $publish = Publish::where('hash_id', $hash->id)->first();
         $publish->publishNow();
-        // expect($publish)->toBeNull();
 
-        // $publish->markAsPublished(['success' => true]);
-
-        // Update station name to ensure hash changes
-        $station->refresh();
-        $station->name = 'Completely New Station Name '.uniqid();
-        $station->save();
+        // Update station name using query builder to bypass events
+        $newName = 'Completely New Station Name '.uniqid();
+        TestWeatherStation::where('id', $station->id)
+            ->update(['name' => $newName]);
 
         runSyncAutoDiscover();
-        //        $newHash = $hashUpdater->updateHash($station);
 
         // Verify hash actually changed
         $newHash = Hash::where('hashable_type', 'test_weather_station')->where('hashable_id', $station->id)->first();
         expect($newHash->attribute_hash)->not->toBe($hash->attribute_hash);
 
-        // Should create new publish record for new hash
+        // Should have same publish record but with pending status
         $newPublish = Publish::where('hash_id', $newHash->id)->first();
         expect($newPublish)->not->toBeNull();
-        dump($newPublish);
         expect($newPublish->status)->toBe('pending');
     })->only();
 

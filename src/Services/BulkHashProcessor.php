@@ -562,7 +562,7 @@ class BulkHashProcessor
             return; // No publishers configured for this model type
         }
 
-        // Get all hashes for these model IDs
+        // Get all hashes for these model IDs (fresh from database to get latest values)
         $hashes = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
             ->whereIn('hashable_id', $modelIds)
             ->whereNull('deleted_at')
@@ -571,12 +571,12 @@ class BulkHashProcessor
         foreach ($hashes as $hash) {
             foreach ($publishers as $publisher) {
                 // Check if a publish record already exists for this hash and publisher
-                $exists = \Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $hash->id)
+                $existingPublish = \Ameax\LaravelChangeDetection\Models\Publish::where('hash_id', $hash->id)
                     ->where('publisher_id', $publisher->id)
-                    ->exists();
+                    ->first();
 
-                if (! $exists) {
-                    // Create publish record
+                if (! $existingPublish) {
+                    // Create new publish record
                     \Ameax\LaravelChangeDetection\Models\Publish::create([
                         'hash_id' => $hash->id,
                         'publisher_id' => $publisher->id,
@@ -587,6 +587,16 @@ class BulkHashProcessor
                             'model_type' => $morphClass,
                             'model_id' => $hash->hashable_id,
                         ],
+                    ]);
+                } elseif ($existingPublish->isPublished() && $existingPublish->published_hash !== $hash->composite_hash) {
+                    // Hash has changed since last publish, reset to pending
+                    $existingPublish->update([
+                        'status' => 'pending',
+                        'attempts' => 0,
+                        'last_error' => null,
+                        'last_response_code' => null,
+                        'error_type' => null,
+                        'next_try' => null,
                     ]);
                 }
             }

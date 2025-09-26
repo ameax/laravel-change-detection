@@ -288,12 +288,12 @@ class HashUpdater
 
         foreach ($publishers as $publisher) {
             // Check if a publish record already exists for this hash and publisher
-            $exists = Publish::where('hash_id', $hash->id)
+            $existingPublish = Publish::where('hash_id', $hash->id)
                 ->where('publisher_id', $publisher->id)
-                ->exists();
+                ->first();
 
-            if (! $exists) {
-                // Create publish record
+            if (! $existingPublish) {
+                // Create new publish record
                 Publish::create([
                     'hash_id' => $hash->id,
                     'publisher_id' => $publisher->id,
@@ -304,6 +304,16 @@ class HashUpdater
                         'model_type' => $model->getMorphClass(),
                         'model_id' => $model->getKey(),
                     ],
+                ]);
+            } elseif ($existingPublish->isPublished() && $existingPublish->published_hash !== $hash->composite_hash) {
+                // Hash has changed since last publish, reset to pending
+                $existingPublish->update([
+                    'status' => 'pending',
+                    'attempts' => 0,
+                    'last_error' => null,
+                    'last_response_code' => null,
+                    'error_type' => null,
+                    'next_try' => null,
                 ]);
             }
         }
