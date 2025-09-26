@@ -10,7 +10,28 @@ use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 
 function runWeatherStationSync(array $options = []): void
 {
+    // Use autodiscovery to sync all models related to the weather station publisher
+    // The sync command will:
+    // 1. Find the WeatherStation publisher
+    // 2. Autodiscover dependent models from getHashCompositeDependencies()
+    // 3. Sync them in the correct order (dependencies first, then main model)
+    runSyncAutoDiscover($options);
+}
+
+function runWeatherStationSyncOnly(array $options = []): void
+{
+    // Only sync the weather station model (for testing specific scenarios)
     runSyncForModel(TestWeatherStation::class, $options);
+}
+
+function runWindvaneSync(array $options = []): void
+{
+    runSyncForModel(TestWindvane::class, $options);
+}
+
+function runAnemometerSync(array $options = []): void
+{
+    runSyncForModel(TestAnemometer::class, $options);
 }
 
 // ===== WEATHER STATION-SPECIFIC HASH FUNCTIONS =====

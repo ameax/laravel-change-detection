@@ -91,7 +91,55 @@ class BulkHashProcessor
         // Build dependencies for these models
         $this->buildDependencyRelationshipsForIds($modelClass, $modelIds);
 
+        // Recalculate composite hashes now that dependencies are in place
+        $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
+
         return count($modelIds);
+    }
+
+    /**
+     * Update composite hashes for all parent models.
+     * This finds all models that have dependencies and recalculates their composite hashes.
+     *
+     * @return int Number of parent models updated
+     */
+    public function updateParentModelsWithChangedDependencies(): int
+    {
+        $hashesTable = config('change-detection.tables.hashes', 'hashes');
+        $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
+
+        // Find all parent models that have dependencies (including soft-deleted ones)
+        // We'll recalculate all of them to ensure they're up to date
+        // This includes parents whose dependencies might have been soft-deleted
+        $sql = "
+            SELECT DISTINCT hd.dependent_model_type, hd.dependent_model_id
+            FROM `{$hashDependentsTable}` hd
+        ";
+
+        $results = $this->connection->select($sql);
+
+        if (empty($results)) {
+            return 0;
+        }
+
+        // Group by model type for batch processing
+        $modelGroups = [];
+        foreach ($results as $result) {
+            $modelGroups[$result->dependent_model_type][] = $result->dependent_model_id;
+        }
+
+        $totalUpdated = 0;
+
+        // Update composite hashes for each model type
+        foreach ($modelGroups as $morphType => $modelIds) {
+            $modelClass = \Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper::getModelClassFromMorphName($morphType);
+            if ($modelClass) {
+                $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
+                $totalUpdated += count($modelIds);
+            }
+        }
+
+        return $totalUpdated;
     }
 
     /**
@@ -176,11 +224,8 @@ class BulkHashProcessor
         $bindings = array_merge([$morphClass, $now, $now], $modelIds, $scopeBindings);
         $this->connection->statement($sql, $bindings);
 
-        // Build dependency relationships for the updated models
-        $this->buildDependencyRelationshipsForIds($modelClass, $modelIds);
-
-        // Recalculate composite hashes now that dependencies are in place
-        $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
+        // Don't build dependencies here - let buildPendingDependencies handle it
+        // This ensures dependencies are only built when they actually exist
 
         return count($modelIds); // Return count of processed IDs
     }
@@ -364,6 +409,8 @@ class BulkHashProcessor
         $model = new $modelClass;
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
+            // If model has no dependency relationships defined, mark as built
+            $this->markDependenciesBuiltForChunk($modelClass, $modelIds);
             return;
         }
 
@@ -383,13 +430,19 @@ class BulkHashProcessor
             /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
             $models = $models->get();
 
+            $modelsWithDependencies = [];
+
             foreach ($models as $model) {
                 /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $model */
-                $this->buildDependencyRelationshipsForModel($model);
+                if ($this->buildDependencyRelationshipsForModel($model)) {
+                    $modelsWithDependencies[] = $model->getKey();
+                }
             }
 
-            // Mark all models in this chunk as having dependencies built (batch update)
-            $this->markDependenciesBuiltForChunk($modelClass, $chunk);
+            // Only mark models that actually had dependencies created
+            if (!empty($modelsWithDependencies)) {
+                $this->markDependenciesBuiltForChunk($modelClass, $modelsWithDependencies);
+            }
         }
     }
 
@@ -397,21 +450,21 @@ class BulkHashProcessor
      * Build dependency relationships for a single model.
      *
      * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
+     * @return bool True if dependencies were created, false otherwise
      */
-    /**
-     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
-     */
-    private function buildDependencyRelationshipsForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): void
+    private function buildDependencyRelationshipsForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): bool
     {
         $dependencies = $model->getHashCompositeDependencies();
         if (empty($dependencies)) {
-            return;
+            return false;
         }
 
         $dependentHash = $model->getCurrentHash();
         if (! $dependentHash) {
-            return; // Skip if no hash exists
+            return false; // Skip if no hash exists
         }
+
+        $dependenciesCreated = false;
 
         foreach ($dependencies as $relationName) {
             if (! method_exists($model, $relationName)) {
@@ -456,6 +509,8 @@ class BulkHashProcessor
                             'dependent_model_id' => $model->getKey(),
                             'relation_name' => $relationName,
                         ]);
+
+                        $dependenciesCreated = true;
                     }
                 }
             } catch (\Exception $e) {
@@ -466,6 +521,8 @@ class BulkHashProcessor
                 );
             }
         }
+
+        return $dependenciesCreated;
     }
 
     /**

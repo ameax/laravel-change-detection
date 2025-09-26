@@ -68,7 +68,10 @@ class SyncCommand extends Command
         // Step 4: Handle soft-deleted models
         $this->processSoftDeletes($models);
 
-        // Step 5: Sync publish records for all models
+        // Step 5: Update parent models whose dependencies have changed
+        $this->updateParentCompositeHashes();
+
+        // Step 6: Sync publish records for all models
         $this->syncPublishRecords($models);
 
         // Show summary
@@ -260,6 +263,25 @@ class SyncCommand extends Command
             $this->info('  No soft-deleted models found');
         } else {
             $this->info("  Total: {$totalProcessed} hashes marked as deleted");
+        }
+
+        $this->line('');
+    }
+
+    /**
+     * Update parent models whose dependencies have changed.
+     */
+    private function updateParentCompositeHashes(): void
+    {
+        $this->info('🔄 Updating parent composite hashes...');
+
+        $processor = app(BulkHashProcessor::class);
+        $updated = $processor->updateParentModelsWithChangedDependencies();
+
+        if ($updated > 0) {
+            $this->info("  Updated {$updated} parent model composite hashes");
+        } else {
+            $this->info('  No parent models needed updating');
         }
 
         $this->line('');
