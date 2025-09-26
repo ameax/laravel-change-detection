@@ -59,27 +59,6 @@ class ModelDiscoveryHelper
     }
 
     /**
-     * Get model class from a model instance and relation name.
-     *
-     * @return class-string|null
-     */
-    public static function getModelClassFromRelation(Model $model, string $relationName): ?string
-    {
-        if (! method_exists($model, $relationName)) {
-            return null;
-        }
-
-        try {
-            $relation = $model->$relationName();
-            $relatedModel = $relation->getRelated();
-
-            return get_class($relatedModel);
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
      * Get dependency models from a morph name.
      *
      * @return array<string, class-string> Array with relation names as keys and model classes as values
@@ -142,16 +121,5 @@ class ModelDiscoveryHelper
         $reflection = new \ReflectionClass($modelClass);
 
         return $reflection->implementsInterface(Hashable::class);
-    }
-
-    /**
-     * Filter an array of model classes to only include Hashable models.
-     *
-     * @param  array<class-string>  $modelClasses
-     * @return array<class-string>
-     */
-    public static function filterHashableModels(array $modelClasses): array
-    {
-        return array_filter($modelClasses, [self::class, 'isHashable']);
     }
 }

@@ -113,22 +113,6 @@ describe('ModelDiscoveryHelper', function () {
         expect($modelClass)->toBeNull();
     });
 
-    it('gets model class from relation name', function () {
-        $station = new TestWeatherStation;
-
-        // Test valid relation
-        $modelClass = ModelDiscoveryHelper::getModelClassFromRelation($station, 'windvanes');
-        expect($modelClass)->toBe(TestWindvane::class);
-
-        // Test another valid relation
-        $modelClass = ModelDiscoveryHelper::getModelClassFromRelation($station, 'anemometers');
-        expect($modelClass)->toBe(TestAnemometer::class);
-
-        // Test invalid relation
-        $modelClass = ModelDiscoveryHelper::getModelClassFromRelation($station, 'non_existent_relation');
-        expect($modelClass)->toBeNull();
-    });
-
     it('gets dependency models from morph name', function () {
         $dependencies = ModelDiscoveryHelper::getDependencyModelsFromMorphName('test_weather_station');
 
@@ -163,23 +147,6 @@ describe('ModelDiscoveryHelper', function () {
         expect(ModelDiscoveryHelper::isHashable(TestWeatherStation::class))->toBeTrue();
         expect(ModelDiscoveryHelper::isHashable(TestWindvane::class))->toBeTrue();
         expect(ModelDiscoveryHelper::isHashable('NonExistentClass'))->toBeFalse();
-    });
-
-    it('filters hashable models from array', function () {
-        $models = [
-            TestWeatherStation::class,
-            TestWindvane::class,
-            TestAnemometer::class,
-            'NonExistentClass',
-        ];
-
-        $hashableModels = ModelDiscoveryHelper::filterHashableModels($models);
-
-        expect($hashableModels)->toBe([
-            TestWeatherStation::class,
-            TestWindvane::class,
-            TestAnemometer::class,
-        ]);
     });
 
     it('handles empty composite dependencies correctly', function () {
