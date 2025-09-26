@@ -54,7 +54,7 @@ return new class extends Migration
             $table->string('published_hash', 32)->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('published_at')->nullable();
-            $table->enum('status', ['pending', 'dispatched', 'deferred', 'published', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'dispatched', 'deferred', 'published', 'failed', 'soft-deleted'])->default('pending');
             $table->unsignedInteger('attempts')->default(0);
             $table->text('last_error')->nullable();
             $table->integer('last_response_code')->nullable();

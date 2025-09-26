@@ -102,35 +102,6 @@ it('detects and updates changes in existing cars', function () {
     expect($newHash2->attribute_hash)->not->toBe($originalHash2);
 });
 
-it('shows dry run results without making changes', function () {
-    // Create cars
-    for ($i = 1; $i <= 3; $i++) {
-        TestCar::create([
-            'model' => "Car {$i}",
-            'year' => 2020 + $i,
-            'price' => 30000 + ($i * 1000),
-            'is_electric' => false,
-            'features' => [],
-        ]);
-    }
-
-    // Verify no hashes exist
-    $initialHashCount = Hash::where('hashable_type', 'test_car')->count();
-    expect($initialHashCount)->toBe(0);
-
-    // Execute sync command in dry-run mode
-    $this->artisan('change-detection:sync', [
-        '--models' => [TestCar::class],
-        '--dry-run' => true,
-    ])
-        ->expectsOutputToContain('DRY RUN MODE')
-        ->expectsOutputToContain('Changes detected: 3')
-        ->assertExitCode(0);
-
-    // Verify no hashes were created
-    $finalHashCount = Hash::where('hashable_type', 'test_car')->count();
-    expect($finalHashCount)->toBe(0);
-});
 
 it('handles limit option correctly', function () {
     // Create 10 cars

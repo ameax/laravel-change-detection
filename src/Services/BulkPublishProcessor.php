@@ -22,6 +22,8 @@ class BulkPublishProcessor
      * This will:
      * 1. Create missing publish records for active publishers
      * 2. Update outdated publish records (when hash has changed)
+     * 3. Soft-delete publish records when hash is soft-deleted
+     * 4. Reactivate soft-deleted publishes when hash is restored
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array{created: int, updated: int}
@@ -49,6 +51,12 @@ class BulkPublishProcessor
 
             // Update outdated publish records with a single UPDATE...JOIN
             $updated += $this->updateOutdatedPublishRecords($morphClass, $publisher);
+
+            // Soft-delete publishes for soft-deleted hashes
+            $updated += $this->softDeletePublishesForDeletedHashes($morphClass, $publisher);
+
+            // Reactivate soft-deleted publishes for restored hashes
+            $updated += $this->reactivateSoftDeletedPublishes($morphClass, $publisher);
         }
 
         return ['created' => $created, 'updated' => $updated];
@@ -261,6 +269,56 @@ class BulkPublishProcessor
                   OR
                   p.status = 'failed'
               )
+        ";
+
+        return $this->connection->update($sql, [$publisher->id, $morphClass]);
+    }
+
+    /**
+     * Soft-delete publish records when their associated hash is soft-deleted.
+     * Uses bulk UPDATE for performance.
+     */
+    private function softDeletePublishesForDeletedHashes(string $morphClass, Publisher $publisher): int
+    {
+        $hashesTable = config('change-detection.tables.hashes', 'hashes');
+        $publishesTable = config('change-detection.tables.publishes', 'publishes');
+
+        // Soft-delete publishes where hash has been soft-deleted
+        $sql = "
+            UPDATE `{$publishesTable}` p
+            INNER JOIN `{$hashesTable}` h ON h.id = p.hash_id
+            SET
+                p.status = 'soft-deleted',
+                p.updated_at = NOW()
+            WHERE p.publisher_id = ?
+              AND h.hashable_type = ?
+              AND h.deleted_at IS NOT NULL
+              AND p.status NOT IN ('soft-deleted', 'dispatched')
+        ";
+
+        return $this->connection->update($sql, [$publisher->id, $morphClass]);
+    }
+
+    /**
+     * Reactivate soft-deleted publish records when their hash is restored.
+     * Uses bulk UPDATE for performance.
+     */
+    private function reactivateSoftDeletedPublishes(string $morphClass, Publisher $publisher): int
+    {
+        $hashesTable = config('change-detection.tables.hashes', 'hashes');
+        $publishesTable = config('change-detection.tables.publishes', 'publishes');
+
+        // Reactivate soft-deleted publishes where hash has been restored
+        $sql = "
+            UPDATE `{$publishesTable}` p
+            INNER JOIN `{$hashesTable}` h ON h.id = p.hash_id
+            SET
+                p.status = 'pending',
+                p.updated_at = NOW()
+            WHERE p.publisher_id = ?
+              AND h.hashable_type = ?
+              AND h.deleted_at IS NULL
+              AND p.status = 'soft-deleted'
         ";
 
         return $this->connection->update($sql, [$publisher->id, $morphClass]);

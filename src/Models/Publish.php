@@ -97,6 +97,11 @@ class Publish extends Model
         return $this->status === 'failed';
     }
 
+    public function isSoftDeleted(): bool
+    {
+        return $this->status === 'soft-deleted';
+    }
+
     public function shouldRetry(): bool
     {
         return $this->isDeferred() &&
@@ -236,6 +241,11 @@ class Publish extends Model
      */
     public function publishNow(): bool
     {
+        // Skip soft-deleted publishes
+        if ($this->isSoftDeleted()) {
+            return false;
+        }
+
         if (! $this->isPending() && ! $this->shouldRetry()) {
             return false;
         }
@@ -243,6 +253,12 @@ class Publish extends Model
         if (! $this->hash) {
             $this->markAsFailed('No hash found', null);
 
+            return false;
+        }
+
+        // Check if hash is soft-deleted, and if so, soft-delete this publish
+        if ($this->hash->deleted_at !== null) {
+            $this->update(['status' => 'soft-deleted']);
             return false;
         }
 
