@@ -64,7 +64,7 @@ describe('car concurrent publishing', function () {
         $hash3 = $car3->getCurrentHash();
         $publish3 = Publish::where('hash_id', $hash3->id)->first();
         expect($publish3)->not->toBeNull();
-        expect($publish3->status)->toBe('pending');
+        expect($publish3->status)->toBe(PublishStatusEnum::PENDING);
     });
 
     it('handles failed publishes and resets them', function () {
@@ -86,7 +86,7 @@ describe('car concurrent publishing', function () {
 
         // Simulate failures with different error types
         $publish1->update([
-            'status' => 'failed',
+            'status' => PublishStatusEnum::FAILED,
             'attempts' => 3,
             'last_error' => 'Connection timeout',
             'error_type' => 'infrastructure',
@@ -94,7 +94,7 @@ describe('car concurrent publishing', function () {
         ]);
 
         $publish2->update([
-            'status' => 'failed',
+            'status' => PublishStatusEnum::FAILED,
             'attempts' => 1,
             'last_error' => 'Invalid payload',
             'error_type' => 'validation',
@@ -109,7 +109,7 @@ describe('car concurrent publishing', function () {
 
         // Verify failed publish1 was reset due to hash change
         $publish1->refresh();
-        expect($publish1->status)->toBe('pending');
+        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish1->attempts)->toBe(0);
         expect($publish1->last_error)->toBeNull();
         expect($publish1->error_type)->toBeNull();
@@ -117,7 +117,7 @@ describe('car concurrent publishing', function () {
 
         // Verify failed publish2 was also reset (bulk operations reset all failures)
         $publish2->refresh();
-        expect($publish2->status)->toBe('pending');
+        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish2->attempts)->toBe(0);
 
         // Update car2 now
@@ -128,7 +128,7 @@ describe('car concurrent publishing', function () {
 
         // Publish2 remains reset from earlier
         $publish2->refresh();
-        expect($publish2->status)->toBe('pending');
+        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish2->attempts)->toBe(0);
     });
 
@@ -160,14 +160,14 @@ describe('car concurrent publishing', function () {
             ->update(['created_at' => now()->subHours(2)]);
 
         // Query for stale pending publishes (e.g., older than 24 hours)
-        $stalePending = Publish::where('status', 'pending')
+        $stalePending = Publish::where('status', PublishStatusEnum::PENDING)
             ->where('created_at', '<', now()->subDay())
             ->count();
 
         expect($stalePending)->toBe(1); // Only publish1 is stale
 
         // Could implement auto-retry or notification logic for stale records
-        $stalePublishes = Publish::where('status', 'pending')
+        $stalePublishes = Publish::where('status', PublishStatusEnum::PENDING)
             ->where('created_at', '<', now()->subDay())
             ->get();
 
@@ -180,7 +180,7 @@ describe('car concurrent publishing', function () {
         $publish1->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Re-check stale count
-        $stalePending = Publish::where('status', 'pending')
+        $stalePending = Publish::where('status', PublishStatusEnum::PENDING)
             ->where('created_at', '<', now()->subDay())
             ->count();
 
@@ -207,10 +207,10 @@ describe('car concurrent publishing', function () {
             ->lockForUpdate()
             ->first();
 
-        expect($lockedPublish->status)->toBe('pending');
+        expect($lockedPublish->status)->toBe(PublishStatusEnum::PENDING);
 
         // Update status in locked transaction
-        $lockedPublish->update(['status' => 'dispatched']);
+        $lockedPublish->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Process 2: Try to update same record (would wait for lock in real scenario)
         // In test, we'll verify the lock prevents dirty reads
@@ -223,7 +223,7 @@ describe('car concurrent publishing', function () {
 
         // After commit, status is updated
         $publish->refresh();
-        expect($publish->status)->toBe('dispatched');
+        expect($publish->status)->toBe(PublishStatusEnum::DISPATCHED);
 
         // Demonstrate optimistic locking with version/updated_at check
         $originalUpdatedAt = $publish->updated_at;

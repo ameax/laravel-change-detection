@@ -3,10 +3,12 @@
 use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
+use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     Relation::morphMap([
@@ -82,9 +84,12 @@ it('debugs the sync process with dependencies', function () {
     // Now try the alternative: let autodiscovery handle it
     dump('=== Alternative: Autodiscovery ===');
 
-    // Truncate and start fresh
+    // Truncate and start fresh (disable foreign key checks)
+    DB::statement('SET FOREIGN_KEY_CHECKS=0;');
     Hash::truncate();
     HashDependent::truncate();
+    Publish::truncate();
+    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
     // Run sync with autodiscovery
     test()->artisan('change-detection:sync')->assertExitCode(0);
