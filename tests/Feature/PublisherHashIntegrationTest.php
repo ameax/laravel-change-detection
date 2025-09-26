@@ -201,7 +201,7 @@ describe('publisher and hash system integration', function () {
         expect($newPublishes)->toHaveCount(1);
     });
 
-     // 8. Bulk Hash Update Creates Bulk Publish Records
+    // 8. Bulk Hash Update Creates Bulk Publish Records
     it('efficiently creates publish records during bulk hash updates', function () {
         $stations = createBulkWeatherStations(50);
         $publisher = createPublisherForModel('test_weather_station');
