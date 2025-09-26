@@ -109,8 +109,6 @@ class Publish extends Model
      *
      * NOTE: This does NOT increment the attempts counter.
      * For real publishing that tracks attempts, use publishNow() instead.
-     *
-     * @return void
      */
     public function markAsDispatched(): void
     {
@@ -168,10 +166,9 @@ class Publish extends Model
      * If called after a real publish attempt (publishNow/BulkPublishJob),
      * the attempts counter will already have been incremented.
      *
-     * @param  string  $error The error message
-     * @param  int|null  $responseCode Optional HTTP response code
-     * @param  string|null  $errorType Optional error type for categorization
-     * @return void
+     * @param  string  $error  The error message
+     * @param  int|null  $responseCode  Optional HTTP response code
+     * @param  string|null  $errorType  Optional error type for categorization
      */
     public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
