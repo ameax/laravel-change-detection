@@ -65,7 +65,10 @@ class SyncCommand extends Command
             $this->updateHashes($models);
         }
 
-        // Step 4: Sync publish records for all models
+        // Step 4: Handle soft-deleted models
+        $this->processSoftDeletes($models);
+
+        // Step 5: Sync publish records for all models
         $this->syncPublishRecords($models);
 
         // Show summary
@@ -224,6 +227,39 @@ class SyncCommand extends Command
                 $this->line("  {$modelName}: Building dependencies...");
                 $this->info("    → Built dependencies for {$pendingDeps} records");
             }
+        }
+
+        $this->line('');
+    }
+
+    /**
+     * Process soft-deleted models by marking their hashes as deleted.
+     *
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     */
+    private function processSoftDeletes(\Illuminate\Support\Collection $models): void
+    {
+        $this->info('🗑️ Processing soft-deleted models...');
+
+        $processor = app(BulkHashProcessor::class);
+        $totalProcessed = 0;
+
+        foreach ($models as $modelClass) {
+            $modelName = class_basename($modelClass);
+
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $processed = $processor->softDeleteHashesForDeletedModels($modelClass);
+
+            if ($processed > 0) {
+                $this->line("  {$modelName}: Marked {$processed} hashes as deleted");
+                $totalProcessed += $processed;
+            }
+        }
+
+        if ($totalProcessed === 0) {
+            $this->info('  No soft-deleted models found');
+        } else {
+            $this->info("  Total: {$totalProcessed} hashes marked as deleted");
         }
 
         $this->line('');

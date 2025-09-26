@@ -53,6 +53,7 @@ return new class extends Migration
             $table->boolean('is_electric')->default(false);  // Boolean type
             $table->json('features')->nullable();            // JSON type
             $table->timestamps();
+            $table->softDeletes();                           // Support for soft deletes
         });
 
         // Test Animals table with various column types
