@@ -635,4 +635,97 @@ describe('car publishing', function () {
         expect($publishCount)->toBe(50);
     });
 
+    it('handles 5000 cars efficiently', function () {
+        // Create a publisher
+        $publisher = createCarPublisher();
+
+        // Create 5000 cars using bulk insert for faster creation
+        $startTime = microtime(true);
+
+        $carData = [];
+        $now = now();
+        for ($i = 1; $i <= 5000; $i++) {
+            $carData[] = [
+                'model' => "Car {$i}",
+                'year' => 2020 + ($i % 5),
+                'price' => 30000 + ($i * 10),
+                'is_electric' => $i % 3 === 0,
+                'features' => json_encode(['id' => $i]),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Use chunk insert for faster creation
+        foreach (array_chunk($carData, 500) as $chunk) {
+            TestCar::insert($chunk);
+        }
+
+        $createTime = microtime(true) - $startTime;
+        dump("Created 5000 cars in: {$createTime}s");
+
+        // Get all car IDs for verification
+        $carIds = TestCar::pluck('id')->toArray();
+        expect(count($carIds))->toBe(5000);
+
+        // Enable query log
+        DB::enableQueryLog();
+
+        // Run sync to create all hashes and publish records
+        $startTime = microtime(true);
+        syncCars();
+        $syncTime = microtime(true) - $startTime;
+
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        // Verify all hashes were created
+        $hashCount = Hash::where('hashable_type', 'test_car')
+            ->whereIn('hashable_id', $carIds)
+            ->count();
+        expect($hashCount)->toBe(5000);
+
+        // Verify all publish records were created
+        $publishCount = Publish::whereHas('hash', function ($query) {
+            $query->where('hashable_type', 'test_car');
+        })->count();
+        expect($publishCount)->toBe(5000);
+
+        // Performance check: even with 5000 records, should complete reasonably fast
+        dump("Performance for 5000 cars:");
+        dump("  Sync time: {$syncTime}s");
+        dump("  Total queries: " . count($queries));
+        dump("  Queries per record: " . (count($queries) / 5000));
+
+        // Should complete in under 30 seconds even with 5000 records
+        expect($syncTime)->toBeLessThan(30.0);
+
+        // Should use bulk operations - very few queries relative to record count
+        $queriesPerRecord = count($queries) / 5000;
+        expect($queriesPerRecord)->toBeLessThan(0.01); // Less than 1 query per 100 records
+
+        // Update 1000 cars to test bulk update performance
+        $carsToUpdate = TestCar::limit(1000)->pluck('id');
+        TestCar::whereIn('id', $carsToUpdate)
+            ->update(['price' => DB::raw('price + 5000')]);
+
+        // Run sync again
+        $startTime = microtime(true);
+        syncCars();
+        $updateSyncTime = microtime(true) - $startTime;
+
+        dump("  Update sync time (1000 changes): {$updateSyncTime}s");
+
+        // Update sync should also be fast
+        expect($updateSyncTime)->toBeLessThan(10.0);
+
+        // Verify the 1000 publish records were updated
+        $pendingCount = Publish::where('status', 'pending')
+            ->whereHas('hash', function ($query) use ($carsToUpdate) {
+                $query->where('hashable_type', 'test_car')
+                      ->whereIn('hashable_id', $carsToUpdate);
+            })->count();
+        expect($pendingCount)->toBeGreaterThanOrEqual(1000);
+    })->skip(env('SKIP_LARGE_TESTS', true), 'Skipping large dataset test - set SKIP_LARGE_TESTS=false to run');
+
 });
