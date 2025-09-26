@@ -10,21 +10,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait InteractsWithHashes
 {
-    public static function bootInteractsWithHashes(): void
-    {
-        static::saved(function ($model) {
-            if ($model instanceof Hashable) {
-                $model->updateHash();
-            }
-        });
-
-        static::deleted(function ($model) {
-            if ($model instanceof Hashable) {
-                $model->markHashAsDeleted();
-            }
-        });
-    }
-
     public function hash(): MorphOne
     {
         return $this->morphOne(Hash::class, 'hashable');

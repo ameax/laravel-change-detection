@@ -2,7 +2,6 @@
 
 namespace Ameax\LaravelChangeDetection;
 
-use Ameax\LaravelChangeDetection\Commands\LaravelChangeDetectionCommand;
 use Ameax\LaravelChangeDetection\Commands\ProcessPublishesCommand;
 use Ameax\LaravelChangeDetection\Commands\PurgeDeletedHashesCommand;
 use Ameax\LaravelChangeDetection\Commands\SyncCommand;
@@ -24,7 +23,6 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_change_detection_tables')
-            ->hasCommand(LaravelChangeDetectionCommand::class)
             ->hasCommand(ProcessPublishesCommand::class)
             ->hasCommand(PurgeDeletedHashesCommand::class)
             ->hasCommand(SyncCommand::class)
