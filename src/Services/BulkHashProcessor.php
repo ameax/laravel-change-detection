@@ -588,16 +588,29 @@ class BulkHashProcessor
                             'model_id' => $hash->hashable_id,
                         ],
                     ]);
-                } elseif ($existingPublish->isPublished() && $existingPublish->published_hash !== $hash->composite_hash) {
-                    // Hash has changed since last publish, reset to pending
-                    $existingPublish->update([
-                        'status' => 'pending',
-                        'attempts' => 0,
-                        'last_error' => null,
-                        'last_response_code' => null,
-                        'error_type' => null,
-                        'next_try' => null,
-                    ]);
+                } elseif ($existingPublish->status === 'published' || $existingPublish->status === 'failed') {
+                    // For published records: check if content has changed since last successful publish
+                    // For failed records: always reset to retry with latest content
+                    $shouldReset = false;
+
+                    if ($existingPublish->status === 'published') {
+                        // Reset if hash changed since last publish
+                        $shouldReset = $existingPublish->published_hash !== $hash->composite_hash;
+                    } else {
+                        // For failed status, always reset to retry with current content
+                        $shouldReset = true;
+                    }
+
+                    if ($shouldReset) {
+                        $existingPublish->update([
+                            'status' => 'pending',
+                            'attempts' => 0,
+                            'last_error' => null,
+                            'last_response_code' => null,
+                            'error_type' => null,
+                            'next_try' => null,
+                        ]);
+                    }
                 }
             }
         }

@@ -164,4 +164,101 @@ describe('car publishing', function () {
         expect(Publish::count())->toBe(1);
     });
 
+    it('handles multiple publishers for the same car independently', function () {
+        // Create a car
+        $car = createCar(['model' => 'Porsche 911', 'price' => 120000]);
+
+        // Create multiple publishers for cars (different endpoints/platforms)
+        $apiPublisher = createCarPublisher([
+            'name' => 'Main API Publisher',
+            'config' => ['endpoint' => 'https://api.main.com/cars']
+        ]);
+
+        $backupPublisher = createCarPublisher([
+            'name' => 'Backup API Publisher',
+            'config' => ['endpoint' => 'https://api.backup.com/cars']
+        ]);
+
+        $analyticsPublisher = createCarPublisher([
+            'name' => 'Analytics Publisher',
+            'config' => ['endpoint' => 'https://analytics.example.com/cars']
+        ]);
+
+        // Initial sync to create hash and publish records for all publishers
+        syncCars();
+
+        $car->refresh();
+        $hash = $car->getCurrentHash();
+
+        // Verify 3 publish records were created (one per publisher)
+        expect(Publish::count())->toBe(3);
+
+        // Get all publish records
+        $apiPublish = Publish::where('publisher_id', $apiPublisher->id)->first();
+        $backupPublish = Publish::where('publisher_id', $backupPublisher->id)->first();
+        $analyticsPublish = Publish::where('publisher_id', $analyticsPublisher->id)->first();
+
+        // All should be pending initially
+        expect($apiPublish->status)->toBe('pending');
+        expect($backupPublish->status)->toBe('pending');
+        expect($analyticsPublish->status)->toBe('pending');
+
+        // All should point to the same hash
+        expect($apiPublish->hash_id)->toBe($hash->id);
+        expect($backupPublish->hash_id)->toBe($hash->id);
+        expect($analyticsPublish->hash_id)->toBe($hash->id);
+
+        // Simulate different publish states
+        // API publisher succeeds
+        $apiPublish->update([
+            'status' => 'published',
+            'published_at' => now(),
+            'attempts' => 1
+        ]);
+
+        // Backup publisher fails
+        $backupPublish->update([
+            'status' => 'failed',
+            'attempts' => 3,
+            'last_error' => 'Connection timeout'
+        ]);
+
+        // Analytics publisher remains pending
+
+        // Update the car
+        $originalCompositeHash = $hash->composite_hash;
+        $car->update(['price' => 125000]);
+
+        // Run sync again
+        syncCars();
+
+        // Verify hash was updated
+        $car->refresh();
+        $updatedHash = $car->getCurrentHash();
+        expect($updatedHash->id)->toBe($hash->id); // Same record
+        expect($updatedHash->composite_hash)->not->toBe($originalCompositeHash);
+
+        // Check publish records after sync
+        $apiPublish->refresh();
+        $backupPublish->refresh();
+        $analyticsPublish->refresh();
+
+        // Published record should reset to pending with attempts reset
+        expect($apiPublish->status)->toBe('pending');
+        expect($apiPublish->attempts)->toBe(0);
+        expect($apiPublish->hash_id)->toBe($hash->id); // Still same hash record
+
+        // Failed record should reset to pending with attempts reset
+        expect($backupPublish->status)->toBe('pending');
+        expect($backupPublish->attempts)->toBe(0);
+        expect($backupPublish->last_error)->toBeNull();
+
+        // Pending record should remain pending
+        expect($analyticsPublish->status)->toBe('pending');
+        expect($analyticsPublish->attempts)->toBe(0);
+
+        // Still only 3 publish records (no duplicates created)
+        expect(Publish::count())->toBe(3);
+    });
+
 });
