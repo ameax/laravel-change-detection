@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
@@ -32,7 +33,7 @@ describe('car soft-delete publishing', function () {
         // Verify initial state
         expect($hash)->not->toBeNull();
         expect($hash->deleted_at)->toBeNull();
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
 
         // Soft delete the car
         $car->delete();
@@ -73,7 +74,7 @@ describe('car soft-delete publishing', function () {
 
         // Verify publish record is still pending and can be processed
         $publish->refresh();
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
 
         // Update the restored car
         $originalCompositeHash = $hash->composite_hash;
@@ -90,7 +91,7 @@ describe('car soft-delete publishing', function () {
 
         // Verify publish record is still pending (ready to publish the updated content)
         $publish->refresh();
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish->hash_id)->toBe($hash->id);
     });
 

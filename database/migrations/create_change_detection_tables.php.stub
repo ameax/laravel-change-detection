@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -54,7 +55,7 @@ return new class extends Migration
             $table->string('published_hash', 32)->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('published_at')->nullable();
-            $table->enum('status', ['pending', 'dispatched', 'deferred', 'published', 'failed', 'soft-deleted'])->default('pending');
+            $table->enum('status', PublishStatusEnum::values())->default(PublishStatusEnum::PENDING->value);
             $table->unsignedInteger('attempts')->default(0);
             $table->text('last_error')->nullable();
             $table->integer('last_response_code')->nullable();

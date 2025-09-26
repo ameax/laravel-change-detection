@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnimal;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -300,7 +301,7 @@ describe('robustness scenarios', function () {
 
         // Simulate concurrent operations: one marks publish as dispatched
         $publish = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)->first();
-        $publish->update(['status' => 'dispatched']);
+        $publish->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Animal leaves scope while publish is dispatched
         updateAnimalWeight(1, 2.0); // Now light
@@ -311,7 +312,7 @@ describe('robustness scenarios', function () {
         expect($hash->deleted_at)->not->toBeNull();
 
         $publish->refresh();
-        expect($publish->status)->toBe('dispatched'); // Should remain dispatched
+        expect($publish->status)->toBe(PublishStatusEnum::DISPATCHED); // Should remain dispatched
     });
 
     it('soft-deletes publishes when animal leaves scope', function () {
@@ -329,7 +330,7 @@ describe('robustness scenarios', function () {
             ->whereHas('hash', function ($query) {
                 $query->where('hashable_id', 1);
             })->first();
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
 
         // Animal leaves scope
         updateAnimalWeight(1, 2.0); // Now light
@@ -337,7 +338,7 @@ describe('robustness scenarios', function () {
 
         // Publish should be soft-deleted when hash is soft deleted
         $publish->refresh();
-        expect($publish->status)->toBe('soft-deleted');
+        expect($publish->status)->toBe(PublishStatusEnum::SOFT_DELETED);
 
         // Hash should be soft deleted
         $hash = getAnimalHash(1);
@@ -363,7 +364,7 @@ describe('robustness scenarios', function () {
             ->whereHas('hash', function ($query) {
                 $query->where('hashable_id', 1);
             })->first();
-        expect($publish->status)->toBe('soft-deleted');
+        expect($publish->status)->toBe(PublishStatusEnum::SOFT_DELETED);
 
         // Animal re-enters scope
         updateAnimalWeight(1, 5.0); // Heavy again
@@ -371,7 +372,7 @@ describe('robustness scenarios', function () {
 
         // Publish should be reactivated to pending
         $publish->refresh();
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
 
         // Hash should be active again
         $hash = getAnimalHash(1);
@@ -406,7 +407,7 @@ describe('robustness scenarios', function () {
         // The first 10 animals (now light) should have soft-deleted publishes
         // But animals 2 and 3 from setup (dog, horse) remain heavy
         $softDeletedPublishes = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
-            ->where('status', 'soft-deleted')
+            ->where('status', PublishStatusEnum::SOFT_DELETED)
             ->count();
         expect($softDeletedPublishes)->toBe(10); // Only the 10 that became light
 
@@ -417,7 +418,7 @@ describe('robustness scenarios', function () {
 
         // All 24 should now have active publishes (10 reactivated + 12 existing + 2 new from setup light animals)
         $activePublishes = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
-            ->where('status', 'pending')
+            ->where('status', PublishStatusEnum::PENDING)
             ->count();
         expect($activePublishes)->toBe(24); // All animals are now heavy
         expectActiveHashCount(24); // All 24 animals now have hashes
@@ -454,7 +455,7 @@ describe('robustness scenarios', function () {
 
         // Publish processor should see hash is deleted and mark publish as soft-deleted
         expect($hash->deleted_at)->not->toBeNull();
-        expect($publish->status)->toBe('soft-deleted');
+        expect($publish->status)->toBe(PublishStatusEnum::SOFT_DELETED);
 
         // If publish is in soft-deleted state, processor should skip it
         // This prevents unnecessary processing of out-of-scope records

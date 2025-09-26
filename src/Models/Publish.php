@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,7 +48,7 @@ class Publish extends Model
         'next_try' => 'datetime',
         'attempts' => 'integer',
         'last_response_code' => 'integer',
-        'status' => 'string',
+        'status' => PublishStatusEnum::class,
         'metadata' => 'array',
     ];
 
@@ -74,37 +75,37 @@ class Publish extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === PublishStatusEnum::PENDING;
     }
 
     public function isDispatched(): bool
     {
-        return $this->status === 'dispatched';
+        return $this->status === PublishStatusEnum::DISPATCHED;
     }
 
     public function isDeferred(): bool
     {
-        return $this->status === 'deferred';
+        return $this->status === PublishStatusEnum::DEFERRED;
     }
 
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === PublishStatusEnum::PUBLISHED;
     }
 
     public function isFailed(): bool
     {
-        return $this->status === 'failed';
+        return $this->status === PublishStatusEnum::FAILED;
     }
 
     public function isSoftDeleted(): bool
     {
-        return $this->status === 'soft-deleted';
+        return $this->status === PublishStatusEnum::SOFT_DELETED;
     }
 
     public function shouldRetry(): bool
     {
-        return $this->isDeferred() &&
+        return $this->status === PublishStatusEnum::DEFERRED &&
                $this->next_try &&
                $this->next_try->isPast();
     }
@@ -118,14 +119,14 @@ class Publish extends Model
     public function markAsDispatched(): void
     {
         $this->update([
-            'status' => 'dispatched',
+            'status' => PublishStatusEnum::DISPATCHED,
         ]);
     }
 
     public function markAsPublished(): void
     {
         $this->update([
-            'status' => 'published',
+            'status' => PublishStatusEnum::PUBLISHED,
             'published_hash' => $this->hash->composite_hash,
             'published_at' => now(),
             'last_error' => null,
@@ -142,7 +143,7 @@ class Publish extends Model
 
         if ($currentAttempts > count($retryIntervals)) {
             $this->update([
-                'status' => 'failed',
+                'status' => PublishStatusEnum::FAILED,
                 'attempts' => $currentAttempts,
                 'last_error' => $error,
                 'last_response_code' => $responseCode,
@@ -154,7 +155,7 @@ class Publish extends Model
         }
 
         $this->update([
-            'status' => 'deferred',
+            'status' => PublishStatusEnum::DEFERRED,
             'attempts' => $currentAttempts,
             'last_error' => $error,
             'last_response_code' => $responseCode,
@@ -178,7 +179,7 @@ class Publish extends Model
     public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
         $this->update([
-            'status' => 'failed',
+            'status' => PublishStatusEnum::FAILED,
             'last_error' => $error,
             'last_response_code' => $responseCode,
             'error_type' => $errorType,
@@ -228,9 +229,9 @@ class Publish extends Model
     public function scopePendingOrDeferred(Builder $query): Builder
     {
         return $query->where(function ($q) {
-            $q->where('status', 'pending')
+            $q->where('status', PublishStatusEnum::PENDING)
                 ->orWhere(function ($q) {
-                    $q->where('status', 'deferred')
+                    $q->where('status', PublishStatusEnum::DEFERRED)
                         ->where('next_try', '<=', now());
                 });
         });
@@ -258,13 +259,13 @@ class Publish extends Model
 
         // Check if hash is soft-deleted, and if so, soft-delete this publish
         if ($this->hash->deleted_at !== null) {
-            $this->update(['status' => 'soft-deleted']);
+            $this->update(['status' => PublishStatusEnum::SOFT_DELETED]);
             return false;
         }
 
         // Increment attempts and mark as dispatched
         $this->update([
-            'status' => 'dispatched',
+            'status' => PublishStatusEnum::DISPATCHED,
             'attempts' => $this->attempts + 1,
         ]);
 

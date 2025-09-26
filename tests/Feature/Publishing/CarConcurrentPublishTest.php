@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
@@ -37,7 +38,7 @@ describe('car concurrent publishing', function () {
 
         // First sync marks as dispatched
         $publish1 = Publish::where('publisher_id', $publisher->id)->first();
-        $publish1->update(['status' => 'dispatched']);
+        $publish1->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Second sync runs while first is still dispatched
         syncCars();
@@ -47,7 +48,7 @@ describe('car concurrent publishing', function () {
 
         // Verify dispatched record wasn't reset
         $publish1->refresh();
-        expect($publish1->status)->toBe('dispatched');
+        expect($publish1->status)->toBe(PublishStatusEnum::DISPATCHED);
 
         // Create a new car during processing
         $car3 = createCar(['model' => 'Ferrari Roma', 'price' => 250000]);
@@ -176,7 +177,7 @@ describe('car concurrent publishing', function () {
         }
 
         // Simulate marking as dispatched after detection
-        $publish1->update(['status' => 'dispatched']);
+        $publish1->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Re-check stale count
         $stalePending = Publish::where('status', 'pending')

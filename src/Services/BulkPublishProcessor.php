@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Services;
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
@@ -115,7 +116,7 @@ class BulkPublishProcessor
                 SELECT
                     h.id as hash_id,
                     ? as publisher_id,
-                    'pending' as status,
+                    ? as status,
                     0 as attempts,
                     NOW() as created_at,
                     NOW() as updated_at,
@@ -141,6 +142,7 @@ class BulkPublishProcessor
 
             $bindings = [
                 $publisher->id,
+                PublishStatusEnum::PENDING->value,
                 $morphClass,
                 $morphClass,
                 $publisher->id,
@@ -164,7 +166,7 @@ class BulkPublishProcessor
                     {$limitClause}
                 ) changed_models ON h.hashable_id = changed_models.id
                 SET
-                    p.status = 'pending',
+                    p.status = ?,
                     p.attempts = 0,
                     p.last_error = NULL,
                     p.last_response_code = NULL,
@@ -175,16 +177,19 @@ class BulkPublishProcessor
                   AND h.hashable_type = ?
                   AND h.deleted_at IS NULL
                   AND (
-                      (p.status = 'published' AND p.published_hash != h.composite_hash)
+                      (p.status = ? AND p.published_hash != h.composite_hash)
                       OR
-                      p.status = 'failed'
+                      p.status = ?
                   )
             ";
 
             $bindings = [
                 $morphClass,
+                PublishStatusEnum::PENDING->value,
                 $publisher->id,
                 $morphClass,
+                PublishStatusEnum::PUBLISHED->value,
+                PublishStatusEnum::FAILED->value,
             ];
 
             $updated += $this->connection->update($sql, $bindings);
@@ -216,7 +221,7 @@ class BulkPublishProcessor
             SELECT
                 h.id as hash_id,
                 ? as publisher_id,
-                'pending' as status,
+                ? as status,
                 0 as attempts,
                 NOW() as created_at,
                 NOW() as updated_at,
@@ -232,6 +237,7 @@ class BulkPublishProcessor
 
         $bindings = [
             $publisher->id,
+            PublishStatusEnum::PENDING->value,
             $morphClass,
             $publisher->id,
             $morphClass,
@@ -254,7 +260,7 @@ class BulkPublishProcessor
             UPDATE `{$publishesTable}` p
             INNER JOIN `{$hashesTable}` h ON h.id = p.hash_id
             SET
-                p.status = 'pending',
+                p.status = ?,
                 p.attempts = 0,
                 p.last_error = NULL,
                 p.last_response_code = NULL,
@@ -265,13 +271,19 @@ class BulkPublishProcessor
               AND h.hashable_type = ?
               AND h.deleted_at IS NULL
               AND (
-                  (p.status = 'published' AND p.published_hash != h.composite_hash)
+                  (p.status = ? AND p.published_hash != h.composite_hash)
                   OR
-                  p.status = 'failed'
+                  p.status = ?
               )
         ";
 
-        return $this->connection->update($sql, [$publisher->id, $morphClass]);
+        return $this->connection->update($sql, [
+            PublishStatusEnum::PENDING->value,
+            $publisher->id,
+            $morphClass,
+            PublishStatusEnum::PUBLISHED->value,
+            PublishStatusEnum::FAILED->value
+        ]);
     }
 
     /**
@@ -288,15 +300,21 @@ class BulkPublishProcessor
             UPDATE `{$publishesTable}` p
             INNER JOIN `{$hashesTable}` h ON h.id = p.hash_id
             SET
-                p.status = 'soft-deleted',
+                p.status = ?,
                 p.updated_at = NOW()
             WHERE p.publisher_id = ?
               AND h.hashable_type = ?
               AND h.deleted_at IS NOT NULL
-              AND p.status NOT IN ('soft-deleted', 'dispatched')
+              AND p.status NOT IN (?, ?)
         ";
 
-        return $this->connection->update($sql, [$publisher->id, $morphClass]);
+        return $this->connection->update($sql, [
+            PublishStatusEnum::SOFT_DELETED->value,
+            $publisher->id,
+            $morphClass,
+            PublishStatusEnum::SOFT_DELETED->value,
+            PublishStatusEnum::DISPATCHED->value
+        ]);
     }
 
     /**
@@ -313,14 +331,19 @@ class BulkPublishProcessor
             UPDATE `{$publishesTable}` p
             INNER JOIN `{$hashesTable}` h ON h.id = p.hash_id
             SET
-                p.status = 'pending',
+                p.status = ?,
                 p.updated_at = NOW()
             WHERE p.publisher_id = ?
               AND h.hashable_type = ?
               AND h.deleted_at IS NULL
-              AND p.status = 'soft-deleted'
+              AND p.status = ?
         ";
 
-        return $this->connection->update($sql, [$publisher->id, $morphClass]);
+        return $this->connection->update($sql, [
+            PublishStatusEnum::PENDING->value,
+            $publisher->id,
+            $morphClass,
+            PublishStatusEnum::SOFT_DELETED->value
+        ]);
     }
 }

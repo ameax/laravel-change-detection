@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
@@ -114,7 +115,7 @@ describe('car basic publishing', function () {
         $publish->refresh();
         expect($publish->id)->toBe($originalPublishId);
         expect($publish->hash_id)->toBe($firstHash->id); // Still points to original hash
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
     });
 
     it('resets publish to pending when car changes after successful publish', function () {
@@ -154,7 +155,7 @@ describe('car basic publishing', function () {
         // Verify the publish record was reset to pending
         $publish->refresh();
         expect($publish->hash_id)->toBe($firstHash->id); // Still points to the last published hash
-        expect($publish->status)->toBe('pending');
+        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish->attempts)->toBe(0);
 
         // Still only ONE publish record per publisher

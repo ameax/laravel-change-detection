@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
@@ -52,9 +53,9 @@ describe('car publisher status', function () {
         $analyticsPublish = Publish::where('publisher_id', $analyticsPublisher->id)->first();
 
         // All should be pending initially
-        expect($apiPublish->status)->toBe('pending');
-        expect($backupPublish->status)->toBe('pending');
-        expect($analyticsPublish->status)->toBe('pending');
+        expect($apiPublish->status)->toBe(PublishStatusEnum::PENDING);
+        expect($backupPublish->status)->toBe(PublishStatusEnum::PENDING);
+        expect($analyticsPublish->status)->toBe(PublishStatusEnum::PENDING);
 
         // All should point to the same hash
         expect($apiPublish->hash_id)->toBe($hash->id);
@@ -64,7 +65,7 @@ describe('car publisher status', function () {
         // Simulate different publish states
         // API publisher succeeds
         $apiPublish->update([
-            'status' => 'published',
+            'status' => PublishStatusEnum::PUBLISHED,
             'published_at' => now(),
             'published_hash' => $hash->composite_hash, // Set the published hash
             'attempts' => 1,
@@ -72,7 +73,7 @@ describe('car publisher status', function () {
 
         // Backup publisher fails
         $backupPublish->update([
-            'status' => 'failed',
+            'status' => PublishStatusEnum::FAILED,
             'attempts' => 3,
             'last_error' => 'Connection timeout',
         ]);
@@ -98,17 +99,17 @@ describe('car publisher status', function () {
         $analyticsPublish->refresh();
 
         // Published record should reset to pending with attempts reset
-        expect($apiPublish->status)->toBe('pending');
+        expect($apiPublish->status)->toBe(PublishStatusEnum::PENDING);
         expect($apiPublish->attempts)->toBe(0);
         expect($apiPublish->hash_id)->toBe($hash->id); // Still same hash record
 
         // Failed record should reset to pending with attempts reset
-        expect($backupPublish->status)->toBe('pending');
+        expect($backupPublish->status)->toBe(PublishStatusEnum::PENDING);
         expect($backupPublish->attempts)->toBe(0);
         expect($backupPublish->last_error)->toBeNull();
 
         // Pending record should remain pending
-        expect($analyticsPublish->status)->toBe('pending');
+        expect($analyticsPublish->status)->toBe(PublishStatusEnum::PENDING);
         expect($analyticsPublish->attempts)->toBe(0);
 
         // Still only 3 publish records (no duplicates created)
@@ -142,8 +143,8 @@ describe('car publisher status', function () {
 
         expect($publish1)->not->toBeNull();
         expect($publish2)->not->toBeNull();
-        expect($publish1->status)->toBe('pending');
-        expect($publish2->status)->toBe('pending');
+        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
+        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
 
         // Deactivate the publisher
         $publisher->update(['status' => 'inactive']);
@@ -161,8 +162,8 @@ describe('car publisher status', function () {
         // Verify existing publish records were NOT modified (still pending with original hash)
         $publish1->refresh();
         $publish2->refresh();
-        expect($publish1->status)->toBe('pending');
-        expect($publish2->status)->toBe('pending');
+        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
+        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish1->hash_id)->toBe($hash1->id);
         expect($publish2->hash_id)->toBe($hash2->id);
 
@@ -187,7 +188,7 @@ describe('car publisher status', function () {
         $hash3 = $car3->getCurrentHash();
         $publish3 = Publish::where('hash_id', $hash3->id)->first();
         expect($publish3)->not->toBeNull();
-        expect($publish3->status)->toBe('pending');
+        expect($publish3->status)->toBe(PublishStatusEnum::PENDING);
 
         // Verify car1 and car2 publish records were reset due to hash changes
         $publish1->refresh();
@@ -195,15 +196,15 @@ describe('car publisher status', function () {
 
         // Since the hashes changed while publisher was inactive,
         // they should now be reset to pending with updated content
-        expect($publish1->status)->toBe('pending');
-        expect($publish2->status)->toBe('pending');
+        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
+        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
 
         // Update a car again with publisher active
         $car1->update(['price' => 100000]);
 
         // Mark publish1 as published first
         $publish1->update([
-            'status' => 'published',
+            'status' => PublishStatusEnum::PUBLISHED,
             'published_at' => now(),
             'published_hash' => $car1->getCurrentHash()->composite_hash,
         ]);
@@ -216,7 +217,7 @@ describe('car publisher status', function () {
 
         // Verify the published record was properly reset
         $publish1->refresh();
-        expect($publish1->status)->toBe('pending');
+        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
         expect($publish1->attempts)->toBe(0);
     });
 
@@ -240,9 +241,9 @@ describe('car publisher status', function () {
         // Each can be processed independently
         foreach ($publishes as $index => $publish) {
             if ($index === 0) {
-                $publish->update(['status' => 'dispatched']);
+                $publish->update(['status' => PublishStatusEnum::DISPATCHED]);
             } elseif ($index === 1) {
-                $publish->update(['status' => 'published', 'published_at' => now()]);
+                $publish->update(['status' => PublishStatusEnum::PUBLISHED, 'published_at' => now()]);
             }
             // Third remains pending
         }
@@ -252,9 +253,9 @@ describe('car publisher status', function () {
 
         // Verify each maintains its own state
         $publishes = Publish::orderBy('id')->get();
-        expect($publishes[0]->status)->toBe('dispatched');
-        expect($publishes[1]->status)->toBe('published');
-        expect($publishes[2]->status)->toBe('pending');
+        expect($publishes[0]->status)->toBe(PublishStatusEnum::DISPATCHED);
+        expect($publishes[1]->status)->toBe(PublishStatusEnum::PUBLISHED);
+        expect($publishes[2]->status)->toBe(PublishStatusEnum::PENDING);
 
         // No duplicates created
         expect(Publish::count())->toBe(3);

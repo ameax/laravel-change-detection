@@ -1,5 +1,6 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Models\Publisher;
@@ -110,7 +111,7 @@ function assertCarHasHash(TestCar $car): Hash
 /**
  * Assert publish record exists with expected status
  */
-function assertPublishExists(TestCar $car, Publisher $publisher, string $expectedStatus = 'pending'): Publish
+function assertPublishExists(TestCar $car, Publisher $publisher, string|PublishStatusEnum $expectedStatus = PublishStatusEnum::PENDING): Publish
 {
     $hash = $car->getCurrentHash();
 
@@ -121,6 +122,12 @@ function assertPublishExists(TestCar $car, Publisher $publisher, string $expecte
         ->first();
 
     expect($publish)->not->toBeNull();
+
+    // Convert string to enum if needed for comparison
+    if (is_string($expectedStatus)) {
+        $expectedStatus = PublishStatusEnum::from($expectedStatus);
+    }
+
     expect($publish->status)->toBe($expectedStatus);
 
     return $publish;
