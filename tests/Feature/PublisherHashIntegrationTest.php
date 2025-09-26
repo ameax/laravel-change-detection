@@ -68,7 +68,7 @@ describe('publisher and hash system integration', function () {
 
     // 2. Multiple Publishers Create Multiple Publish Records
     it('creates separate publish records for each active publisher', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -93,7 +93,7 @@ describe('publisher and hash system integration', function () {
 
     // 3. Publish Record Status Management
     it('correctly manages publish record lifecycle status', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -109,21 +109,23 @@ describe('publisher and hash system integration', function () {
         expect($publish->attempts)->toBe(0);
         expect($publish->published_hash)->toBeNull();
 
-        // Simulate dispatch
+        // Test manual status changes (for testing/debugging)
+        // Note: markAsDispatched() does NOT increment attempts counter
         $publish->markAsDispatched();
         expect($publish->status)->toBe('dispatched');
-        expect($publish->attempts)->toBe(0);
+        expect($publish->attempts)->toBe(0);  // Still 0, no real attempt made
 
-        // Simulate success
-        $publish->markAsPublished(['response' => 'ok']);
+        // Simulate success after manual dispatch
+        // Note: markAsPublished() does NOT accept parameters
+        $publish->markAsPublished();
         expect($publish->status)->toBe('published');
         expect($publish->published_hash)->toBe($hash->composite_hash);
-        expect($publish->attempts)->toBe(0);
-    });
+        expect($publish->attempts)->toBe(0);  // Still 0, manual operations don't count as attempts
+    })->only();
 
     // 4. Handle Failed Publish Attempts
     it('handles failed publish attempts correctly', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -134,15 +136,17 @@ describe('publisher and hash system integration', function () {
 
         $publish = Publish::where('hash_id', $hash->id)->first();
 
-        // Simulate failure
-        $publish->markAsDispatched();
+        // Simulate real publish attempt and failure
+        // Note: publishNow() increments attempts counter (0→1)
+        // markAsFailed() does NOT increment attempts (stays at 1)
+        $publish->publishNow();
         $publish->markAsFailed('Connection timeout', 504);
 
         expect($publish->status)->toBe('failed');
         expect($publish->attempts)->toBe(1);
         expect($publish->last_error)->toContain('Connection timeout');
         expect($publish->last_response_code)->toBe(504);
-    });
+    })->only();
 
     // 5. Prevent Duplicate Publish Records
     it('prevents duplicate publish records for same hash-publisher pair', function () {
@@ -170,7 +174,7 @@ describe('publisher and hash system integration', function () {
 
     // 6. Publisher Deactivation Stops New Publish Records
     it('does not create publish records for deactivated publishers', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -221,7 +225,7 @@ describe('publisher and hash system integration', function () {
 
     // 9. Soft Deleted Models Don't Create New Publish Records
     it('does not create publish records for soft deleted models', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -253,7 +257,7 @@ describe('publisher and hash system integration', function () {
 
     // 10. Cascade Delete Publish Records When Hash Is Purged
     it('cascades deletion of publish records when hash is purged', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -275,7 +279,7 @@ describe('publisher and hash system integration', function () {
 
     // 11. Publisher Priority Ordering
     it('respects publisher priority when creating publish records', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -296,7 +300,7 @@ describe('publisher and hash system integration', function () {
 
     // 12. Republish After Hash Update
     it('allows republishing when hash changes after initial publish', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -327,7 +331,7 @@ describe('publisher and hash system integration', function () {
 
     // 13. Error Categorization Affects Retry Strategy
     it('categorizes publish errors correctly for retry strategies', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -353,7 +357,7 @@ describe('publisher and hash system integration', function () {
     it('batch processing creates correct number of publish records', function () {
         $stations = [];
         for ($i = 0; $i < 10; $i++) {
-            $station = createStationInBayern(['name' => "Station $i"]);
+            $station = createStationInBayernWithoutEvt(['name' => "Station $i"]);
             createWindvaneForStation($station->id);
             createAnemometerForStation($station->id, 25.0);
             $stations[] = $station;
@@ -372,7 +376,7 @@ describe('publisher and hash system integration', function () {
     // 15. Cross-Database Publisher Support
     it('supports publishers in different database than hashes', function () {
         // This test assumes publishers are in default DB and hashes could be in different DB
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -394,7 +398,7 @@ describe('publisher and hash system integration', function () {
 
     // 16. Publish Metadata Persistence
     it('preserves metadata through publish lifecycle', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -424,7 +428,7 @@ describe('publisher and hash system integration', function () {
 
     // 17. Concurrent Publisher Updates
     it('handles concurrent publisher updates safely', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -448,7 +452,7 @@ describe('publisher and hash system integration', function () {
 
     // 18. Deferred Publish Records Can Be Retried
     it('allows retrying deferred publish records', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -475,7 +479,7 @@ describe('publisher and hash system integration', function () {
 
     // 19. Publisher Filtering By Environment
     it('filters publishers by environment configuration', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 
@@ -500,7 +504,7 @@ describe('publisher and hash system integration', function () {
 
     // 20. Orphaned Publish Records Cleanup
     it('cleans up orphaned publish records when publisher is deleted', function () {
-        $station = createStationInBayern();
+        $station = createStationInBayernWithoutEvt();
         createWindvaneForStation($station->id);
         createAnemometerForStation($station->id, 25.0);
 

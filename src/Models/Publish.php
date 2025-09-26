@@ -104,6 +104,14 @@ class Publish extends Model
                $this->next_try->isPast();
     }
 
+    /**
+     * Mark publish record as dispatched (for testing/manual status changes).
+     *
+     * NOTE: This does NOT increment the attempts counter.
+     * For real publishing that tracks attempts, use publishNow() instead.
+     *
+     * @return void
+     */
     public function markAsDispatched(): void
     {
         $this->update([
@@ -152,6 +160,19 @@ class Publish extends Model
         ]);
     }
 
+    /**
+     * Mark publish record as failed (terminal state).
+     *
+     * NOTE: This does NOT increment the attempts counter.
+     * This method is used when marking a record as permanently failed.
+     * If called after a real publish attempt (publishNow/BulkPublishJob),
+     * the attempts counter will already have been incremented.
+     *
+     * @param  string  $error The error message
+     * @param  int|null  $responseCode Optional HTTP response code
+     * @param  string|null  $errorType Optional error type for categorization
+     * @return void
+     */
     public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
         $this->update([
