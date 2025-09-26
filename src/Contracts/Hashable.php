@@ -29,14 +29,6 @@ interface Hashable
     public function getCurrentHash(): ?object;
 
     /**
-     * Get the relations that should be notified when this model's hash changes.
-     * Return an array of relation names that point to dependent models.
-     *
-     * @return array<string>
-     */
-    public function getHashRelationsToNotifyOnChange(): array;
-
-    /**
      * Get the query scope for filtering hashable records.
      * Return a closure that accepts a query builder and applies filtering,
      * or null if no filtering should be applied.
