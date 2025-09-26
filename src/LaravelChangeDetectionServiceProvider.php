@@ -21,7 +21,6 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-change-detection')
             ->hasConfigFile()
-            ->hasViews()
             ->hasMigration('create_change_detection_tables')
             ->hasCommand(ProcessPublishesCommand::class)
             ->hasCommand(PurgeDeletedHashesCommand::class)
