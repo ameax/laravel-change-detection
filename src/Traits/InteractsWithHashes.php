@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Traits;
 
-use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -20,16 +19,6 @@ trait InteractsWithHashes
         return $this->hash()->active()->first();
     }
 
-    public function updateHash(): void
-    {
-        app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->updateHash($this);
-    }
-
-    public function markHashAsDeleted(): void
-    {
-        app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->markAsDeleted($this);
-    }
-
     public function getHashableScope(): ?\Closure
     {
         return null;
@@ -38,21 +27,6 @@ trait InteractsWithHashes
     public function getHashRelationsToNotifyOnChange(): array
     {
         return [];
-    }
-
-    public function calculateAttributeHash(): string
-    {
-        return app(\Ameax\LaravelChangeDetection\Services\MySQLHashCalculator::class)->calculateAttributeHash($this);
-    }
-
-    public function calculateCompositeHash(): string
-    {
-        return app(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class)->calculate($this);
-    }
-
-    public function hasHashChanged(): bool
-    {
-        return app(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class)->hasChanged($this);
     }
 
     public function getHashDependents(): \Illuminate\Database\Eloquent\Collection
@@ -73,11 +47,6 @@ trait InteractsWithHashes
         }
 
         return $currentHash->publishes;
-    }
-
-    public function forceHashUpdate(): Hash
-    {
-        return app(\Ameax\LaravelChangeDetection\Services\HashUpdater::class)->updateHash($this);
     }
 
     public function getHashLastUpdated(): ?\Illuminate\Support\Carbon

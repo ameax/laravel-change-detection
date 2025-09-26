@@ -36,7 +36,6 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\DependencyHashCalculator::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\HashUpdater::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\BulkHashProcessor::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\OrphanedHashDetector::class);
         $this->app->singleton(\Ameax\LaravelChangeDetection\Services\HashPurger::class);
