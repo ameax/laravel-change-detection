@@ -462,8 +462,8 @@ describe('weather station CRUD operations with publishing', function () {
         // Hash should be soft deleted
         expectStationHashSoftDeleted($stationId);
 
-        // Dependent record still exists (cascade not configured)
-        expect(TestAnemometer::find($anemometer->id))->not->toBeNull();
+        // Dependent record should be deleted due to cascade delete
+        expect(TestAnemometer::find($anemometer->id))->toBeNull();
     });
 });
 

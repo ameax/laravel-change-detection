@@ -447,6 +447,77 @@ class BulkHashProcessor
     }
 
     /**
+     * Get the inverse relationship name for a related model back to its parent.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $relatedModel
+     * @param  string  $mainModelClass
+     * @param  \Illuminate\Database\Eloquent\Model  $mainModel
+     * @return string|null
+     */
+    private function getInverseRelationName(\Illuminate\Database\Eloquent\Model $relatedModel, string $mainModelClass, \Illuminate\Database\Eloquent\Model $mainModel): ?string
+    {
+        // Common relationship naming patterns
+        $possibleNames = [
+            // Singular forms
+            lcfirst(class_basename($mainModelClass)), // e.g., 'testWeatherStation'
+            \Illuminate\Support\Str::snake(class_basename($mainModelClass)), // e.g., 'test_weather_station'
+            \Illuminate\Support\Str::camel(\Illuminate\Support\Str::snake(class_basename($mainModelClass))), // e.g., 'testWeatherStation'
+
+            // Without 'Test' prefix for test models
+            lcfirst(str_replace('Test', '', class_basename($mainModelClass))), // e.g., 'weatherStation'
+            \Illuminate\Support\Str::snake(str_replace('Test', '', class_basename($mainModelClass))), // e.g., 'weather_station'
+            \Illuminate\Support\Str::camel(\Illuminate\Support\Str::snake(str_replace('Test', '', class_basename($mainModelClass)))), // e.g., 'weatherStation'
+        ];
+
+        // Check each possible name
+        foreach ($possibleNames as $name) {
+            if (method_exists($relatedModel, $name)) {
+                try {
+                    $relation = $relatedModel->{$name}();
+                    // Verify it's a BelongsTo relation pointing to the correct model
+                    if ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
+                        $related = $relation->getRelated();
+                        if (get_class($related) === $mainModelClass) {
+                            return $name;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Method exists but might not be a relation, continue checking
+                    continue;
+                }
+            }
+        }
+
+        // If no standard naming found, check all methods for BelongsTo relations
+        $reflection = new \ReflectionClass($relatedModel);
+        foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->getDeclaringClass()->getName() !== get_class($relatedModel)) {
+                continue; // Skip inherited methods
+            }
+
+            $methodName = $method->getName();
+            if (in_array($methodName, ['__construct', '__destruct', '__get', '__set', '__call', '__callStatic'])) {
+                continue; // Skip magic methods
+            }
+
+            try {
+                $result = $relatedModel->{$methodName}();
+                if ($result instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
+                    $related = $result->getRelated();
+                    if (get_class($related) === $mainModelClass) {
+                        return $methodName;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Not a relation or requires parameters, skip
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Build dependency relationships for a single model.
      *
      * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
@@ -474,12 +545,31 @@ class BulkHashProcessor
             try {
                 $relation = $model->{$relationName}();
 
-                // Apply scope if the related model has one
+                // Get the related model class
                 $relatedModel = $relation->getRelated();
+
+                // First, apply the related model's own scope if it has one
                 if ($relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
-                    $scope = $relatedModel->getHashableScope();
-                    if ($scope) {
-                        $scope($relation);
+                    $relatedScope = $relatedModel->getHashableScope();
+                    if ($relatedScope) {
+                        $relatedScope($relation);
+                    }
+                }
+
+                // IMPORTANT: Filter dependent models by their relationship to the scoped main model
+                // This ensures we only include dependencies for models that meet the main model's scope
+                $mainModelClass = get_class($model);
+                $mainScope = $model->getHashableScope();
+
+                if ($mainScope && $relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                    // Get the inverse relationship name (e.g., 'weatherStation' for 'anemometers')
+                    $inverseRelation = $this->getInverseRelationName($relatedModel, $mainModelClass, $model);
+
+                    if ($inverseRelation) {
+                        // Filter to only get dependent models whose main model meets the scope
+                        $relation->whereHas($inverseRelation, function ($query) use ($mainScope) {
+                            $mainScope($query);
+                        });
                     }
                 }
 
