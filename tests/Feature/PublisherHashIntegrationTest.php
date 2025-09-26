@@ -370,7 +370,7 @@ describe('publisher and hash system integration', function () {
         $newPublish = Publish::where('hash_id', $newHash->id)->first();
         expect($newPublish)->not->toBeNull();
         expect($newPublish->status)->toBe('pending');
-    })->only();
+    });
 
     // 13. Error Categorization Affects Retry Strategy
     it('categorizes publish errors correctly for retry strategies', function () {

@@ -70,6 +70,11 @@ it('detects and updates changes in existing cars', function () {
         'features' => ['sport_package' => true],
     ]);
 
+    // First run sync to create initial hashes
+    $this->artisan('change-detection:sync', [
+        '--models' => [TestCar::class],
+    ])->assertExitCode(0);
+
     // Store original hashes
     $originalHash1 = $car1->getCurrentHash()->attribute_hash;
     $originalHash2 = $car2->getCurrentHash()->attribute_hash;
