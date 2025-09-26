@@ -51,15 +51,15 @@ it('excludes soft-deleted dependencies from composite hash calculation', functio
         ->first();
 
     dump('Initial state:');
-    dump('  Station attribute hash: ' . $stationHash->attribute_hash);
-    dump('  Station composite hash: ' . $stationHash->composite_hash);
-    dump('  Are they same: ' . ($stationHash->attribute_hash === $stationHash->composite_hash ? 'YES' : 'NO'));
+    dump('  Station attribute hash: '.$stationHash->attribute_hash);
+    dump('  Station composite hash: '.$stationHash->composite_hash);
+    dump('  Are they same: '.($stationHash->attribute_hash === $stationHash->composite_hash ? 'YES' : 'NO'));
 
     // Check dependencies
     $deps = HashDependent::where('dependent_model_type', 'test_weather_station')
         ->where('dependent_model_id', $station->id)
         ->get();
-    dump('  Dependencies count: ' . $deps->count());
+    dump('  Dependencies count: '.$deps->count());
 
     // Now delete one dependency
     dump("\nDeleting anemometer...");
@@ -70,7 +70,7 @@ it('excludes soft-deleted dependencies from composite hash calculation', functio
     $anemHashAfterDelete = Hash::where('hashable_type', 'test_anemometer')
         ->where('hashable_id', $anemometer->id)
         ->first();
-    dump('Anemometer hash deleted_at: ' . ($anemHashAfterDelete->deleted_at ? 'SOFT DELETED' : 'NULL'));
+    dump('Anemometer hash deleted_at: '.($anemHashAfterDelete->deleted_at ? 'SOFT DELETED' : 'NULL'));
 
     // Check station composite hash after first delete
     $stationHashAfter1 = Hash::where('hashable_type', 'test_weather_station')
@@ -78,8 +78,8 @@ it('excludes soft-deleted dependencies from composite hash calculation', functio
         ->first();
 
     dump('After deleting anemometer:');
-    dump('  Station composite hash: ' . $stationHashAfter1->composite_hash);
-    dump('  Changed from initial: ' . ($stationHashAfter1->composite_hash !== $stationHash->composite_hash ? 'YES' : 'NO'));
+    dump('  Station composite hash: '.$stationHashAfter1->composite_hash);
+    dump('  Changed from initial: '.($stationHashAfter1->composite_hash !== $stationHash->composite_hash ? 'YES' : 'NO'));
 
     // Delete the second dependency
     dump("\nDeleting windvane...");
@@ -92,20 +92,20 @@ it('excludes soft-deleted dependencies from composite hash calculation', functio
         ->first();
 
     dump('After deleting all dependencies:');
-    dump('  Station attribute hash: ' . $stationHashFinal->attribute_hash);
-    dump('  Station composite hash: ' . $stationHashFinal->composite_hash);
-    dump('  Should be same (no deps): ' . ($stationHashFinal->attribute_hash === $stationHashFinal->composite_hash ? 'YES' : 'NO'));
+    dump('  Station attribute hash: '.$stationHashFinal->attribute_hash);
+    dump('  Station composite hash: '.$stationHashFinal->composite_hash);
+    dump('  Should be same (no deps): '.($stationHashFinal->attribute_hash === $stationHashFinal->composite_hash ? 'YES' : 'NO'));
 
     // Manually calculate what the dependency hash should be
     $calculator = app(DependencyHashCalculator::class);
     $calculatedDepsHash = $calculator->calculate($station);
-    dump('  Manually calculated deps hash: ' . ($calculatedDepsHash ?? 'NULL'));
+    dump('  Manually calculated deps hash: '.($calculatedDepsHash ?? 'NULL'));
 
     // Check if hash_dependents still exist
     $remainingDeps = HashDependent::where('dependent_model_type', 'test_weather_station')
         ->where('dependent_model_id', $station->id)
         ->get();
-    dump('  Remaining hash_dependents: ' . $remainingDeps->count());
+    dump('  Remaining hash_dependents: '.$remainingDeps->count());
 
     // The composite hash should equal attribute hash when all dependencies are deleted
     expect($stationHashFinal->composite_hash)->toBe($stationHashFinal->attribute_hash);

@@ -102,7 +102,6 @@ it('detects and updates changes in existing cars', function () {
     expect($newHash2->attribute_hash)->not->toBe($originalHash2);
 });
 
-
 it('handles limit option correctly', function () {
     // Create 10 cars
     for ($i = 1; $i <= 10; $i++) {

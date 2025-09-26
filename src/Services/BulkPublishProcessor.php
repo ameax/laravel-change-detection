@@ -282,7 +282,7 @@ class BulkPublishProcessor
             $publisher->id,
             $morphClass,
             PublishStatusEnum::PUBLISHED->value,
-            PublishStatusEnum::FAILED->value
+            PublishStatusEnum::FAILED->value,
         ]);
     }
 
@@ -313,7 +313,7 @@ class BulkPublishProcessor
             $publisher->id,
             $morphClass,
             PublishStatusEnum::SOFT_DELETED->value,
-            PublishStatusEnum::DISPATCHED->value
+            PublishStatusEnum::DISPATCHED->value,
         ]);
     }
 
@@ -343,7 +343,7 @@ class BulkPublishProcessor
             PublishStatusEnum::PENDING->value,
             $publisher->id,
             $morphClass,
-            PublishStatusEnum::SOFT_DELETED->value
+            PublishStatusEnum::SOFT_DELETED->value,
         ]);
     }
 }

@@ -502,7 +502,7 @@ function createCompleteWeatherStation(string $location = 'Bayern', float $maxSpe
 {
     $station = TestWeatherStation::withoutEvents(function () use ($location) {
         return TestWeatherStation::create([
-            'name' => "{$location} Station " . uniqid(),
+            'name' => "{$location} Station ".uniqid(),
             'location' => $location,
             'latitude' => 48.1351 + (rand(0, 100) / 1000),
             'longitude' => 11.5820 + (rand(0, 100) / 1000),
@@ -545,6 +545,7 @@ function createStationWithMultipleSensors(int $windvaneCount = 2, int $anemomete
 function createQualifyingStation(): TestWeatherStation
 {
     $data = createCompleteWeatherStation('Bayern', 25.0); // max_speed > 20
+
     return $data['station'];
 }
 
@@ -558,6 +559,7 @@ function createNonQualifyingStation(string $reason = 'location'): TestWeatherSta
             $station = createStationInBayernWithoutEvt(['status' => 'inactive']);
             createWindvaneForStation($station->id);
             createAnemometerForStation($station->id, 25.0);
+
             return $station;
         case 'speed':
             $data = createCompleteWeatherStation('Bayern', 15.0); // max_speed < 20

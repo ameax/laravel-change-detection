@@ -1,12 +1,12 @@
 <?php
 
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 
 beforeEach(function () {
     Relation::morphMap([

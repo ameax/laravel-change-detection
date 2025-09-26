@@ -411,6 +411,7 @@ class BulkHashProcessor
         if (empty($dependencies)) {
             // If model has no dependency relationships defined, mark as built
             $this->markDependenciesBuiltForChunk($modelClass, $modelIds);
+
             return;
         }
 
@@ -440,7 +441,7 @@ class BulkHashProcessor
             }
 
             // Only mark models that actually had dependencies created
-            if (!empty($modelsWithDependencies)) {
+            if (! empty($modelsWithDependencies)) {
                 $this->markDependenciesBuiltForChunk($modelClass, $modelsWithDependencies);
             }
         }
@@ -448,11 +449,6 @@ class BulkHashProcessor
 
     /**
      * Get the inverse relationship name for a related model back to its parent.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $relatedModel
-     * @param  string  $mainModelClass
-     * @param  \Illuminate\Database\Eloquent\Model  $mainModel
-     * @return string|null
      */
     private function getInverseRelationName(\Illuminate\Database\Eloquent\Model $relatedModel, string $mainModelClass, \Illuminate\Database\Eloquent\Model $mainModel): ?string
     {

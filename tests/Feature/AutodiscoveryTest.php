@@ -29,7 +29,7 @@ it('discovers all models for weather station sync', function () {
 
     dump('Models discovered for sync:');
     foreach ($models as $index => $model) {
-        dump(($index + 1) . '. ' . $model);
+        dump(($index + 1).'. '.$model);
     }
 
     // Verify the order is correct: dependencies first, then main model

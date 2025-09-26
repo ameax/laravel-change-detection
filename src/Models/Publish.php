@@ -260,6 +260,7 @@ class Publish extends Model
         // Check if hash is soft-deleted, and if so, soft-delete this publish
         if ($this->hash->deleted_at !== null) {
             $this->update(['status' => PublishStatusEnum::SOFT_DELETED]);
+
             return false;
         }
 
