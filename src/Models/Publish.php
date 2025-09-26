@@ -108,7 +108,6 @@ class Publish extends Model
     {
         $this->update([
             'status' => 'dispatched',
-            'attempts' => $this->attempts + 1,
         ]);
     }
 
@@ -124,21 +123,32 @@ class Publish extends Model
 
     public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
     {
+        // Increment attempts counter
+        $currentAttempts = $this->attempts + 1;
+
         // Get retry intervals from publisher if available, otherwise use config
         $retryIntervals = $this->getPublisherRetryIntervals();
 
-        if ($this->attempts > count($retryIntervals)) {
-            $this->markAsFailed($error, $responseCode, $errorType);
+        if ($currentAttempts > count($retryIntervals)) {
+            $this->update([
+                'status' => 'failed',
+                'attempts' => $currentAttempts,
+                'last_error' => $error,
+                'last_response_code' => $responseCode,
+                'error_type' => $errorType,
+                'next_try' => null,
+            ]);
 
             return;
         }
 
         $this->update([
             'status' => 'deferred',
+            'attempts' => $currentAttempts,
             'last_error' => $error,
             'last_response_code' => $responseCode,
             'error_type' => $errorType,
-            'next_try' => now()->addSeconds($retryIntervals[$this->attempts]),
+            'next_try' => now()->addSeconds($retryIntervals[$currentAttempts]),
         ]);
     }
 
@@ -218,7 +228,11 @@ class Publish extends Model
             return false;
         }
 
-        $this->markAsDispatched();
+        // Increment attempts and mark as dispatched
+        $this->update([
+            'status' => 'dispatched',
+            'attempts' => $this->attempts + 1,
+        ]);
 
         try {
             $publisherClass = $this->publisher->publisher_class;
