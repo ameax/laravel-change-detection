@@ -7,6 +7,10 @@ use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 
+// Prevent function redeclaration errors when running multiple test files
+if (!defined('PUBLISHERHELPERS_LOADED')) {
+    define('PUBLISHERHELPERS_LOADED', true);
+
 // ===== PUBLISHER CREATION HELPERS =====
 
 function createWebhookPublisher(string $modelType, string $webhookUrl, ?string $name = null): Publisher
@@ -435,3 +439,5 @@ function cleanupPublisherData(): void
     cache()->forget('active-publishers');
     cache()->forget('bulk-publish-job-lock');
 }
+
+} // End of PUBLISHERHELPERS_LOADED guard

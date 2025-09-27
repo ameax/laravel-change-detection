@@ -5,6 +5,10 @@ use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Publishers\LogPublisher;
 
+// Prevent function redeclaration errors when running multiple test files
+if (!defined('HASH_SYNC_HELPERS_LOADED')) {
+    define('HASH_SYNC_HELPERS_LOADED', true);
+
 // ===== SYNC FUNCTIONS =====
 
 function runSyncForModel(string $modelClass, array $options = []): void
@@ -191,3 +195,5 @@ function verifyHashEvolution(array $hashes, int $expectedUniqueCount): void
 {
     expect(count(array_unique($hashes)))->toBe($expectedUniqueCount);
 }
+
+} // End of HASH_SYNC_HELPERS_LOADED guard

@@ -9,6 +9,10 @@ use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+// Prevent function redeclaration errors when running multiple test files
+if (!defined('PERFORMANCEHELPERS_LOADED')) {
+    define('PERFORMANCEHELPERS_LOADED', true);
+
 // ===== BULK DATA CREATION HELPERS =====
 
 function createBulkWeatherStations(int $count): array
@@ -518,3 +522,5 @@ function logConstrainedPerformance(float $time, float $peakMemory): void
         // dump('Constrained Performance:', $metrics);
     }
 }
+
+} // End of PERFORMANCEHELPERS_LOADED guard

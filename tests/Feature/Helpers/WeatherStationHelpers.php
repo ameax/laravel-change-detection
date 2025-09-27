@@ -6,6 +6,10 @@ use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 
+// Prevent function redeclaration errors when running multiple test files
+if (!defined('WEATHER_STATION_HELPERS_LOADED')) {
+    define('WEATHER_STATION_HELPERS_LOADED', true);
+
 // ===== WEATHER STATION-SPECIFIC SYNC FUNCTIONS =====
 
 function runWeatherStationSync(array $options = []): void
@@ -572,3 +576,5 @@ function createNonQualifyingStation(string $reason = 'location'): TestWeatherSta
 
     return $data['station'] ?? createStationInBayernWithoutEvt();
 }
+
+} // End of WEATHER_STATION_HELPERS_LOADED guard

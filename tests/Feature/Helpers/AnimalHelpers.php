@@ -4,6 +4,10 @@ use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnimal;
 
+// Prevent function redeclaration errors when running multiple test files
+if (!defined('ANIMAL_HELPERS_LOADED')) {
+    define('ANIMAL_HELPERS_LOADED', true);
+
 // ===== ANIMAL-SPECIFIC SYNC FUNCTIONS =====
 
 function runAnimalSync(array $options = []): void
@@ -200,3 +204,5 @@ function simulateAnimalLifecycle(int $animalId): array
 
     return $lifecycle;
 }
+
+} // End of ANIMAL_HELPERS_LOADED guard
