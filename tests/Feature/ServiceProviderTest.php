@@ -64,7 +64,7 @@ describe('LaravelChangeDetectionServiceProvider', function () {
     test('it publishes the migration file', function () {
         // Given: Migration publishing is available
         $migrationPath = database_path('migrations');
-        $migrationPattern = $migrationPath . '/*_create_change_detection_tables.php';
+        $migrationPattern = $migrationPath.'/*_create_change_detection_tables.php';
 
         // Clean up any existing migrations
         foreach (glob($migrationPattern) as $file) {
@@ -182,29 +182,41 @@ describe('LaravelChangeDetectionServiceProvider', function () {
         $method->setAccessible(true);
 
         // Create a mock package to capture configuration
-        $package = new class {
+        $package = new class
+        {
             public $name;
+
             public $hasConfig = false;
+
             public $hasMigration = false;
+
             public $commands = [];
 
-            public function name($name) {
+            public function name($name)
+            {
                 $this->name = $name;
+
                 return $this;
             }
 
-            public function hasConfigFile() {
+            public function hasConfigFile()
+            {
                 $this->hasConfig = true;
+
                 return $this;
             }
 
-            public function hasMigration($migration) {
+            public function hasMigration($migration)
+            {
                 $this->hasMigration = $migration;
+
                 return $this;
             }
 
-            public function hasCommand($command) {
+            public function hasCommand($command)
+            {
                 $this->commands[] = $command;
+
                 return $this;
             }
         };
@@ -256,10 +268,8 @@ describe('LaravelChangeDetectionServiceProvider', function () {
 
     test('it supports dependency injection for services', function () {
         // Given: A class that depends on package services
-        $testClass = new class(
-            app(ChangeDetector::class),
-            app(BulkHashProcessor::class)
-        ) {
+        $testClass = new class(app(ChangeDetector::class), app(BulkHashProcessor::class))
+        {
             public function __construct(
                 public ChangeDetector $detector,
                 public BulkHashProcessor $processor

@@ -175,8 +175,8 @@ describe('TruncateCommand', function () {
             '--force' => true,
             '--only' => 'hashes',
         ])
-        ->expectsOutputToContain('Table not found: non_existent_table')
-        ->assertExitCode(0);
+            ->expectsOutputToContain('Table not found: non_existent_table')
+            ->assertExitCode(0);
 
         // Cleanup: Reset config
         config(['change-detection.tables.hashes' => 'hashes']);
@@ -207,8 +207,8 @@ describe('TruncateCommand', function () {
             '--force' => true,
             '--only' => 'invalid_table,hashes',
         ])
-        ->expectsOutputToContain('Unknown table alias: invalid_table')
-        ->assertExitCode(0);
+            ->expectsOutputToContain('Unknown table alias: invalid_table')
+            ->assertExitCode(0);
 
         // Then: Valid tables are still processed
         expect(Hash::count())->toBe(0);
@@ -259,7 +259,7 @@ describe('TruncateCommand', function () {
             '--force' => true,
             '--only' => 'hashes',
         ])
-        ->assertExitCode(0);
+            ->assertExitCode(0);
 
         // Then: Custom table is truncated
         expect(DB::table('custom_hashes')->count())->toBe(0);
@@ -288,7 +288,7 @@ describe('TruncateCommand', function () {
             '--force' => true,
             '--only' => '',
         ])
-        ->expectsOutput('No valid tables specified for truncation.')
-        ->assertExitCode(1);
+            ->expectsOutput('No valid tables specified for truncation.')
+            ->assertExitCode(1);
     })->skip();
 });

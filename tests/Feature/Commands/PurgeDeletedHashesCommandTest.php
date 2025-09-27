@@ -6,11 +6,11 @@ use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Models\Publisher;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
+use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Artisan;
-use Carbon\Carbon;
 
 describe('PurgeDeletedHashesCommand', function () {
     beforeEach(function () {
@@ -308,8 +308,8 @@ describe('PurgeDeletedHashesCommand', function () {
             '--older-than' => 7,
             '--dry-run' => true,
         ])
-        ->expectsOutputToContain('=== Deleted Hashes Older Than 7 Days ===')
-        ->expectsOutputToContain('weather_station')
-        ->expectsOutputToContain('anemometer');
+            ->expectsOutputToContain('=== Deleted Hashes Older Than 7 Days ===')
+            ->expectsOutputToContain('weather_station')
+            ->expectsOutputToContain('anemometer');
     });
 });

@@ -91,7 +91,7 @@ describe('BulkPublishJob', function () {
         expect(Publish::pendingOrDeferred()->count())->toBe(3);
 
         // When: We execute the job
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: All publishes are processed
@@ -101,7 +101,7 @@ describe('BulkPublishJob', function () {
 
     test('it uses unique job identifier to prevent duplicates', function () {
         // Given: A BulkPublishJob instance
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
 
         // Then: It has correct unique settings
         expect($job->uniqueId())->toBe('bulk_publish_job');
@@ -121,7 +121,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Lock is released after execution
@@ -145,7 +145,7 @@ describe('BulkPublishJob', function () {
             ->with('BulkPublishJob: Another instance is running, skipping')
             ->once();
 
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publishes remain unprocessed
@@ -170,7 +170,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Deferred publish is processed
@@ -206,7 +206,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Both publishes are processed
@@ -230,7 +230,7 @@ describe('BulkPublishJob', function () {
             ->once();
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publish is marked as failed
@@ -255,7 +255,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publish is deferred or failed
@@ -277,7 +277,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Attempts are incremented
@@ -302,7 +302,7 @@ describe('BulkPublishJob', function () {
         Queue::fake();
 
         // When: Job executes (with queue fake to prevent actual dispatch)
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Note: In real scenario, it would dispatch next batch if limit exceeded
@@ -312,7 +312,7 @@ describe('BulkPublishJob', function () {
 
     test('it releases lock on job failure', function () {
         // Given: A job that will fail
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
 
         // Simulate job failure
         $exception = new Exception('Test failure');
@@ -326,7 +326,7 @@ describe('BulkPublishJob', function () {
 
     test('it determines error types correctly', function () {
         // Given: Various exception messages
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $reflection = new ReflectionClass($job);
         $method = $reflection->getMethod('determineErrorType');
         $method->setAccessible(true);
@@ -359,7 +359,7 @@ describe('BulkPublishJob', function () {
 
     test('it extracts response codes from exception messages', function () {
         // Given: Exception messages with response codes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $reflection = new ReflectionClass($job);
         $method = $reflection->getMethod('extractResponseCode');
         $method->setAccessible(true);
@@ -398,7 +398,7 @@ describe('BulkPublishJob', function () {
         }
 
         // When: Job executes (it will process in batches)
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publishes are processed
@@ -424,7 +424,7 @@ describe('BulkPublishJob', function () {
             ->once();
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publish remains unprocessed due to critical error
@@ -449,7 +449,7 @@ describe('BulkPublishJob', function () {
         ]);
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
 
         // Then: Publish is marked as published (skipped)
@@ -488,7 +488,7 @@ describe('BulkPublishJob', function () {
             ->once();
 
         // When: Job executes
-        $job = new BulkPublishJob();
+        $job = new BulkPublishJob;
         $job->handle();
     })->skip();
 });
