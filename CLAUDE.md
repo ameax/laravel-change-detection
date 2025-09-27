@@ -108,3 +108,11 @@ This package is being rebuilt from `laravel-hash-change-detector` following a ph
 - **Max 200 Lines**: Strict limit per class for maintainability
 - **Cross-Database Support**: Hash tables can be in different DB than models
 - **Performance Critical**: MySQL-based hash calculations for large datasets
+
+## Important Behavioral Notes
+
+### Publish Records
+- **ONE publish record per hash**: The system maintains exactly ONE publish record per main hash record
+- **Not per change**: Publish records are NOT created for every change event
+- **Initial creation only**: A publish record is created when a hash is first created, not on subsequent updates
+- **Purpose**: Tracks that a hash needs to be published to external systems, not individual changes

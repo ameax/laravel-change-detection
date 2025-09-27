@@ -293,7 +293,11 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             return ['status' => 'failed', 'error_type' => 'data'];
         }
 
-        $publishRecord->markAsDispatched();
+        // Increment attempts and mark as dispatched
+        $publishRecord->update([
+            'status' => 'dispatched',
+            'attempts' => $publishRecord->attempts + 1,
+        ]);
 
         try {
             $publisherClass = $publishRecord->publisher->publisher_class;

@@ -5,10 +5,11 @@ namespace Ameax\LaravelChangeDetection\Tests\Models;
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Traits\InteractsWithHashes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TestCar extends Model implements Hashable
 {
-    use InteractsWithHashes;
+    use InteractsWithHashes, SoftDeletes;
 
     protected $table = 'test_cars';
 

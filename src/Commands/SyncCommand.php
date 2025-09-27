@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Commands;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
+use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\BulkPublishProcessor;
 use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Illuminate\Console\Command;
@@ -17,9 +20,8 @@ class SyncCommand extends Command
 {
     public $signature = 'change-detection:sync
                         {--limit= : Limit number of records to process per model}
-                        {--purge : Immediately purge orphaned hashes instead of marking as deleted}
+                        {--purge : Hard delete orphaned and soft-deleted hashes from database}
                         {--report : Show detailed report of all operations}
-                        {--dry-run : Preview changes without making modifications}
                         {--models=* : Specific model classes to sync (defaults to auto-discovery)}';
 
     public $description = 'Synchronize all hash records (auto-discover, detect, cleanup, and update)';
@@ -50,11 +52,6 @@ class SyncCommand extends Command
         }
 
         $this->info("Found {$models->count()} hashable model(s) to process");
-
-        if ($this->option('dry-run')) {
-            $this->warn('🔍 DRY RUN MODE - No changes will be made');
-        }
-
         $this->line('');
 
         // Step 1: Detect changes
@@ -63,10 +60,19 @@ class SyncCommand extends Command
         // Step 2: Clean up orphaned hashes
         $this->cleanupOrphans($models);
 
-        // Step 3: Update changed hashes (if not dry run)
-        if (! $this->option('dry-run') && $this->totalChangesDetected > 0) {
+        // Step 3: Update changed hashes
+        if ($this->totalChangesDetected > 0) {
             $this->updateHashes($models);
         }
+
+        // Step 4: Handle soft-deleted models
+        $this->processSoftDeletes($models);
+
+        // Step 5: Update parent models whose dependencies have changed
+        $this->updateParentCompositeHashes();
+
+        // Step 6: Sync publish records for all models
+        $this->syncPublishRecords($models);
 
         // Show summary
         $this->showSummary($startTime);
@@ -152,13 +158,6 @@ class SyncCommand extends Command
     {
         $this->info('🧹 Cleaning up orphaned hashes...');
 
-        if ($this->option('dry-run')) {
-            $this->line('  (Skipped in dry-run mode)');
-            $this->line('');
-
-            return;
-        }
-
         $orphanDetector = app(OrphanedHashDetector::class);
         $isPurge = $this->option('purge');
         $action = $isPurge ? 'purged' : 'cleaned';
@@ -220,6 +219,111 @@ class SyncCommand extends Command
                     $this->info("    → Updated {$updated} hash records");
                 }
             }
+
+            // Always check for pending dependencies (even for models with no changes)
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $pendingDeps = $limit
+                ? $processor->buildPendingDependencies($modelClass, (int) $limit)
+                : $processor->buildPendingDependencies($modelClass);
+
+            if ($pendingDeps > 0) {
+                $this->line("  {$modelName}: Building dependencies...");
+                $this->info("    → Built dependencies for {$pendingDeps} records");
+            }
+        }
+
+        $this->line('');
+    }
+
+    /**
+     * Process soft-deleted models by marking their hashes as deleted.
+     *
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     */
+    private function processSoftDeletes(\Illuminate\Support\Collection $models): void
+    {
+        $this->info('🗑️ Processing soft-deleted models...');
+
+        $processor = app(BulkHashProcessor::class);
+        $totalProcessed = 0;
+
+        foreach ($models as $modelClass) {
+            $modelName = class_basename($modelClass);
+
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $processed = $processor->softDeleteHashesForDeletedModels($modelClass);
+
+            if ($processed > 0) {
+                $this->line("  {$modelName}: Marked {$processed} hashes as deleted");
+                $totalProcessed += $processed;
+            }
+        }
+
+        if ($totalProcessed === 0) {
+            $this->info('  No soft-deleted models found');
+        } else {
+            $this->info("  Total: {$totalProcessed} hashes marked as deleted");
+        }
+
+        $this->line('');
+    }
+
+    /**
+     * Update parent models whose dependencies have changed.
+     */
+    private function updateParentCompositeHashes(): void
+    {
+        $this->info('🔄 Updating parent composite hashes...');
+
+        $processor = app(BulkHashProcessor::class);
+        $updated = $processor->updateParentModelsWithChangedDependencies();
+
+        if ($updated > 0) {
+            $this->info("  Updated {$updated} parent model composite hashes");
+        } else {
+            $this->info('  No parent models needed updating');
+        }
+
+        $this->line('');
+    }
+
+    /**
+     * Sync publish records for all models.
+     *
+     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     */
+    private function syncPublishRecords(\Illuminate\Support\Collection $models): void
+    {
+        $this->info('📤 Syncing publish records...');
+
+        $publishProcessor = app(BulkPublishProcessor::class);
+        $totalCreated = 0;
+        $totalUpdated = 0;
+
+        foreach ($models as $modelClass) {
+            $modelName = class_basename($modelClass);
+            $this->line("  Processing {$modelName}...");
+
+            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            $result = $publishProcessor->syncAllPublishRecords($modelClass);
+
+            if ($result['created'] > 0 || $result['updated'] > 0) {
+                if ($result['created'] > 0) {
+                    $this->info("    → Created {$result['created']} publish records");
+                    $totalCreated += $result['created'];
+                }
+                if ($result['updated'] > 0) {
+                    $this->info("    → Updated {$result['updated']} publish records");
+                    $totalUpdated += $result['updated'];
+                }
+            } else {
+                $this->line('    → No publish changes needed');
+            }
+        }
+
+        if ($totalCreated > 0 || $totalUpdated > 0) {
+            $this->line('');
+            $this->info("Total: Created {$totalCreated}, Updated {$totalUpdated} publish records");
         }
 
         $this->line('');
@@ -236,27 +340,17 @@ class SyncCommand extends Command
         $this->info('📈 Synchronization Summary');
         $this->info('═══════════════════════════════════════════');
 
-        if ($this->option('dry-run')) {
-            $this->warn('Mode: DRY RUN (no changes made)');
-        }
-
         $this->line('Models processed: '.count($this->modelStats));
         $this->line("Changes detected: {$this->totalChangesDetected}");
-
-        if (! $this->option('dry-run')) {
-            $this->line("Hashes updated: {$this->totalHashesUpdated}");
-            $action = $this->option('purge') ? 'purged' : 'marked as deleted';
-            $this->line("Orphaned hashes {$action}: {$this->totalOrphansProcessed}");
-        }
-
+        $this->line("Hashes updated: {$this->totalHashesUpdated}");
+        $action = $this->option('purge') ? 'purged' : 'marked as deleted';
+        $this->line("Orphaned hashes {$action}: {$this->totalOrphansProcessed}");
         $this->line("Execution time: {$duration} seconds");
 
         $this->line('');
 
         if ($this->totalChangesDetected === 0 && $this->totalOrphansProcessed === 0) {
             $this->info('✨ All hash records are up to date!');
-        } elseif ($this->option('dry-run')) {
-            $this->warn('Run without --dry-run to apply these changes.');
         } else {
             $this->info('✅ Synchronization completed successfully!');
         }
@@ -281,8 +375,8 @@ class SyncCommand extends Command
             $tableData[] = [
                 'Model' => $stats['name'],
                 'Changes Detected' => $stats['changes_detected'],
-                'Hashes Updated' => $this->option('dry-run') ? 'N/A' : $stats['hashes_updated'],
-                'Orphans Processed' => $this->option('dry-run') ? 'N/A' : $stats['orphans_processed'],
+                'Hashes Updated' => $stats['hashes_updated'],
+                'Orphans Processed' => $stats['orphans_processed'],
             ];
         }
 
@@ -297,13 +391,7 @@ class SyncCommand extends Command
      */
     private function implementsHashable(string $modelClass): bool
     {
-        if (! class_exists($modelClass)) {
-            return false;
-        }
-
-        $reflection = new ReflectionClass($modelClass);
-
-        return $reflection->implementsInterface(Hashable::class);
+        return ModelDiscoveryHelper::isHashable($modelClass);
     }
 
     /**
@@ -314,10 +402,46 @@ class SyncCommand extends Command
     private function discoverHashableModels(): \Illuminate\Support\Collection
     {
         $models = collect();
+
+        // First, discover models from Publishers
+        $this->discoverModelsFromPublishers($models);
+
+        // Then, discover models from app/Models as fallback
+        $this->discoverModelsFromAppPath($models);
+
+        return $models->unique()->sort()->values();
+    }
+
+    /**
+     * Discover models from Publisher records.
+     */
+    private function discoverModelsFromPublishers(\Illuminate\Support\Collection &$models): void
+    {
+        $publishers = Publisher::active()->get();
+
+        foreach ($publishers as $publisher) {
+            $modelType = $publisher->model_type;
+
+            // Get all models needed for this publisher (main + dependencies)
+            $publisherModels = ModelDiscoveryHelper::getAllModelsForSync($modelType);
+
+            foreach ($publisherModels as $modelClass) {
+                if (ModelDiscoveryHelper::isHashable($modelClass)) {
+                    $models->push($modelClass);
+                }
+            }
+        }
+    }
+
+    /**
+     * Discover models from app/Models directory.
+     */
+    private function discoverModelsFromAppPath(\Illuminate\Support\Collection &$models): void
+    {
         $appPath = app_path('Models');
 
         if (! File::exists($appPath)) {
-            return $models;
+            return;
         }
 
         $files = File::allFiles($appPath);
@@ -336,7 +460,5 @@ class SyncCommand extends Command
                 }
             }
         }
-
-        return $models->sort()->values();
     }
 }

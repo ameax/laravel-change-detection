@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $hashable_id
  * @property string $attribute_hash
  * @property string|null $composite_hash
+ * @property bool $has_dependencies_built
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
@@ -29,10 +30,12 @@ class Hash extends Model
         'hashable_id',
         'attribute_hash',
         'composite_hash',
+        'has_dependencies_built',
         'deleted_at',
     ];
 
     protected $casts = [
+        'has_dependencies_built' => 'boolean',
         'deleted_at' => 'datetime',
     ];
 

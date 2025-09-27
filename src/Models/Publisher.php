@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Ameax\LaravelChangeDetection\Enums\PublisherStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string $model_type
  * @property string $publisher_class
- * @property string $status
+ * @property PublisherStatusEnum $status
  * @property array<string, mixed>|null $config
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
@@ -32,7 +33,7 @@ class Publisher extends Model
     ];
 
     protected $casts = [
-        'status' => 'string',
+        'status' => PublisherStatusEnum::class,
         'config' => 'array',
     ];
 
@@ -54,7 +55,7 @@ class Publisher extends Model
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return $this->status === PublisherStatusEnum::ACTIVE;
     }
 
     /**
@@ -63,7 +64,7 @@ class Publisher extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', PublisherStatusEnum::ACTIVE->value);
     }
 
     /**

@@ -11,7 +11,7 @@ Laravel Change Detection automatically calculates and stores MD5/SHA256 hashes o
 
 ## Features
 
-- **🚀 High Performance**: MySQL-optimized hash calculations for 100k+ records
+- **🚀 High Performance**: MySQL-optimized hash calculations for 100k+ records with 1000-record batch processing
 - **🔄 Composite Dependencies**: Track changes across related models automatically
 - **⚡ Bulk Operations**: Efficient batch processing with configurable limits
 - **🗃️ Cross-Database Support**: Hash tables can be in different databases than models
@@ -21,6 +21,8 @@ Laravel Change Detection automatically calculates and stores MD5/SHA256 hashes o
 - **💾 Soft Delete Support**: Proper handling of deleted records
 - **🧹 Cleanup Tools**: Automatic orphaned hash detection and removal
 - **📝 Debug Logging**: Built-in LogPublisher for development
+- **🎯 Smart Model Discovery**: Automatically discovers models via Publishers and Morph Map
+- **🔧 Dependency Tracking**: Efficient dependency building with `has_dependencies_built` flag
 
 ## Installation
 
@@ -209,7 +211,7 @@ php artisan change-detection:sync --report
 # Limit processing per model (useful for large datasets)
 php artisan change-detection:sync --limit=1000
 
-# Immediately purge orphaned hashes instead of soft-deleting
+# Hard delete orphaned and soft-deleted hashes from database
 php artisan change-detection:sync --purge
 
 # Sync specific models only
@@ -217,6 +219,21 @@ php artisan change-detection:sync --models="App\Models\User,App\Models\Post"
 ```
 
 This command combines auto-discovery, change detection, orphan cleanup, and hash updates in one operation.
+
+**Note about --purge option**: By default, the sync command soft-deletes hashes (marks them with a `deleted_at` timestamp) when models are deleted or go out of scope. Using the `--purge` flag will:
+- Hard delete (completely remove) orphaned hashes where the model record no longer exists
+- Hard delete any previously soft-deleted hashes (where `deleted_at` is not null)
+- This permanently removes the hash records and their related data via cascade deletion
+
+#### Model Discovery
+
+The sync command automatically discovers models through multiple methods:
+
+1. **Publisher Records**: Models registered via Publishers (supports models anywhere in your codebase)
+2. **Laravel Morph Map**: Models registered in Laravel's morph map
+3. **App\Models Directory**: Fallback scanning of the standard models directory
+
+Models with dependencies are processed in the correct order: dependencies first, then main models.
 
 ### Detect Changes Command
 
@@ -305,13 +322,26 @@ $detector = app(ChangeDetector::class);
 // Count changed models efficiently
 $changedCount = $detector->countChangedModels(User::class);
 
-// Process changes in batches
-$updatedCount = $processor->processChangedModels(User::class, limit: 1000);
+// Process changes in batches (default: 1000 records per batch)
+$updatedCount = $processor->processChangedModels(User::class, limit: 10000);
 
 // Process specific model IDs
 $modelIds = [1, 2, 3, 4, 5];
 $updatedCount = $processor->updateHashesForIds(User::class, $modelIds);
+
+// Build pending dependencies for models
+$pendingCount = $processor->buildPendingDependencies(User::class);
 ```
+
+### Performance Optimizations
+
+The package is optimized for large-scale data processing:
+
+- **Batch Processing**: All operations work in configurable chunks (default: 1000 records)
+- **Bulk SQL Operations**: Uses `INSERT ... ON DUPLICATE KEY UPDATE` for efficient hash updates
+- **Smart Dependency Building**: Dependencies are built after initial hash creation using the `has_dependencies_built` flag
+- **N+1 Query Prevention**: Batch updates for dependency flags to avoid multiple queries
+- **Optimized Model Discovery**: Models are discovered via Publishers and Laravel's Morph Map
 
 ## Orphaned Hash Cleanup
 

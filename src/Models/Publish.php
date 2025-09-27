@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Models;
 
+use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
+use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,11 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $publisher_id
  * @property string|null $published_hash
  * @property \Illuminate\Support\Carbon|null $published_at
- * @property string $status
+ * @property PublishStatusEnum $status
  * @property int $attempts
  * @property string|null $last_error
  * @property int|null $last_response_code
- * @property string|null $error_type
+ * @property PublishErrorTypeEnum|null $error_type
  * @property \Illuminate\Support\Carbon|null $next_try
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
@@ -47,7 +49,8 @@ class Publish extends Model
         'next_try' => 'datetime',
         'attempts' => 'integer',
         'last_response_code' => 'integer',
-        'status' => 'string',
+        'status' => PublishStatusEnum::class,
+        'error_type' => PublishErrorTypeEnum::class,
         'metadata' => 'array',
     ];
 
@@ -74,78 +77,121 @@ class Publish extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === PublishStatusEnum::PENDING;
     }
 
     public function isDispatched(): bool
     {
-        return $this->status === 'dispatched';
+        return $this->status === PublishStatusEnum::DISPATCHED;
     }
 
     public function isDeferred(): bool
     {
-        return $this->status === 'deferred';
+        return $this->status === PublishStatusEnum::DEFERRED;
     }
 
     public function isPublished(): bool
     {
-        return $this->status === 'published';
+        return $this->status === PublishStatusEnum::PUBLISHED;
     }
 
     public function isFailed(): bool
     {
-        return $this->status === 'failed';
+        return $this->status === PublishStatusEnum::FAILED;
+    }
+
+    public function isSoftDeleted(): bool
+    {
+        return $this->status === PublishStatusEnum::SOFT_DELETED;
     }
 
     public function shouldRetry(): bool
     {
-        return $this->isDeferred() &&
+        return $this->status === PublishStatusEnum::DEFERRED &&
                $this->next_try &&
                $this->next_try->isPast();
     }
 
+    /**
+     * Mark publish record as dispatched (for testing/manual status changes).
+     *
+     * NOTE: This does NOT increment the attempts counter.
+     * For real publishing that tracks attempts, use publishNow() instead.
+     */
     public function markAsDispatched(): void
     {
-        $this->update(['status' => 'dispatched']);
+        $this->update([
+            'status' => PublishStatusEnum::DISPATCHED,
+        ]);
     }
 
     public function markAsPublished(): void
     {
         $this->update([
-            'status' => 'published',
+            'status' => PublishStatusEnum::PUBLISHED,
             'published_hash' => $this->hash->composite_hash,
             'published_at' => now(),
             'last_error' => null,
         ]);
     }
 
-    public function markAsDeferred(string $error, ?int $responseCode = null, ?string $errorType = null): void
+    public function markAsDeferred(string $error, ?int $responseCode = null, PublishErrorTypeEnum|string|null $errorType = null): void
     {
-        $this->attempts++;
+        // Increment attempts counter
+        $currentAttempts = $this->attempts + 1;
+
+        // Convert string error type to enum if needed
+        if (is_string($errorType)) {
+            $errorType = PublishErrorTypeEnum::tryFrom($errorType);
+        }
 
         // Get retry intervals from publisher if available, otherwise use config
         $retryIntervals = $this->getPublisherRetryIntervals();
 
-        if ($this->attempts > count($retryIntervals)) {
-            $this->markAsFailed($error, $responseCode, $errorType);
+        if ($currentAttempts > count($retryIntervals)) {
+            $this->update([
+                'status' => PublishStatusEnum::FAILED,
+                'attempts' => $currentAttempts,
+                'last_error' => $error,
+                'last_response_code' => $responseCode,
+                'error_type' => $errorType,
+                'next_try' => null,
+            ]);
 
             return;
         }
 
         $this->update([
-            'status' => 'deferred',
-            'attempts' => $this->attempts,
+            'status' => PublishStatusEnum::DEFERRED,
+            'attempts' => $currentAttempts,
             'last_error' => $error,
             'last_response_code' => $responseCode,
             'error_type' => $errorType,
-            'next_try' => now()->addSeconds($retryIntervals[$this->attempts]),
+            'next_try' => now()->addSeconds($retryIntervals[$currentAttempts]),
         ]);
     }
 
-    public function markAsFailed(string $error, ?int $responseCode = null, ?string $errorType = null): void
+    /**
+     * Mark publish record as failed (terminal state).
+     *
+     * NOTE: This does NOT increment the attempts counter.
+     * This method is used when marking a record as permanently failed.
+     * If called after a real publish attempt (publishNow/BulkPublishJob),
+     * the attempts counter will already have been incremented.
+     *
+     * @param  string  $error  The error message
+     * @param  int|null  $responseCode  Optional HTTP response code
+     * @param  PublishErrorTypeEnum|string|null  $errorType  Optional error type for categorization
+     */
+    public function markAsFailed(string $error, ?int $responseCode = null, PublishErrorTypeEnum|string|null $errorType = null): void
     {
+        // Convert string error type to enum if needed
+        if (is_string($errorType)) {
+            $errorType = PublishErrorTypeEnum::tryFrom($errorType);
+        }
+
         $this->update([
-            'status' => 'failed',
+            'status' => PublishStatusEnum::FAILED,
             'last_error' => $error,
             'last_response_code' => $responseCode,
             'error_type' => $errorType,
@@ -195,9 +241,9 @@ class Publish extends Model
     public function scopePendingOrDeferred(Builder $query): Builder
     {
         return $query->where(function ($q) {
-            $q->where('status', 'pending')
+            $q->where('status', PublishStatusEnum::PENDING)
                 ->orWhere(function ($q) {
-                    $q->where('status', 'deferred')
+                    $q->where('status', PublishStatusEnum::DEFERRED)
                         ->where('next_try', '<=', now());
                 });
         });
@@ -208,6 +254,11 @@ class Publish extends Model
      */
     public function publishNow(): bool
     {
+        // Skip soft-deleted publishes
+        if ($this->isSoftDeleted()) {
+            return false;
+        }
+
         if (! $this->isPending() && ! $this->shouldRetry()) {
             return false;
         }
@@ -218,7 +269,18 @@ class Publish extends Model
             return false;
         }
 
-        $this->markAsDispatched();
+        // Check if hash is soft-deleted, and if so, soft-delete this publish
+        if ($this->hash->deleted_at !== null) {
+            $this->update(['status' => PublishStatusEnum::SOFT_DELETED]);
+
+            return false;
+        }
+
+        // Increment attempts and mark as dispatched
+        $this->update([
+            'status' => PublishStatusEnum::DISPATCHED,
+            'attempts' => $this->attempts + 1,
+        ]);
 
         try {
             $publisherClass = $this->publisher->publisher_class;

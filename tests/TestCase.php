@@ -79,6 +79,9 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_anemometers',
+            'test_windvanes',
+            'test_weather_stations',
             'test_animals',
             'test_cars',
             'test_comments',
@@ -107,6 +110,9 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_anemometers',
+            'test_windvanes',
+            'test_weather_stations',
             'test_animals',
             'test_cars',
             'test_comments',
