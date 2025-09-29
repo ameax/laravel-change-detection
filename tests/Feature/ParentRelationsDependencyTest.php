@@ -78,7 +78,6 @@ describe('parent relations dependency building', function () {
         expect($anemometerDependency->relation_name)->toBe('weatherStation');
     });
 
-
     it('respects parent model scope when building dependencies', function () {
         // Create station outside of scope
         $berlinStation = TestWeatherStation::create([

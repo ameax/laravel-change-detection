@@ -319,7 +319,8 @@ describe('scope-aware dependency filtering', function () {
 
         // Override TestWindvane scope temporarily for this test
         $originalScope = TestWindvane::class;
-        $windvaneWithScope = new class extends TestWindvane {
+        $windvaneWithScope = new class extends TestWindvane
+        {
             public function getHashableScope(): ?\Closure
             {
                 return function ($query) {
@@ -371,7 +372,8 @@ describe('scope-aware dependency filtering', function () {
         // it checks if the dependent models are within their own scopes
 
         // Create a custom test model with a scope for testing
-        $testAnemometerClass = new class extends TestAnemometer {
+        $testAnemometerClass = new class extends TestAnemometer
+        {
             protected $table = 'test_anemometers';
 
             public function getHashableScope(): ?\Closure

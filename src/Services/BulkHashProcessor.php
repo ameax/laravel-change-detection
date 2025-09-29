@@ -451,7 +451,6 @@ class BulkHashProcessor
         }
     }
 
-
     /**
      * Build dependency relationships for a single model.
      *
@@ -618,6 +617,7 @@ class BulkHashProcessor
                 \Illuminate\Support\Facades\Log::warning(
                     "Parent relation {$relationName} does not exist on ".get_class($childModel)
                 );
+
                 continue;
             }
 
