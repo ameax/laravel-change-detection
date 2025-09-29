@@ -101,10 +101,16 @@ class User extends Model implements Hashable
         return ['name', 'email', 'status'];
     }
 
-    // Define dependencies (optional - for composite hashing)
+    // Define child dependencies (optional - for composite hashing)
     public function getHashCompositeDependencies(): array
     {
         return ['posts']; // Hash changes when user's posts change
+    }
+
+    // Define parent relations to notify (optional)
+    public function getHashParentRelations(): array
+    {
+        return []; // No parent relations for User
     }
 
     public function posts()
@@ -147,6 +153,29 @@ $newHash = $user->forceHashUpdate();
 
 ## Advanced Usage
 
+### The Hashable Interface
+
+The `Hashable` interface requires implementing these methods:
+
+```php
+interface Hashable
+{
+    // Required: Define which attributes to include in the hash
+    public function getHashableAttributes(): array;
+
+    // Optional: Define child relations whose changes affect this model's hash
+    public function getHashCompositeDependencies(): array;
+
+    // Optional: Define parent relations to notify when this model changes
+    public function getHashParentRelations(): array;
+
+    // Optional: Define a scope to filter which records get hashed
+    public function getHashableScope(): ?\Closure;
+}
+```
+
+The `InteractsWithHashes` trait provides default implementations for optional methods.
+
 ### Composite Dependencies
 
 Track changes across related models:
@@ -182,15 +211,56 @@ class Reply extends Model implements Hashable
         return ['content', 'author'];
     }
 
-    // No dependencies
+    // No child dependencies
     public function getHashCompositeDependencies(): array
     {
         return [];
     }
+
+    // Define parent relations to notify when this model changes
+    public function getHashParentRelations(): array
+    {
+        return ['article']; // Notify article when reply changes
+    }
+
+    public function article()
+    {
+        return $this->belongsTo(Article::class);
+    }
 }
 ```
 
-When a reply is created/updated/deleted, the parent article's hash automatically updates.
+When a reply is created/updated/deleted, the parent article's hash automatically updates through the parent relation notification.
+
+### Scope Filtering
+
+Control which records get hashed using scopes:
+
+```php
+class WeatherStation extends Model implements Hashable
+{
+    use InteractsWithHashes;
+
+    public function getHashableAttributes(): array
+    {
+        return ['name', 'location', 'status'];
+    }
+
+    // Only active stations in specific regions get hashed
+    public function getHashableScope(): ?\Closure
+    {
+        return function ($query) {
+            $query->where('status', 'active')
+                  ->whereIn('location', ['Bayern', 'Berlin']);
+        };
+    }
+}
+```
+
+**Important**: The system ensures that:
+- Only models within their scope get hash records
+- Dependencies are only created for models that are in scope
+- When a model goes out of scope, its hash is soft-deleted
 
 ## CLI Commands
 

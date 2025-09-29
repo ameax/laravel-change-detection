@@ -49,57 +49,43 @@ Uses Pest with Orchestra Testbench for Laravel package testing. Tests are locate
 - Octane compatibility checking enabled
 - Model property checking enabled
 
-## Implementation Approach
+### Interface Requirements
+The `Hashable` interface requires:
+- `getHashableAttributes(): array` - Attributes to include in hash
+- `getHashCompositeDependencies(): array` - Child relations that affect this model's hash
+- `getHashParentRelations(): array` - Parent relations to notify when this model changes
+- `getHashableScope(): ?\Closure` - Optional scope to filter which records get hashed
 
-This package is being rebuilt from `laravel-hash-change-detector` following a phase-by-phase approach detailed in `import/laravel-hash-change-detector/docs/PACKAGE_REBUILD_PLAN.md`. Each phase must be:
+## Implementation Status
 
-1. **Discussed first** - Review requirements and approach
-2. **Implemented** - Complete the phase functionality
-3. **Tested** - Ensure all tests pass
-4. **Committed** - Create atomic commits per phase
+All core functionality is fully implemented and tested:
 
-### Implementation Phases
-
-**Phase 0: Repository Setup** ✅ COMPLETED
-- Config file migration (1:1 from old package, no API section)
-- Test environment with MySQL
-- Basic package structure
-
-**Phase 1: Migrations & Models** ✅ COMPLETED
-- Copy migrations with `deleted_at` extension
-- Copy Models: Hash, HashDependent, Publish, Publisher
-- Copy Interfaces: Hashable, Publisher
-- Rewrite InteractsWithHashes trait (simplified)
-
-**Phase 2: Hash Calculation** ✅ COMPLETED
-- MySQLHashCalculator for performance
-- DependencyHashCalculator for composite hashes
-- CompositeHashCalculator integration
-
-**Phase 3: Change Detection** ✅ COMPLETED
-- ChangeDetector service
-- HashUpdater service
-- Integration with model events
-
-**Phase 4: Model Integration** ✅ COMPLETED
-- InteractsWithHashes trait implementation
-- Model observers for automatic updates
-- Hash relationship methods
-
-**Phase 5: Composite Dependencies Testing** ✅ COMPLETED
-- Complex test models (Article -> Comments -> Replies)
-- Integration tests for nested dependencies
-- Circular dependency prevention
-
-**Phase 6: MySQL Optimization**
-- BulkHashProcessor for performance
+✅ **Core Features**
+- Hash calculation and storage
+- Change detection with MySQL optimization
+- Composite dependencies (parent-child relationships)
+- Scope filtering for selective hashing
+- Soft delete support
 - Cross-database support
-- Missing record detection for deletions
 
-**Phase 7: Commands & Jobs**
-- DetectChangesCommand (intelligent)
-- DetectChangesJob for queuing
+✅ **Services**
+- BulkHashProcessor for high-performance batch operations
+- ChangeDetector for efficient change detection
+- MySQLHashCalculator for optimized hash calculations
+- DependencyHashCalculator for composite hashes
+- CompositeHashCalculator for combined hash logic
+
+✅ **Commands**
+- `change-detection:sync` - Main synchronization command
+- `change-detection:detect` - Fine-grained change detection
+- `change-detection:truncate` - Reset system tables
+- `change-detection:purge` - Clean up deleted hashes
+
+✅ **Publishing System**
+- Publisher interface and models
 - LogPublisher for development
+- Retry logic with configurable intervals
+- Error categorization and tracking
 
 ### Key Architectural Decisions
 
@@ -108,11 +94,24 @@ This package is being rebuilt from `laravel-hash-change-detector` following a ph
 - **Max 200 Lines**: Strict limit per class for maintainability
 - **Cross-Database Support**: Hash tables can be in different DB than models
 - **Performance Critical**: MySQL-based hash calculations for large datasets
+- **Explicit Parent Relations**: Child models explicitly define parent relations via `getHashParentRelations()`
+- **Scope Enforcement**: Only models within their defined scope get hash records
 
 ## Important Behavioral Notes
+
+### Scope Filtering
+- **In-Scope Only**: Hashes are only created for models that match their `getHashableScope()` criteria
+- **Dependency Filtering**: Dependencies are only created to/from models that are in scope
+- **Soft Deletion**: When a model goes out of scope, its hash is soft-deleted (marked with `deleted_at`)
+- **Parent Scope Check**: Parent dependencies are only created if the parent model is also in scope
 
 ### Publish Records
 - **ONE publish record per hash**: The system maintains exactly ONE publish record per main hash record
 - **Not per change**: Publish records are NOT created for every change event
 - **Initial creation only**: A publish record is created when a hash is first created, not on subsequent updates
 - **Purpose**: Tracks that a hash needs to be published to external systems, not individual changes
+
+### Dependency Direction
+- **Child Dependencies** (`getHashCompositeDependencies`): Parent model's hash depends on these children
+- **Parent Relations** (`getHashParentRelations`): Child notifies these parents when it changes
+- **Relation Names**: Stored in `hash_dependents.relation_name` for parent dependencies
