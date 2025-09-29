@@ -23,4 +23,9 @@ trait InteractsWithHashes
     {
         return null;
     }
+
+    public function getHashParentRelations(): array
+    {
+        return [];
+    }
 }

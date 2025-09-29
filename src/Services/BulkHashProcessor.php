@@ -88,8 +88,12 @@ class BulkHashProcessor
 
         $modelIds = $hashes->pluck('hashable_id')->toArray();
 
-        // Build dependencies for these models
+        // Build both types of dependencies for these models
+        // 1. Build child dependencies (for composite hash calculation)
         $this->buildDependencyRelationshipsForIds($modelClass, $modelIds);
+
+        // 2. Build parent dependencies (for change propagation)
+        $this->buildParentDependenciesForIds($modelClass, $modelIds);
 
         // Recalculate composite hashes now that dependencies are in place
         $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
@@ -447,71 +451,6 @@ class BulkHashProcessor
         }
     }
 
-    /**
-     * Get the inverse relationship name for a related model back to its parent.
-     */
-    private function getInverseRelationName(\Illuminate\Database\Eloquent\Model $relatedModel, string $mainModelClass, \Illuminate\Database\Eloquent\Model $mainModel): ?string
-    {
-        // Common relationship naming patterns
-        $possibleNames = [
-            // Singular forms
-            lcfirst(class_basename($mainModelClass)), // e.g., 'testWeatherStation'
-            \Illuminate\Support\Str::snake(class_basename($mainModelClass)), // e.g., 'test_weather_station'
-            \Illuminate\Support\Str::camel(\Illuminate\Support\Str::snake(class_basename($mainModelClass))), // e.g., 'testWeatherStation'
-
-            // Without 'Test' prefix for test models
-            lcfirst(str_replace('Test', '', class_basename($mainModelClass))), // e.g., 'weatherStation'
-            \Illuminate\Support\Str::snake(str_replace('Test', '', class_basename($mainModelClass))), // e.g., 'weather_station'
-            \Illuminate\Support\Str::camel(\Illuminate\Support\Str::snake(str_replace('Test', '', class_basename($mainModelClass)))), // e.g., 'weatherStation'
-        ];
-
-        // Check each possible name
-        foreach ($possibleNames as $name) {
-            if (method_exists($relatedModel, $name)) {
-                try {
-                    $relation = $relatedModel->{$name}();
-                    // Verify it's a BelongsTo relation pointing to the correct model
-                    if ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
-                        $related = $relation->getRelated();
-                        if (get_class($related) === $mainModelClass) {
-                            return $name;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Method exists but might not be a relation, continue checking
-                    continue;
-                }
-            }
-        }
-
-        // If no standard naming found, check all methods for BelongsTo relations
-        $reflection = new \ReflectionClass($relatedModel);
-        foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->getDeclaringClass()->getName() !== get_class($relatedModel)) {
-                continue; // Skip inherited methods
-            }
-
-            $methodName = $method->getName();
-            if (in_array($methodName, ['__construct', '__destruct', '__get', '__set', '__call', '__callStatic'])) {
-                continue; // Skip magic methods
-            }
-
-            try {
-                $result = $relatedModel->{$methodName}();
-                if ($result instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
-                    $related = $result->getRelated();
-                    if (get_class($related) === $mainModelClass) {
-                        return $methodName;
-                    }
-                }
-            } catch (\Exception $e) {
-                // Not a relation or requires parameters, skip
-                continue;
-            }
-        }
-
-        return null;
-    }
 
     /**
      * Build dependency relationships for a single model.
@@ -552,22 +491,7 @@ class BulkHashProcessor
                     }
                 }
 
-                // IMPORTANT: Filter dependent models by their relationship to the scoped main model
-                // This ensures we only include dependencies for models that meet the main model's scope
-                $mainModelClass = get_class($model);
-                $mainScope = $model->getHashableScope();
-
-                if ($mainScope && $relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable && $relatedModel instanceof \Illuminate\Database\Eloquent\Model) {
-                    // Get the inverse relationship name (e.g., 'weatherStation' for 'anemometers')
-                    $inverseRelation = $this->getInverseRelationName($relatedModel, $mainModelClass, $model);
-
-                    if ($inverseRelation) {
-                        // Filter to only get dependent models whose main model meets the scope
-                        $relation->whereHas($inverseRelation, function ($query) use ($mainScope) {
-                            $mainScope($query);
-                        });
-                    }
-                }
+                // No need for inverse relation lookup anymore - child models will register themselves
 
                 $relatedModels = $relation->get();
 
@@ -575,6 +499,23 @@ class BulkHashProcessor
                     if ($relatedModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
                         $relatedHash = $relatedModel->getCurrentHash();
                         if (! $relatedHash) {
+                            // Check if the related model is within its own scope
+                            $relatedModelScope = $relatedModel->getHashableScope();
+                            $isInScope = true;
+
+                            if ($relatedModelScope) {
+                                /** @var \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $relatedModel */
+                                $relatedClass = get_class($relatedModel);
+                                $query = $relatedClass::where($relatedModel->getKeyName(), $relatedModel->getKey());
+                                $relatedModelScope($query);
+                                $isInScope = $query->exists();
+                            }
+
+                            // Only create hash if the related model is in its scope
+                            if (! $isInScope) {
+                                continue; // Skip this dependency - related model is out of scope
+                            }
+
                             // Create a basic hash for the related model if it doesn't exist
                             // This ensures new records get hashes and can be dependencies
                             /** @var \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $relatedModel */
@@ -593,7 +534,8 @@ class BulkHashProcessor
                             'hash_id' => $relatedHash->id,
                             'dependent_model_type' => $model->getMorphClass(),
                             'dependent_model_id' => $model->getKey(),
-                            'relation_name' => $relationName,
+                        ], [
+                            'relation_name' => null, // Parent-to-child dependencies don't need relation names
                         ]);
 
                         $dependenciesCreated = true;
@@ -609,6 +551,116 @@ class BulkHashProcessor
         }
 
         return $dependenciesCreated;
+    }
+
+    /**
+     * Build parent dependency relationships for multiple models.
+     * This creates hash_dependents entries based on getHashParentRelations().
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  array<int>  $modelIds
+     */
+    public function buildParentDependenciesForIds(string $modelClass, array $modelIds): void
+    {
+        if (empty($modelIds)) {
+            return;
+        }
+
+        $model = new $modelClass;
+        $parentRelations = $model->getHashParentRelations();
+        if (empty($parentRelations)) {
+            return;
+        }
+
+        // Process in chunks to avoid memory issues
+        $chunks = array_chunk($modelIds, 1000);
+
+        foreach ($chunks as $chunk) {
+            /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
+            $models = $modelClass::whereIn($model->getKeyName(), $chunk);
+
+            // Apply scope if defined
+            $scope = $model->getHashableScope();
+            if ($scope) {
+                $scope($models);
+            }
+
+            /** @var \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> */
+            $models = $models->get();
+
+            foreach ($models as $childModel) {
+                /** @var \Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable $childModel */
+                $this->buildParentDependenciesForModel($childModel);
+            }
+        }
+    }
+
+    /**
+     * Build parent dependencies for a single model.
+     * Creates hash_dependents entries for each parent relation defined in getHashParentRelations().
+     *
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $childModel
+     */
+    private function buildParentDependenciesForModel(\Ameax\LaravelChangeDetection\Contracts\Hashable $childModel): void
+    {
+        $parentRelations = $childModel->getHashParentRelations();
+        if (empty($parentRelations)) {
+            return;
+        }
+
+        $childHash = $childModel->getCurrentHash();
+        if (! $childHash) {
+            return; // Skip if child has no hash
+        }
+
+        foreach ($parentRelations as $relationName) {
+            if (! method_exists($childModel, $relationName)) {
+                \Illuminate\Support\Facades\Log::warning(
+                    "Parent relation {$relationName} does not exist on ".get_class($childModel)
+                );
+                continue;
+            }
+
+            try {
+                $relation = $childModel->{$relationName}();
+
+                // Handle BelongsTo relations
+                if ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
+                    $parentModel = $relation->first();
+                    if ($parentModel && $parentModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                        // Check if parent model is within its scope
+                        $parentScope = $parentModel->getHashableScope();
+                        $isInScope = true;
+
+                        if ($parentScope) {
+                            // Check if parent model meets its scope criteria
+                            $parentClass = get_class($parentModel);
+                            $parentQuery = $parentClass::where($parentModel->getKeyName(), $parentModel->getKey());
+                            $parentScope($parentQuery);
+                            $isInScope = $parentQuery->exists();
+                        }
+
+                        // Only create dependency if parent is in scope
+                        if ($isInScope) {
+                            // Create dependency: child hash -> parent model
+                            \Ameax\LaravelChangeDetection\Models\HashDependent::updateOrCreate([
+                                'hash_id' => $childHash->id,
+                                'dependent_model_type' => $parentModel->getMorphClass(),
+                                'dependent_model_id' => $parentModel->getKey(),
+                            ], [
+                                'relation_name' => $relationName, // Store the relation name for parent dependencies
+                            ]);
+                        }
+                    }
+                }
+                // Could be extended to handle BelongsToMany or other relation types if needed
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning(
+                    "Failed to build parent dependency for relation {$relationName} on ".get_class($childModel),
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
     }
 
     /**

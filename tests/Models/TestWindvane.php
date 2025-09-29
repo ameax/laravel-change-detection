@@ -42,6 +42,11 @@ class TestWindvane extends Model implements Hashable
         return [];
     }
 
+    public function getHashParentRelations(): array
+    {
+        return ['weatherStation'];
+    }
+
     public function weatherStation(): BelongsTo
     {
         return $this->belongsTo(TestWeatherStation::class, 'weather_station_id');
