@@ -84,9 +84,6 @@ class TestCase extends Orchestra
             'test_weather_stations',
             'test_animals',
             'test_cars',
-            'test_comments',
-            'test_posts',
-            'test_users',
             'test_models',
             // Package tables
             'hash_dependents',
@@ -115,9 +112,6 @@ class TestCase extends Orchestra
             'test_weather_stations',
             'test_animals',
             'test_cars',
-            'test_comments',
-            'test_posts',
-            'test_users',
             'test_models',
             // Package tables
             'hash_dependents',
