@@ -3,8 +3,6 @@
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
-use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 
 /**
  * Query Performance Analysis Results
@@ -57,7 +55,6 @@ use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
  * 2. Partition hash_dependents table by dependent_model_type for very large datasets
  * 3. Add covering index if specific query patterns emerge
  */
-
 it('analyzes composite hash update query performance', function () {
     $hashesTable = config('change-detection.tables.hashes', 'hashes');
     $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
@@ -192,7 +189,7 @@ it('analyzes composite hash update query performance', function () {
     $duration = microtime(true) - $start;
 
     echo "Updated {$updated} parent composite hashes\n";
-    echo "Execution time: " . round($duration * 1000, 2) . " ms\n";
+    echo 'Execution time: '.round($duration * 1000, 2)." ms\n";
 
     expect($updated)->toBeGreaterThan(0);
 })->skip('Run manually with: vendor/bin/pest tests/Feature/QueryAnalysisTest.php --filter "analyzes composite hash update query performance"');
