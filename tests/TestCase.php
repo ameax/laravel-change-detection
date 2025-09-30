@@ -79,6 +79,10 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_microscope_manufacturer_registry',
+            'test_microscope_certification_registry',
+            'test_microscopes',
+            'test_laboratory_facilities',
             'test_anemometers',
             'test_windvanes',
             'test_weather_stations',
@@ -107,6 +111,10 @@ class TestCase extends Orchestra
 
         $tables = [
             // Test tables
+            'test_microscope_manufacturer_registry',
+            'test_microscope_certification_registry',
+            'test_microscopes',
+            'test_laboratory_facilities',
             'test_anemometers',
             'test_windvanes',
             'test_weather_stations',

@@ -71,10 +71,56 @@ return new class extends Migration
             $table->string('sensor_type');
             $table->timestamps();
         });
+
+        // Laboratory facilities - Main lab facility
+        Schema::create('test_laboratory_facilities', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('location');
+            $table->string('certification_level');
+            $table->string('facility_code')->unique();
+            $table->timestamps();
+        });
+
+        // Microscopes - Equipment at laboratories
+        Schema::create('test_microscopes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('laboratory_facility_id')->constrained('test_laboratory_facilities')->cascadeOnDelete();
+            $table->string('model');
+            $table->decimal('magnification', 8, 2);
+            $table->string('type');
+            $table->timestamps();
+        });
+
+        // Microscope certification registry - Separate table for join testing
+        Schema::create('test_microscope_certification_registry', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('microscope_id')->constrained('test_microscopes')->cascadeOnDelete();
+            $table->string('external_identifier');
+            $table->date('certification_date');
+            $table->timestamps();
+
+            $table->unique('external_identifier', 'test_microscope_cert_ext_id_unique');
+        });
+
+        // Microscope manufacturer registry - Second join table for testing multiple joins
+        Schema::create('test_microscope_manufacturer_registry', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('microscope_id')->constrained('test_microscopes')->cascadeOnDelete();
+            $table->string('manufacturer_external_id');
+            $table->string('manufacturer_name');
+            $table->timestamps();
+
+            $table->unique('manufacturer_external_id', 'test_microscope_mfr_ext_id_unique');
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('test_microscope_manufacturer_registry');
+        Schema::dropIfExists('test_microscope_certification_registry');
+        Schema::dropIfExists('test_microscopes');
+        Schema::dropIfExists('test_laboratory_facilities');
         Schema::dropIfExists('test_anemometers');
         Schema::dropIfExists('test_windvanes');
         Schema::dropIfExists('test_weather_stations');
