@@ -124,21 +124,17 @@ describe('parent relations dependency building', function () {
         $processor->buildPendingDependencies(TestWeatherStation::class);
         $processor->buildPendingDependencies(TestWindvane::class);
 
-        // Get windvane hashes
+        // Berlin windvane should NOT have a hash (parent station is out of scope)
         $berlinWindvaneHash = Hash::where('hashable_type', 'test_windvane')
             ->where('hashable_id', $berlinWindvane->id)
             ->first();
+        expect($berlinWindvaneHash)->toBeNull();
 
+        // Bayern windvane should have a hash (parent station is in scope)
         $bayernWindvaneHash = Hash::where('hashable_type', 'test_windvane')
             ->where('hashable_id', $bayernWindvane->id)
             ->first();
-
-        // Berlin station is out of scope, so no dependency should be created
-        $berlinDependency = HashDependent::where('hash_id', $berlinWindvaneHash->id)
-            ->where('dependent_model_type', 'test_weather_station')
-            ->where('dependent_model_id', $berlinStation->id)
-            ->first();
-        expect($berlinDependency)->toBeNull();
+        expect($bayernWindvaneHash)->not->toBeNull();
 
         // Bayern station is in scope, so dependency should be created
         $bayernDependency = HashDependent::where('hash_id', $bayernWindvaneHash->id)

@@ -342,8 +342,57 @@ class BulkHashProcessor
     }
 
     /**
+     * Check if a model has at least one parent that is in scope.
+     *
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
+     */
+    private function hasAtLeastOneParentInScope(\Ameax\LaravelChangeDetection\Contracts\Hashable $model): bool
+    {
+        $parentRelations = $model->getHashParentRelations();
+        if (empty($parentRelations)) {
+            return true; // No parent relations means no parent scope check needed
+        }
+
+        foreach ($parentRelations as $relationName) {
+            if (! method_exists($model, $relationName)) {
+                continue;
+            }
+
+            try {
+                $relation = $model->{$relationName}();
+                if ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
+                    $parentModel = $relation->first();
+                    if ($parentModel && $parentModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable) {
+                        // Check if parent is in scope
+                        $parentScope = $parentModel->getHashableScope();
+                        if (! $parentScope) {
+                            return true; // Parent has no scope, so it's considered "in scope"
+                        }
+
+                        $parentClass = get_class($parentModel);
+                        $parentQuery = $parentClass::where($parentModel->getKeyName(), $parentModel->getKey());
+                        $parentScope($parentQuery);
+                        if ($parentQuery->exists()) {
+                            return true; // At least one parent is in scope
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log and continue checking other parents
+                \Illuminate\Support\Facades\Log::warning(
+                    "Error checking parent scope for relation {$relationName}",
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return false; // No parents found in scope
+    }
+
+    /**
      * Build a subquery for scoped model filtering.
      * Returns empty string if no scope is defined.
+     * For models without their own scope but with parent relations, checks parent scope.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      */
@@ -352,29 +401,109 @@ class BulkHashProcessor
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (! $scope) {
-            return ''; // No scope defined, no filtering needed
+        if ($scope) {
+            // Model has its own scope - use it
+            $query = $modelClass::query();
+            $scope($query);
+
+            // Get the SQL and bindings from the scoped query
+            $subquerySql = $query->select($model->getKeyName())->toSql();
+
+            // Build qualified table name for cross-database compatibility
+            $modelConnection = $model->getConnection();
+            $modelDatabase = $modelConnection->getDatabaseName();
+            $table = $model->getTable();
+
+            if ($modelDatabase) {
+                // Replace the table name in the subquery with the qualified table name
+                $qualifiedTable = "`{$modelDatabase}`.`{$table}`";
+                $subquerySql = str_replace("`{$table}`", $qualifiedTable, $subquerySql);
+            }
+
+            return " AND {$tableAlias}.`{$primaryKey}` IN ({$subquerySql})";
         }
 
-        // Create a query with the scope applied to get the subquery SQL
-        $query = $modelClass::query();
-        $scope($query);
-
-        // Get the SQL and bindings from the scoped query
-        $subquerySql = $query->select($model->getKeyName())->toSql();
-
-        // Build qualified table name for cross-database compatibility
-        $modelConnection = $model->getConnection();
-        $modelDatabase = $modelConnection->getDatabaseName();
-        $table = $model->getTable();
-
-        if ($modelDatabase) {
-            // Replace the table name in the subquery with the qualified table name
-            $qualifiedTable = "`{$modelDatabase}`.`{$table}`";
-            $subquerySql = str_replace("`{$table}`", $qualifiedTable, $subquerySql);
+        // No own scope - check if model has parent relations that need scope filtering
+        $parentRelations = $model->getHashParentRelations();
+        if (empty($parentRelations)) {
+            return ''; // No scope and no parents - no filtering needed
         }
 
-        return " AND {$tableAlias}.`{$primaryKey}` IN ({$subquerySql})";
+        // Build parent scope subquery
+        return $this->buildParentScopeSubquery($model, $tableAlias, $primaryKey, $parentRelations);
+    }
+
+    /**
+     * Build a subquery that filters child models by their parent's scope.
+     *
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
+     * @param  array<string>  $parentRelations
+     */
+    private function buildParentScopeSubquery(\Ameax\LaravelChangeDetection\Contracts\Hashable $model, string $tableAlias, string $primaryKey, array $parentRelations): string
+    {
+        $conditions = [];
+
+        foreach ($parentRelations as $relationName) {
+            if (! method_exists($model, $relationName)) {
+                continue;
+            }
+
+            try {
+                $relation = $model->{$relationName}();
+
+                // Only handle BelongsTo relations for now
+                if (! ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo)) {
+                    continue;
+                }
+
+                $parentModel = $relation->getRelated();
+                if (! ($parentModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable)) {
+                    continue;
+                }
+
+                $parentScope = $parentModel->getHashableScope();
+                if (! $parentScope) {
+                    // Parent has no scope, so all children of this parent are valid
+                    return ''; // No filtering needed if any parent has no scope
+                }
+
+                // Get foreign key and owner key
+                $foreignKey = $relation->getForeignKeyName();
+                $ownerKey = $relation->getOwnerKeyName();
+
+                // Build parent scope subquery
+                $parentClass = get_class($parentModel);
+                $parentQuery = $parentClass::query();
+                $parentScope($parentQuery);
+
+                $parentSubquerySql = $parentQuery->select($ownerKey)->toSql();
+
+                // Build qualified parent table name
+                $parentConnection = $parentModel->getConnection();
+                $parentDatabase = $parentConnection->getDatabaseName();
+                $parentTable = $parentModel->getTable();
+
+                if ($parentDatabase) {
+                    $qualifiedParentTable = "`{$parentDatabase}`.`{$parentTable}`";
+                    $parentSubquerySql = str_replace("`{$parentTable}`", $qualifiedParentTable, $parentSubquerySql);
+                }
+
+                // Add condition for this parent relation
+                $conditions[] = "{$tableAlias}.`{$foreignKey}` IN ({$parentSubquerySql})";
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning(
+                    "Failed to build parent scope subquery for relation {$relationName}",
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if (empty($conditions)) {
+            return ''; // No valid parent relations with scope
+        }
+
+        // Use OR if multiple parent relations (child is valid if ANY parent is in scope)
+        return ' AND ('.implode(' OR ', $conditions).')';
     }
 
     /**
@@ -388,14 +517,65 @@ class BulkHashProcessor
         $model = new $modelClass;
         $scope = $model->getHashableScope();
 
-        if (! $scope) {
+        if ($scope) {
+            $query = $modelClass::query();
+            $scope($query);
+
+            return $query->getBindings();
+        }
+
+        // Check for parent scope bindings
+        $parentRelations = $model->getHashParentRelations();
+        if (empty($parentRelations)) {
             return [];
         }
 
-        $query = $modelClass::query();
-        $scope($query);
+        return $this->getParentScopeBindings($model, $parentRelations);
+    }
 
-        return $query->getBindings();
+    /**
+     * Get bindings from parent scope queries.
+     *
+     * @param  \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model  $model
+     * @param  array<string>  $parentRelations
+     * @return array<mixed>
+     */
+    private function getParentScopeBindings(\Ameax\LaravelChangeDetection\Contracts\Hashable $model, array $parentRelations): array
+    {
+        $bindings = [];
+
+        foreach ($parentRelations as $relationName) {
+            if (! method_exists($model, $relationName)) {
+                continue;
+            }
+
+            try {
+                $relation = $model->{$relationName}();
+                if (! ($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo)) {
+                    continue;
+                }
+
+                $parentModel = $relation->getRelated();
+                if (! ($parentModel instanceof \Ameax\LaravelChangeDetection\Contracts\Hashable)) {
+                    continue;
+                }
+
+                $parentScope = $parentModel->getHashableScope();
+                if (! $parentScope) {
+                    return []; // No scope on any parent means no bindings needed
+                }
+
+                $parentClass = get_class($parentModel);
+                $parentQuery = $parentClass::query();
+                $parentScope($parentQuery);
+
+                $bindings = array_merge($bindings, $parentQuery->getBindings());
+            } catch (\Exception $e) {
+                // Skip this relation
+            }
+        }
+
+        return $bindings;
     }
 
     /**
@@ -508,9 +688,16 @@ class BulkHashProcessor
                                 $query = $relatedClass::where($relatedModel->getKeyName(), $relatedModel->getKey());
                                 $relatedModelScope($query);
                                 $isInScope = $query->exists();
+                            } else {
+                                // If child has no scope but has parent relations, check if at least one parent is in scope
+                                $parentRelations = $relatedModel->getHashParentRelations();
+                                if (! empty($parentRelations)) {
+                                    /** @var \Ameax\LaravelChangeDetection\Contracts\Hashable&\Illuminate\Database\Eloquent\Model $relatedModel */
+                                    $isInScope = $this->hasAtLeastOneParentInScope($relatedModel);
+                                }
                             }
 
-                            // Only create hash if the related model is in its scope
+                            // Only create hash if the related model is in its scope (or has a parent in scope)
                             if (! $isInScope) {
                                 continue; // Skip this dependency - related model is out of scope
                             }

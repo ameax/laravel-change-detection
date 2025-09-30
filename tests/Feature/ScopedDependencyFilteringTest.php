@@ -72,15 +72,11 @@ describe('scope-aware dependency filtering', function () {
             ->first();
         expect($bayernAnemometerHash)->not->toBeNull();
 
-        // The Berlin anemometer should still have a hash (anemometers don't have scope)
+        // The Berlin anemometer should NOT have a hash (parent station is out of scope)
         $berlinAnemometerHash = Hash::where('hashable_type', 'test_anemometer')
             ->where('hashable_id', $berlinAnemometer->id)
             ->first();
-        expect($berlinAnemometerHash)->not->toBeNull();
-
-        // But the Berlin anemometer should NOT be in the hash_dependents table for any weather station
-        $berlinAnemometerDependency = HashDependent::where('hash_id', $berlinAnemometerHash->id)->first();
-        expect($berlinAnemometerDependency)->toBeNull();
+        expect($berlinAnemometerHash)->toBeNull();
 
         // The Bayern anemometer SHOULD be in hash_dependents for the Bayern station
         $bayernAnemometerDependency = HashDependent::where('hash_id', $bayernAnemometerHash->id)

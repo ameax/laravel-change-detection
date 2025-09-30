@@ -101,9 +101,11 @@ All core functionality is fully implemented and tested:
 
 ### Scope Filtering
 - **In-Scope Only**: Hashes are only created for models that match their `getHashableScope()` criteria
+- **Child Inherits Parent Scope**: If a child model has no scope of its own but defines parent relations via `getHashParentRelations()`, it will only get a hash if at least one parent is in scope
 - **Dependency Filtering**: Dependencies are only created to/from models that are in scope
 - **Soft Deletion**: When a model goes out of scope, its hash is soft-deleted (marked with `deleted_at`)
 - **Parent Scope Check**: Parent dependencies are only created if the parent model is also in scope
+- **MySQL Subqueries**: Parent scope filtering uses MySQL subqueries to efficiently handle 100k+ records without PHP-side ID filtering
 
 ### Publish Records
 - **ONE publish record per hash**: The system maintains exactly ONE publish record per main hash record
