@@ -102,10 +102,22 @@ return new class extends Migration
 
             $table->unique('external_identifier', 'test_microscope_cert_ext_id_unique');
         });
+
+        // Microscope manufacturer registry - Second join table for testing multiple joins
+        Schema::create('test_microscope_manufacturer_registry', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('microscope_id')->constrained('test_microscopes')->cascadeOnDelete();
+            $table->string('manufacturer_external_id');
+            $table->string('manufacturer_name');
+            $table->timestamps();
+
+            $table->unique('manufacturer_external_id', 'test_microscope_mfr_ext_id_unique');
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('test_microscope_manufacturer_registry');
         Schema::dropIfExists('test_microscope_certification_registry');
         Schema::dropIfExists('test_microscopes');
         Schema::dropIfExists('test_laboratory_facilities');

@@ -58,6 +58,16 @@ class TestMicroscope extends Model implements Hashable
                 ),
                 'columns' => ['external_identifier' => 'external_identifier'],
             ],
+            [
+                'model' => TestMicroscopeManufacturerRegistry::class,
+                'join' => fn ($join) => $join->leftJoin(
+                    'test_microscope_manufacturer_registry',
+                    'test_microscope_manufacturer_registry.microscope_id',
+                    '=',
+                    'test_microscopes.id'
+                ),
+                'columns' => ['manufacturer_external_id' => 'manufacturer_external_id'],
+            ],
         ];
     }
 
@@ -69,5 +79,10 @@ class TestMicroscope extends Model implements Hashable
     public function certificationRegistry(): HasOne
     {
         return $this->hasOne(TestMicroscopeCertificationRegistry::class, 'microscope_id');
+    }
+
+    public function manufacturerRegistry(): HasOne
+    {
+        return $this->hasOne(TestMicroscopeManufacturerRegistry::class, 'microscope_id');
     }
 }
