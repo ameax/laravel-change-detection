@@ -6,6 +6,15 @@ use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
+use Illuminate\Database\Eloquent\Relations\Relation;
+
+beforeEach(function () {
+    Relation::morphMap([
+        'test_weather_station' => TestWeatherStation::class,
+        'test_windvane' => TestWindvane::class,
+        'test_anemometer' => TestAnemometer::class,
+    ]);
+});
 
 describe('parent relations dependency building', function () {
     it('creates parent dependencies based on getHashParentRelations', function () {
