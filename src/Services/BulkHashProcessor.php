@@ -678,10 +678,14 @@ class BulkHashProcessor
         $model = new $modelClass;
         $morphClass = $model->getMorphClass();
 
-        // Batch update all hashes in this chunk
-        \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
-            ->whereIn('hashable_id', $modelIds)
-            ->update(['has_dependencies_built' => true]);
+        // Process in smaller chunks to avoid MySQL placeholder limit
+        $chunks = array_chunk($modelIds, 1000);
+
+        foreach ($chunks as $chunk) {
+            \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', $morphClass)
+                ->whereIn('hashable_id', $chunk)
+                ->update(['has_dependencies_built' => true]);
+        }
     }
 
     /**
