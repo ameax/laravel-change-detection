@@ -104,6 +104,7 @@ class BulkHashProcessor
     /**
      * Update composite hashes for all parent models.
      * This finds all models that have dependencies and recalculates their composite hashes.
+     * Uses a single bulk MySQL UPDATE query for maximum performance.
      *
      * @return int Number of parent models updated
      */
@@ -112,38 +113,42 @@ class BulkHashProcessor
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
 
-        // Find all parent models that have dependencies (including soft-deleted ones)
-        // We'll recalculate all of them to ensure they're up to date
-        // This includes parents whose dependencies might have been soft-deleted
-        $sql = "
-            SELECT DISTINCT hd.dependent_model_type, hd.dependent_model_id
+        // Use a single bulk UPDATE query that calculates composite hashes entirely in MySQL
+        // This replaces the previous N+1 approach that loaded each model individually
+        $dependencyHashSubquery = "
+            (SELECT MD5(GROUP_CONCAT(
+                IFNULL(dh.composite_hash, dh.attribute_hash)
+                ORDER BY hd.id, dh.hashable_type, dh.hashable_id
+                SEPARATOR '|'
+            ))
             FROM `{$hashDependentsTable}` hd
+            INNER JOIN `{$hashesTable}` dh
+                ON dh.id = hd.hash_id
+                AND dh.deleted_at IS NULL
+            WHERE hd.dependent_model_type = h.hashable_type
+              AND hd.dependent_model_id = h.hashable_id)
         ";
 
-        $results = $this->connection->select($sql);
+        $sql = "
+            UPDATE `{$hashesTable}` h
+            SET h.composite_hash = CASE
+                WHEN {$dependencyHashSubquery} IS NULL THEN h.attribute_hash
+                ELSE MD5(CONCAT(h.attribute_hash, '|', {$dependencyHashSubquery}))
+            END,
+            h.updated_at = ?
+            WHERE h.deleted_at IS NULL
+              AND EXISTS (
+                SELECT 1
+                FROM `{$hashDependentsTable}` hd
+                WHERE hd.dependent_model_type = h.hashable_type
+                  AND hd.dependent_model_id = h.hashable_id
+              )
+        ";
 
-        if (empty($results)) {
-            return 0;
-        }
+        $now = now()->utc()->toDateTimeString();
+        $updated = $this->connection->update($sql, [$now]);
 
-        // Group by model type for batch processing
-        $modelGroups = [];
-        foreach ($results as $result) {
-            $modelGroups[$result->dependent_model_type][] = $result->dependent_model_id;
-        }
-
-        $totalUpdated = 0;
-
-        // Update composite hashes for each model type
-        foreach ($modelGroups as $morphType => $modelIds) {
-            $modelClass = \Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper::getModelClassFromMorphName($morphType);
-            if ($modelClass) {
-                $this->recalculateCompositeHashesForIds($modelClass, $modelIds);
-                $totalUpdated += count($modelIds);
-            }
-        }
-
-        return $totalUpdated;
+        return $updated;
     }
 
     /**
