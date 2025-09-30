@@ -28,4 +28,9 @@ trait InteractsWithHashes
     {
         return [];
     }
+
+    public function getHashableJoins(): array
+    {
+        return [];
+    }
 }

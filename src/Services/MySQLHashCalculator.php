@@ -27,13 +27,27 @@ class MySQLHashCalculator
         $primaryKey = $model->getKeyName();
         $attributes = $model->getHashableAttributes();
         $modelId = $model->getKey();
+        $joins = $model->getHashableJoins();
 
         sort($attributes);
 
+        // Build main model attributes concat parts
+        // Wrap in MAX() for GROUP BY compatibility when joins are present
         $concatParts = [];
+        $wrapFunction = ! empty($joins) ? 'MAX' : '';
+
         foreach ($attributes as $attribute) {
-            $concatParts[] = "IFNULL(CAST(`{$attribute}` AS CHAR), '')";
+            $column = "IFNULL(CAST(`{$table}`.`{$attribute}` AS CHAR), '')";
+            $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
+
+        // Add joined columns (sorted alphabetically by alias)
+        $joinedColumns = $this->buildJoinedColumns($joins);
+        foreach ($joinedColumns as $alias) {
+            $column = "IFNULL(CAST(`{$alias}` AS CHAR), '')";
+            $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
+        }
+
         $concatExpression = 'CONCAT('.implode(", '|', ", $concatParts).')';
 
         $hashExpression = match ($this->hashAlgorithm) {
@@ -43,11 +57,20 @@ class MySQLHashCalculator
 
         // Use the model's connection for hash calculation to support cross-database scenarios
         $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+
+        // Build JOIN clauses with database prefixes
+        $joinClauses = $this->buildJoinClauses($joins, $modelDatabase, $modelConnection);
+
+        // Only add GROUP BY if there are joins
+        $groupByClause = ! empty($joins) ? "GROUP BY `{$table}`.`{$primaryKey}`" : '';
 
         $sql = "
             SELECT {$hashExpression} as attribute_hash
-            FROM `{$table}`
-            WHERE `{$primaryKey}` = ?
+            FROM `{$modelDatabase}`.`{$table}`
+            {$joinClauses}
+            WHERE `{$table}`.`{$primaryKey}` = ?
+            {$groupByClause}
         ";
 
         $result = $modelConnection->selectOne($sql, [$modelId]);
@@ -67,13 +90,27 @@ class MySQLHashCalculator
         $table = $model->getTable();
         $primaryKey = $model->getKeyName();
         $attributes = $model->getHashableAttributes();
+        $joins = $model->getHashableJoins();
 
         sort($attributes);
 
+        // Build main model attributes concat parts
+        // Wrap in MAX() for GROUP BY compatibility when joins are present
         $concatParts = [];
+        $wrapFunction = ! empty($joins) ? 'MAX' : '';
+
         foreach ($attributes as $attribute) {
-            $concatParts[] = "IFNULL(CAST(`{$attribute}` AS CHAR), '')";
+            $column = "IFNULL(CAST(`{$table}`.`{$attribute}` AS CHAR), '')";
+            $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
+
+        // Add joined columns (sorted alphabetically by alias)
+        $joinedColumns = $this->buildJoinedColumns($joins);
+        foreach ($joinedColumns as $alias) {
+            $column = "IFNULL(CAST(`{$alias}` AS CHAR), '')";
+            $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
+        }
+
         $concatExpression = 'CONCAT('.implode(", '|', ", $concatParts).')';
 
         $hashExpression = match ($this->hashAlgorithm) {
@@ -85,13 +122,22 @@ class MySQLHashCalculator
 
         // Use the model's connection for hash calculation to support cross-database scenarios
         $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+
+        // Build JOIN clauses with database prefixes
+        $joinClauses = $this->buildJoinClauses($joins, $modelDatabase, $modelConnection);
+
+        // Only add GROUP BY if there are joins
+        $groupByClause = ! empty($joins) ? "GROUP BY `{$table}`.`{$primaryKey}`" : '';
 
         $sql = "
             SELECT
-                `{$primaryKey}` as model_id,
+                `{$table}`.`{$primaryKey}` as model_id,
                 {$hashExpression} as attribute_hash
-            FROM `{$table}`
-            WHERE `{$primaryKey}` IN ({$placeholders})
+            FROM `{$modelDatabase}`.`{$table}`
+            {$joinClauses}
+            WHERE `{$table}`.`{$primaryKey}` IN ({$placeholders})
+            {$groupByClause}
         ";
 
         $results = $modelConnection->select($sql, $modelIds);
@@ -107,5 +153,69 @@ class MySQLHashCalculator
     public function getHashAlgorithm(): string
     {
         return $this->hashAlgorithm;
+    }
+
+    /**
+     * Build sorted array of joined column aliases.
+     *
+     * @param  array<array{model: class-string<Model>, join: \Closure, columns: array<string, string>}>  $joins
+     * @return array<string>
+     */
+    private function buildJoinedColumns(array $joins): array
+    {
+        $aliases = [];
+
+        foreach ($joins as $joinConfig) {
+            foreach ($joinConfig['columns'] as $alias) {
+                $aliases[] = $alias;
+            }
+        }
+
+        sort($aliases);
+
+        return $aliases;
+    }
+
+    /**
+     * Build JOIN clauses with database prefixes.
+     *
+     * @param  array<array{model: class-string<Model>, join: \Closure, columns: array<string, string>}>  $joins
+     */
+    private function buildJoinClauses(array $joins, string $modelDatabase, Connection $modelConnection): string
+    {
+        if (empty($joins)) {
+            return '';
+        }
+
+        $clauses = [];
+
+        foreach ($joins as $joinConfig) {
+            /** @var Model $joinModel */
+            $joinModel = new $joinConfig['model'];
+            $joinConnection = $joinModel->getConnection();
+            $joinDatabase = $joinConnection->getDatabaseName();
+            $joinTable = $joinModel->getTable();
+
+            // Build the join clause using the closure
+            $query = $modelConnection->query()->from('dummy');
+            $joinConfig['join']($query);
+
+            // Get the join clauses from the query builder
+            $joinClauses = $query->joins ?? [];
+
+            foreach ($joinClauses as $join) {
+                // Extract join information
+                $joinType = strtoupper($join->type);
+                $first = $join->wheres[0]['first'] ?? '';
+                $operator = $join->wheres[0]['operator'] ?? '=';
+                $second = $join->wheres[0]['second'] ?? '';
+
+                // Build SQL with database prefixes
+                $sql = "{$joinType} JOIN `{$joinDatabase}`.`{$joinTable}` ON {$first} {$operator} {$second}";
+                $clauses[] = $sql;
+            }
+        }
+
+        return implode(' ', $clauses);
     }
 }
