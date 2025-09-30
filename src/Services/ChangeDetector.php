@@ -257,9 +257,12 @@ class ChangeDetector
     {
         $model = new $modelClass;
         $scope = $model->getHashableScope();
+        $parentRelations = $model->getHashParentRelations();
 
+        $clauses = [];
+
+        // Add own scope if exists
         if ($scope) {
-            // Model has its own scope - use it
             $query = $modelClass::query();
             $scope($query);
 
@@ -277,17 +280,30 @@ class ChangeDetector
                 $subquerySql = str_replace("`{$table}`", $qualifiedTable, $subquerySql);
             }
 
-            return " AND {$tableAlias}.`{$primaryKey}` IN ({$subquerySql})";
+            $clauses[] = "{$tableAlias}.`{$primaryKey}` IN ({$subquerySql})";
         }
 
-        // No own scope - check if model has parent relations that need scope filtering
-        $parentRelations = $model->getHashParentRelations();
-        if (empty($parentRelations)) {
-            return ''; // No scope and no parents - no filtering needed
+        // Add parent scope if has parent relations
+        if (! empty($parentRelations)) {
+            $parentClause = $this->buildParentScopeSubquery($model, $tableAlias, $primaryKey, $parentRelations);
+            if ($parentClause) {
+                // Remove leading " AND " from parent clause
+                $parentClause = ltrim($parentClause, ' AND ');
+                $clauses[] = $parentClause;
+            }
         }
 
-        // Build parent scope subquery
-        return $this->buildParentScopeSubquery($model, $tableAlias, $primaryKey, $parentRelations);
+        if (empty($clauses)) {
+            return ''; // No filtering needed
+        }
+
+        // If only one clause, return it as-is (no extra wrapping)
+        if (count($clauses) === 1) {
+            return ' AND '.$clauses[0];
+        }
+
+        // Multiple clauses: combine with AND and wrap in parentheses
+        return ' AND ('.implode(' AND ', $clauses).')';
     }
 
     /**
@@ -365,6 +381,7 @@ class ChangeDetector
 
     /**
      * Get bindings from a scoped query for use in raw SQL.
+     * Collects bindings from both own scope and parent scope.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
      * @return array<mixed>
@@ -373,21 +390,24 @@ class ChangeDetector
     {
         $model = new $modelClass;
         $scope = $model->getHashableScope();
+        $parentRelations = $model->getHashParentRelations();
 
+        $bindings = [];
+
+        // Collect own scope bindings
         if ($scope) {
             $query = $modelClass::query();
             $scope($query);
-
-            return $query->getBindings();
+            $bindings = array_merge($bindings, $query->getBindings());
         }
 
-        // Check for parent scope bindings
-        $parentRelations = $model->getHashParentRelations();
-        if (empty($parentRelations)) {
-            return [];
+        // Collect parent scope bindings
+        if (! empty($parentRelations)) {
+            $parentBindings = $this->getParentScopeBindings($model, $parentRelations);
+            $bindings = array_merge($bindings, $parentBindings);
         }
 
-        return $this->getParentScopeBindings($model, $parentRelations);
+        return $bindings;
     }
 
     /**
