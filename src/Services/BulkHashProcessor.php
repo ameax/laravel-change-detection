@@ -198,10 +198,8 @@ class BulkHashProcessor
             END
         ";
 
-        // Add scope filtering
-        $scopeClause = $this->buildScopeSubquery($modelClass, 'm', $primaryKey);
-        $scopeBindings = $this->getScopeBindings($modelClass);
-
+        // Note: No scope filtering here because the IDs passed to this method
+        // are already filtered by ChangeDetector::detectChangedModelIds()
         $idsPlaceholder = str_repeat('?,', count($modelIds) - 1).'?';
 
         $now = now()->utc()->toDateTimeString();
@@ -217,7 +215,6 @@ class BulkHashProcessor
                 ? as updated_at
             FROM {$qualifiedTable} m
             WHERE m.`{$primaryKey}` IN ({$idsPlaceholder})
-            {$scopeClause}
             ON DUPLICATE KEY UPDATE
                 attribute_hash = VALUES(attribute_hash),
                 composite_hash = VALUES(composite_hash),
@@ -225,7 +222,7 @@ class BulkHashProcessor
                 deleted_at = NULL
         ";
 
-        $bindings = array_merge([$morphClass, $now, $now], $modelIds, $scopeBindings);
+        $bindings = array_merge([$morphClass, $now, $now], $modelIds);
         $this->connection->statement($sql, $bindings);
 
         // Don't build dependencies here - let buildPendingDependencies handle it
