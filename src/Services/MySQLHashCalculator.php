@@ -206,12 +206,13 @@ class MySQLHashCalculator
             foreach ($joinClauses as $join) {
                 // Extract join information
                 $joinType = strtoupper($join->type);
+                $actualJoinTable = $join->table;
                 $first = $join->wheres[0]['first'] ?? '';
                 $operator = $join->wheres[0]['operator'] ?? '=';
                 $second = $join->wheres[0]['second'] ?? '';
 
                 // Build SQL with database prefixes
-                $sql = "{$joinType} JOIN `{$joinDatabase}`.`{$joinTable}` ON {$first} {$operator} {$second}";
+                $sql = "{$joinType} JOIN `{$joinDatabase}`.`{$actualJoinTable}` ON {$first} {$operator} {$second}";
                 $clauses[] = $sql;
             }
         }
