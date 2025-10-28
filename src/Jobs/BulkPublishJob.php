@@ -19,8 +19,6 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 600; // 10 minutes
-
     public int $tries = 3;
 
     public int $maxExceptions = 3;
@@ -31,11 +29,10 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     private const LOCK_KEY = 'bulk_publish_job_running';
 
-    private const LOCK_TIMEOUT = 600; // 10 minutes
-
     public function __construct()
     {
         $this->onQueue(config('change-detection.queues.publish', 'default'));
+        $this->timeout = config('change-detection.job_timeout', 1800);
     }
 
     /**
@@ -487,7 +484,9 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     private function acquireLock(): bool
     {
-        return Cache::lock(self::LOCK_KEY, self::LOCK_TIMEOUT)->get();
+        $lockTimeout = config('change-detection.job_timeout', 1800);
+
+        return Cache::lock(self::LOCK_KEY, $lockTimeout)->get();
     }
 
     private function releaseLock(): void

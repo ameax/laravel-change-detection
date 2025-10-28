@@ -83,4 +83,16 @@ return [
     |
     */
     'job_unique_for' => env('CHANGE_DETECTION_JOB_UNIQUE_FOR', 2),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Maximum execution time (in seconds) for the BulkPublishJob.
+    | Should be set high enough to process a full batch including delays.
+    | Default: 1800 seconds (30 minutes)
+    |
+    */
+    'job_timeout' => env('CHANGE_DETECTION_JOB_TIMEOUT', 1800),
 ];
