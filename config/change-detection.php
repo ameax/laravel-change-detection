@@ -95,4 +95,16 @@ return [
     |
     */
     'job_timeout' => env('CHANGE_DETECTION_JOB_TIMEOUT', 1800),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Dispatch Delay
+    |--------------------------------------------------------------------------
+    |
+    | Delay (in seconds) before dispatching the next batch job.
+    | This prevents overwhelming the server with continuous job execution.
+    | Default: 10 seconds
+    |
+    */
+    'job_dispatch_delay' => env('CHANGE_DETECTION_JOB_DISPATCH_DELAY', 10),
 ];

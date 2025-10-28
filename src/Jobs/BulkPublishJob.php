@@ -471,11 +471,13 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                 'count' => $remainingCount,
             ]);
 
-            // Dispatch next job with small delay to prevent overwhelming
-            $job = self::dispatch()->delay(now()->addSeconds(1));
+            // Dispatch next job with configurable delay to prevent overwhelming server
+            $delaySeconds = config('change-detection.job_dispatch_delay', 10);
+            $job = self::dispatch()->delay(now()->addSeconds($delaySeconds));
 
             Log::info('BulkPublishJob: Next batch dispatched', [
-                'delayed_until' => now()->addSeconds(1)->toDateTimeString(),
+                'delay_seconds' => $delaySeconds,
+                'delayed_until' => now()->addSeconds($delaySeconds)->toDateTimeString(),
             ]);
         } else {
             Log::info('BulkPublishJob: All pending publishes processed');
