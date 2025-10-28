@@ -27,8 +27,6 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     private const DEFAULT_DELAY_MS = 50;
 
-    private const LOCK_KEY = 'bulk_publish_job_running';
-
     public function __construct()
     {
         $this->onQueue(config('change-detection.queues.publish', 'default'));
@@ -58,21 +56,9 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             'job_id' => $this->job?->uuid() ?? 'unknown',
         ]);
 
-        // Additional lock check for extra safety
-        if (! $this->acquireLock()) {
-            Log::info('BulkPublishJob: Another instance is running, skipping');
+        $this->processPendingPublishes();
 
-            return;
-        }
-
-        Log::info('BulkPublishJob: Lock acquired successfully');
-
-        try {
-            $this->processPendingPublishes();
-        } finally {
-            $this->releaseLock();
-            Log::info('BulkPublishJob: Lock released');
-        }
+        Log::info('BulkPublishJob: Processing completed');
     }
 
     private function processPendingPublishes(): void
@@ -484,25 +470,11 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    private function acquireLock(): bool
-    {
-        $lockTimeout = config('change-detection.job_timeout', 1800);
-
-        return Cache::lock(self::LOCK_KEY, $lockTimeout)->get();
-    }
-
-    private function releaseLock(): void
-    {
-        Cache::lock(self::LOCK_KEY)->release();
-    }
-
     public function failed(\Throwable $exception): void
     {
         Log::error('BulkPublishJob: Job failed permanently', [
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
         ]);
-
-        $this->releaseLock();
     }
 }
