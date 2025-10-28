@@ -50,19 +50,19 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        Log::info('BulkPublishJob: handle() called', [
+        $this->log('info', 'BulkPublishJob: handle() called', [
             'unique_for' => $this->uniqueFor(),
             'job_id' => $this->job?->uuid() ?? 'unknown',
         ]);
 
         $this->processPendingPublishes();
 
-        Log::info('BulkPublishJob: Processing completed');
+        $this->log('info', 'BulkPublishJob: Processing completed');
     }
 
     private function processPendingPublishes(): void
     {
-        Log::info('BulkPublishJob: Starting bulk publish processing');
+        $this->log('info', 'BulkPublishJob: Starting bulk publish processing');
 
         // Process by publisher type to use their specific settings
         $publisherTypes = Publish::pendingOrDeferred()
@@ -70,19 +70,19 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             ->get()
             ->groupBy('publisher_id');
 
-        Log::info('BulkPublishJob: Queried pending publishes', [
+        $this->log('info', 'BulkPublishJob: Queried pending publishes', [
             'total_records' => $publisherTypes->flatten()->count(),
             'publisher_count' => $publisherTypes->count(),
         ]);
 
         if ($publisherTypes->isEmpty()) {
-            Log::info('BulkPublishJob: No pending publishes found');
+            $this->log('info', 'BulkPublishJob: No pending publishes found');
 
             return;
         }
 
         foreach ($publisherTypes as $publisherId => $publishGroup) {
-            Log::info('BulkPublishJob: Processing publisher group', [
+            $this->log('info', 'BulkPublishJob: Processing publisher group', [
                 'publisher_id' => $publisherId,
                 'records_in_group' => $publishGroup->count(),
             ]);
@@ -93,7 +93,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     private function processPublisherBatch(\Ameax\LaravelChangeDetection\Models\Publisher $publisher): void
     {
-        Log::info('BulkPublishJob: Starting processPublisherBatch', [
+        $this->log('info', 'BulkPublishJob: Starting processPublisherBatch', [
             'publisher' => $publisher->name,
             'publisher_id' => $publisher->id,
         ]);
@@ -106,7 +106,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             $this->getPublisherDelay($publisher->publisher_class) :
             self::DEFAULT_DELAY_MS;
 
-        Log::info('BulkPublishJob: Publisher settings loaded', [
+        $this->log('info', 'BulkPublishJob: Publisher settings loaded', [
             'batch_size' => $batchSize,
             'delay_ms' => $delayMs,
         ]);
@@ -118,7 +118,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                 $publisherInstance = app($publisher->publisher_class);
             }
         } catch (\Exception $e) {
-            Log::error('BulkPublishJob: Could not instantiate publisher', [
+            $this->log('error', 'BulkPublishJob: Could not instantiate publisher', [
                 'publisher' => $publisher->name,
                 'class' => $publisher->publisher_class,
                 'error' => $e->getMessage(),
@@ -138,7 +138,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        Log::info('BulkPublishJob: Processing {count} records for {publisher}', [
+        $this->log('info', 'BulkPublishJob: Processing {count} records for {publisher}', [
             'count' => $publishRecords->count(),
             'publisher' => $publisher->name,
             'batch_size' => $batchSize,
@@ -169,7 +169,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                         $deferredCount++;
                         break;
                     case 'stop_job':
-                        Log::warning('BulkPublishJob: Stopping job due to critical error', [
+                        $this->log('warning', 'BulkPublishJob: Stopping job due to critical error', [
                             'publisher' => $publisher->name,
                             'reason' => $result['reason'] ?? 'Unknown',
                         ]);
@@ -190,7 +190,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
                     // Stop job if too many errors of specific type
                     if ($maxValidationErrors > 0 && $validationErrors >= $maxValidationErrors) {
-                        Log::warning('BulkPublishJob: Stopping job due to too many validation errors', [
+                        $this->log('warning', 'BulkPublishJob: Stopping job due to too many validation errors', [
                             'publisher' => $publisher->name,
                             'validation_errors' => $validationErrors,
                             'max_allowed' => $maxValidationErrors,
@@ -200,7 +200,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                     }
 
                     if ($maxInfrastructureErrors > 0 && $infrastructureErrors >= $maxInfrastructureErrors) {
-                        Log::warning('BulkPublishJob: Stopping job due to infrastructure errors', [
+                        $this->log('warning', 'BulkPublishJob: Stopping job due to infrastructure errors', [
                             'publisher' => $publisher->name,
                             'infrastructure_errors' => $infrastructureErrors,
                             'max_allowed' => $maxInfrastructureErrors,
@@ -216,7 +216,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                 }
 
             } catch (\Exception $e) {
-                Log::error('BulkPublishJob: Unexpected exception processing publish record', [
+                $this->log('error', 'BulkPublishJob: Unexpected exception processing publish record', [
                     'publish_id' => $publishRecord->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -225,7 +225,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
                 // Stop on unexpected exceptions if limit reached
                 if ($maxInfrastructureErrors > 0 && $infrastructureErrors >= $maxInfrastructureErrors) {
-                    Log::error('BulkPublishJob: Stopping job due to unexpected exceptions', [
+                    $this->log('error', 'BulkPublishJob: Stopping job due to unexpected exceptions', [
                         'publisher' => $publisher->name,
                         'infrastructure_errors' => $infrastructureErrors,
                     ]);
@@ -235,7 +235,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        Log::info('BulkPublishJob: Completed batch for {publisher}', [
+        $this->log('info', 'BulkPublishJob: Completed batch for {publisher}', [
             'publisher' => $publisher->name,
             'total_processed' => $publishRecords->count(),
             'successful' => $successCount,
@@ -260,7 +260,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
             return $publisher->getBatchSize() ?: self::DEFAULT_BATCH_SIZE;
         } catch (\Exception $e) {
-            Log::warning('BulkPublishJob: Could not get batch size for {class}', [
+            $this->log('warning', 'BulkPublishJob: Could not get batch size for {class}', [
                 'class' => $publisherClass,
                 'error' => $e->getMessage(),
             ]);
@@ -280,7 +280,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
             return $publisher->getDelayMs();
         } catch (\Exception $e) {
-            Log::warning('BulkPublishJob: Could not get delay for {class}', [
+            $this->log('warning', 'BulkPublishJob: Could not get delay for {class}', [
                 'class' => $publisherClass,
                 'error' => $e->getMessage(),
             ]);
@@ -295,7 +295,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
     private function processPublishRecord(Publish $publishRecord, ?\Ameax\LaravelChangeDetection\Contracts\Publisher $publisherInstance = null): array
     {
         if (! $publishRecord->hash) {
-            Log::warning('BulkPublishJob: Publish record has no hash', [
+            $this->log('warning', 'BulkPublishJob: Publish record has no hash', [
                 'publish_id' => $publishRecord->id,
             ]);
             $publishRecord->markAsFailed('No hash found', null, 'data');
@@ -325,7 +325,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             }
 
             if (! $publisher->shouldPublish($hashableModel)) {
-                Log::info('BulkPublishJob: Publisher says model should not be published', [
+                $this->log('info', 'BulkPublishJob: Publisher says model should not be published', [
                     'publish_id' => $publishRecord->id,
                     'model_class' => get_class($hashableModel),
                     'model_id' => $hashableModel->getKey(),
@@ -340,7 +340,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
             if ($success) {
                 $publishRecord->markAsPublished();
-                Log::debug('BulkPublishJob: Successfully published', [
+                $this->log('debug', 'BulkPublishJob: Successfully published', [
                     'publish_id' => $publishRecord->id,
                 ]);
 
@@ -352,7 +352,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             }
 
         } catch (\Exception $e) {
-            Log::error('BulkPublishJob: Failed to publish record', [
+            $this->log('error', 'BulkPublishJob: Failed to publish record', [
                 'publish_id' => $publishRecord->id,
                 'error' => $e->getMessage(),
             ]);
@@ -447,12 +447,12 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         // Check if there are more pending records
         $remainingCount = Publish::pendingOrDeferred()->count();
 
-        Log::info('BulkPublishJob: Checking for next batch', [
+        $this->log('info', 'BulkPublishJob: Checking for next batch', [
             'remaining_count' => $remainingCount,
         ]);
 
         if ($remainingCount > 0) {
-            Log::info('BulkPublishJob: {count} records remaining, dispatching next batch', [
+            $this->log('info', 'BulkPublishJob: {count} records remaining, dispatching next batch', [
                 'count' => $remainingCount,
             ]);
 
@@ -460,20 +460,34 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             $delaySeconds = config('change-detection.job_dispatch_delay', 10);
             $job = self::dispatch()->delay(now()->addSeconds($delaySeconds));
 
-            Log::info('BulkPublishJob: Next batch dispatched', [
+            $this->log('info', 'BulkPublishJob: Next batch dispatched', [
                 'delay_seconds' => $delaySeconds,
                 'delayed_until' => now()->addSeconds($delaySeconds)->toDateTimeString(),
             ]);
         } else {
-            Log::info('BulkPublishJob: All pending publishes processed');
+            $this->log('info', 'BulkPublishJob: All pending publishes processed');
         }
     }
 
     public function failed(\Throwable $exception): void
     {
-        Log::error('BulkPublishJob: Job failed permanently', [
+        $this->log('error', 'BulkPublishJob: Job failed permanently', [
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
         ]);
+    }
+
+    /**
+     * Log to the configured publishing channel
+     */
+    private function log(string $level, string $message, array $context = []): void
+    {
+        $channel = config('change-detection.log_channels.publishing');
+
+        if ($channel) {
+            Log::channel($channel)->$level($message, $context);
+        } else {
+            Log::$level($message, $context);
+        }
     }
 }

@@ -107,4 +107,18 @@ return [
     |
     */
     'job_dispatch_delay' => env('CHANGE_DETECTION_JOB_DISPATCH_DELAY', 10),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Channels
+    |--------------------------------------------------------------------------
+    |
+    | Configure which log channels to use for different operations.
+    | Set to null to use the default log channel.
+    |
+    */
+    'log_channels' => [
+        'change_detection' => env('CHANGE_DETECTION_LOG_CHANNEL', null),
+        'publishing' => env('CHANGE_DETECTION_PUBLISHING_LOG_CHANNEL', null),
+    ],
 ];
