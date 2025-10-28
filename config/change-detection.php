@@ -77,12 +77,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | How long (in seconds) should a job remain unique after being dispatched.
-    | This prevents duplicate jobs from running simultaneously.
-    | Should be set to the expected job duration to prevent overlapping jobs.
-    | Default: 600 seconds (10 minutes)
+    | This prevents duplicate jobs from being added to the queue.
+    | Should be longer than the dispatch delay but shorter than job duration.
+    | Default: 20 seconds
     |
     */
-    'job_unique_for' => env('CHANGE_DETECTION_JOB_UNIQUE_FOR', 600),
+    'job_unique_for' => env('CHANGE_DETECTION_JOB_UNIQUE_FOR', 20),
 
     /*
     |--------------------------------------------------------------------------
