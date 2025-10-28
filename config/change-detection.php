@@ -70,4 +70,17 @@ return [
     |
     */
     'hash_algorithm' => 'md5',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Unique Lock Duration
+    |--------------------------------------------------------------------------
+    |
+    | How long (in seconds) should a job remain unique after being dispatched.
+    | This prevents duplicate jobs from running simultaneously. Lower values
+    | allow faster batch processing but may cause overlapping jobs.
+    | Default: 2 seconds
+    |
+    */
+    'job_unique_for' => env('CHANGE_DETECTION_JOB_UNIQUE_FOR', 2),
 ];

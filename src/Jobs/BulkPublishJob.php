@@ -51,7 +51,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
      */
     public function uniqueFor(): int
     {
-        return 30; // Wait 30 seconds before allowing retry
+        return config('change-detection.job_unique_for', 2);
     }
 
     public function handle(): void
