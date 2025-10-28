@@ -110,6 +110,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sync Job Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the SyncHashesJob behavior.
+    |
+    */
+    'sync_job_unique_for' => env('CHANGE_DETECTION_SYNC_JOB_UNIQUE_FOR', 120),
+    'sync_job_timeout' => env('CHANGE_DETECTION_SYNC_JOB_TIMEOUT', 3600),
+
+    /*
+    |--------------------------------------------------------------------------
     | Log Channels
     |--------------------------------------------------------------------------
     |
