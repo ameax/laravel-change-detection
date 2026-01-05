@@ -29,6 +29,10 @@ class MySQLHashCalculator
         $modelId = $model->getKey();
         $joins = $model->getHashableJoins();
 
+        // Use the model's connection for hash calculation to support cross-database scenarios
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+
         sort($attributes);
 
         // Build main model attributes concat parts
@@ -41,10 +45,10 @@ class MySQLHashCalculator
             $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
 
-        // Add joined columns (sorted alphabetically by alias)
-        $joinedColumns = $this->buildJoinedColumns($joins);
-        foreach ($joinedColumns as $alias) {
-            $column = "IFNULL(CAST(`{$alias}` AS CHAR), '')";
+        // Add joined columns (sorted alphabetically, already fully qualified with database prefix)
+        $joinedColumns = $this->buildJoinedColumns($joins, $modelDatabase);
+        foreach ($joinedColumns as $qualifiedColumn) {
+            $column = "IFNULL(CAST({$qualifiedColumn} AS CHAR), '')";
             $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
 
@@ -54,10 +58,6 @@ class MySQLHashCalculator
             'sha256' => "SHA2({$concatExpression}, 256)",
             default => "MD5({$concatExpression})"
         };
-
-        // Use the model's connection for hash calculation to support cross-database scenarios
-        $modelConnection = $model->getConnection();
-        $modelDatabase = $modelConnection->getDatabaseName();
 
         // Build JOIN clauses with database prefixes
         $joinClauses = $this->buildJoinClauses($joins, $modelDatabase, $modelConnection);
@@ -92,6 +92,10 @@ class MySQLHashCalculator
         $attributes = $model->getHashableAttributes();
         $joins = $model->getHashableJoins();
 
+        // Use the model's connection for hash calculation to support cross-database scenarios
+        $modelConnection = $model->getConnection();
+        $modelDatabase = $modelConnection->getDatabaseName();
+
         sort($attributes);
 
         // Build main model attributes concat parts
@@ -104,10 +108,10 @@ class MySQLHashCalculator
             $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
 
-        // Add joined columns (sorted alphabetically by alias)
-        $joinedColumns = $this->buildJoinedColumns($joins);
-        foreach ($joinedColumns as $alias) {
-            $column = "IFNULL(CAST(`{$alias}` AS CHAR), '')";
+        // Add joined columns (sorted alphabetically, already fully qualified with database prefix)
+        $joinedColumns = $this->buildJoinedColumns($joins, $modelDatabase);
+        foreach ($joinedColumns as $qualifiedColumn) {
+            $column = "IFNULL(CAST({$qualifiedColumn} AS CHAR), '')";
             $concatParts[] = $wrapFunction ? "{$wrapFunction}({$column})" : $column;
         }
 
@@ -119,10 +123,6 @@ class MySQLHashCalculator
         };
 
         $placeholders = str_repeat('?,', count($modelIds) - 1).'?';
-
-        // Use the model's connection for hash calculation to support cross-database scenarios
-        $modelConnection = $model->getConnection();
-        $modelDatabase = $modelConnection->getDatabaseName();
 
         // Build JOIN clauses with database prefixes
         $joinClauses = $this->buildJoinClauses($joins, $modelDatabase, $modelConnection);
@@ -156,24 +156,32 @@ class MySQLHashCalculator
     }
 
     /**
-     * Build sorted array of joined column aliases.
+     * Build sorted array of joined column references with database prefix.
      *
      * @param  array<array{model: class-string<Model>, join: \Closure, columns: array<string, string>}>  $joins
+     * @param  string  $database  The database name to prefix columns with
      * @return array<string>
      */
-    private function buildJoinedColumns(array $joins): array
+    private function buildJoinedColumns(array $joins, string $database): array
     {
-        $aliases = [];
+        $columns = [];
 
         foreach ($joins as $joinConfig) {
             foreach ($joinConfig['columns'] as $alias) {
-                $aliases[] = $alias;
+                // Convert table.column to `database`.`table`.`column`
+                $parts = explode('.', $alias);
+                if (count($parts) === 2) {
+                    $columns[] = "`{$database}`.`{$parts[0]}`.`{$parts[1]}`";
+                } else {
+                    // Fallback: wrap as-is
+                    $columns[] = "`{$alias}`";
+                }
             }
         }
 
-        sort($aliases);
+        sort($columns);
 
-        return $aliases;
+        return $columns;
     }
 
     /**
