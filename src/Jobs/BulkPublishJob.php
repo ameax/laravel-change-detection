@@ -91,7 +91,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    private function processPublisherBatch(\Ameax\LaravelChangeDetection\Models\Publisher $publisher): void
+    private function processPublisherBatch(Publisher $publisher): void
     {
         $this->log('info', 'BulkPublishJob: Starting processPublisherBatch', [
             'publisher' => $publisher->name,

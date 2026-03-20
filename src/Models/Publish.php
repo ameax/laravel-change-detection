@@ -9,24 +9,26 @@ use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property int $id
  * @property int|null $hash_id
  * @property int $publisher_id
  * @property string|null $published_hash
- * @property \Illuminate\Support\Carbon|null $published_at
+ * @property Carbon|null $published_at
  * @property PublishStatusEnum $status
  * @property int $attempts
  * @property string|null $last_error
  * @property int|null $last_response_code
  * @property PublishErrorTypeEnum|null $error_type
- * @property \Illuminate\Support\Carbon|null $next_try
+ * @property Carbon|null $next_try
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Ameax\LaravelChangeDetection\Models\Hash|null $hash
- * @property-read \Ameax\LaravelChangeDetection\Models\Publisher $publisher
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Hash|null $hash
+ * @property-read Publisher $publisher
  */
 class Publish extends Model
 {
@@ -334,7 +336,7 @@ class Publish extends Model
     public function publishImmediatelyOrQueue(): bool
     {
         // Check if bulk job is running
-        if (\Illuminate\Support\Facades\Cache::has('bulk_publish_job_running')) {
+        if (Cache::has('bulk_publish_job_running')) {
             // Bulk job is running, let it handle this record
             return true;
         }

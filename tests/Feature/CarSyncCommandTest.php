@@ -2,10 +2,11 @@
 
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 beforeEach(function () {
     // Register TestCar in the morph map for cleaner database entries
-    \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+    Relation::morphMap([
         'test_car' => TestCar::class,
     ]);
 });

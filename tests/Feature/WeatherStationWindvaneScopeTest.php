@@ -1,6 +1,8 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Models\Hash;
+use Ameax\LaravelChangeDetection\Models\HashDependent;
+use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWindvane;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -72,14 +74,14 @@ describe('windvane scope filtering based on parent station', function () {
         expect($windvaneOutOfScopeHash)->toBeNull();
 
         // The in-scope windvane should have a dependency to the station
-        $inScopeDependency = \Ameax\LaravelChangeDetection\Models\HashDependent::where('hash_id', $windvaneInScopeHash->id)
+        $inScopeDependency = HashDependent::where('hash_id', $windvaneInScopeHash->id)
             ->where('dependent_model_type', 'test_weather_station')
             ->where('dependent_model_id', $stationInScope->id)
             ->first();
         expect($inScopeDependency)->not->toBeNull();
 
         // Verify publish records only created for in-scope models
-        $publishCount = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)->count();
+        $publishCount = Publish::where('publisher_id', $publisher->id)->count();
         expect($publishCount)->toBe(1); // Only for the station in scope
     });
 });

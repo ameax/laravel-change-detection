@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Services;
 
+use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class BulkPublishProcessor
@@ -26,7 +28,7 @@ class BulkPublishProcessor
      * 3. Soft-delete publish records when hash is soft-deleted
      * 4. Reactivate soft-deleted publishes when hash is restored
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  class-string<Model&Hashable>  $modelClass
      * @return array{created: int, updated: int}
      */
     public function syncAllPublishRecords(string $modelClass): array
@@ -67,7 +69,7 @@ class BulkPublishProcessor
      * Synchronize publish records for models that have recently changed.
      * Uses a subquery to find changed models instead of passing IDs.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable>  $modelClass
+     * @param  class-string<Model&Hashable>  $modelClass
      * @param  int|null  $limit  Limit the number of models to process
      * @return array{created: int, updated: int}
      */

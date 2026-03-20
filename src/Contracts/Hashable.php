@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Ameax\LaravelChangeDetection\Contracts;
 
+use Ameax\LaravelChangeDetection\Models\Hash;
+use Illuminate\Database\Eloquent\Model;
+
 interface Hashable
 {
     /**
@@ -36,7 +39,7 @@ interface Hashable
     /**
      * Get the current hash record for this model.
      *
-     * @return \Ameax\LaravelChangeDetection\Models\Hash|null
+     * @return Hash|null
      */
     public function getCurrentHash(): ?object;
 
@@ -79,7 +82,7 @@ interface Hashable
      *     ]
      * ];
      *
-     * @return array<array{model: class-string<\Illuminate\Database\Eloquent\Model>, join: \Closure, columns: array<string, string>}>
+     * @return array<array{model: class-string<Model>, join: \Closure, columns: array<string, string>}>
      */
     public function getHashableJoins(): array;
 }

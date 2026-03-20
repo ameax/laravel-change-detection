@@ -2,6 +2,7 @@
 
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
+use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnimal;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
@@ -284,7 +285,7 @@ describe('edge cases', function () {
         runSyncForModel(TestAnimal::class);
 
         expectActiveHashCount(2);
-        expect(\Ameax\LaravelChangeDetection\Models\Publish::count())->toBe(0);
+        expect(Publish::count())->toBe(0);
     });
 });
 
@@ -300,7 +301,7 @@ describe('robustness scenarios', function () {
         runSyncForModel(TestAnimal::class);
 
         // Simulate concurrent operations: one marks publish as dispatched
-        $publish = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)->first();
+        $publish = Publish::where('publisher_id', $publisher->id)->first();
         $publish->update(['status' => PublishStatusEnum::DISPATCHED]);
 
         // Animal leaves scope while publish is dispatched
@@ -326,7 +327,7 @@ describe('robustness scenarios', function () {
         runSyncForModel(TestAnimal::class);
 
         // Get the publish record
-        $publish = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
+        $publish = Publish::where('publisher_id', $publisher->id)
             ->whereHas('hash', function ($query) {
                 $query->where('hashable_id', 1);
             })->first();
@@ -360,7 +361,7 @@ describe('robustness scenarios', function () {
         runSyncForModel(TestAnimal::class);
 
         // Verify publish is soft-deleted
-        $publish = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
+        $publish = Publish::where('publisher_id', $publisher->id)
             ->whereHas('hash', function ($query) {
                 $query->where('hashable_id', 1);
             })->first();
@@ -406,7 +407,7 @@ describe('robustness scenarios', function () {
 
         // The first 10 animals (now light) should have soft-deleted publishes
         // But animals 2 and 3 from setup (dog, horse) remain heavy
-        $softDeletedPublishes = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
+        $softDeletedPublishes = Publish::where('publisher_id', $publisher->id)
             ->where('status', PublishStatusEnum::SOFT_DELETED)
             ->count();
         expect($softDeletedPublishes)->toBe(10); // Only the 10 that became light
@@ -417,7 +418,7 @@ describe('robustness scenarios', function () {
         runSyncForModel(TestAnimal::class);
 
         // All 24 should now have active publishes (10 reactivated + 12 existing + 2 new from setup light animals)
-        $activePublishes = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
+        $activePublishes = Publish::where('publisher_id', $publisher->id)
             ->where('status', PublishStatusEnum::PENDING)
             ->count();
         expect($activePublishes)->toBe(24); // All animals are now heavy
@@ -435,7 +436,7 @@ describe('robustness scenarios', function () {
         runSyncForModel(TestAnimal::class);
 
         // Get the publish record
-        $publish = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)
+        $publish = Publish::where('publisher_id', $publisher->id)
             ->whereHas('hash', function ($query) {
                 $query->where('hashable_id', 1);
             })->first();

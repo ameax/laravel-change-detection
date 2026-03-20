@@ -289,7 +289,7 @@ class MockWebhookPublisher implements PublisherContract
         return $this->config['retry_intervals'] ?? [30, 300, 21600];
     }
 
-    public function handlePublishException(\Throwable $exception): string
+    public function handlePublishException(Throwable $exception): string
     {
         $message = $exception->getMessage();
 
@@ -340,7 +340,7 @@ class MockWebhookPublisher implements PublisherContract
                 'error' => "HTTP {$response->status()}: {$response->body()}",
                 'code' => $response->status(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -404,7 +404,7 @@ function measurePublisherPerformance(Publisher $publisher, int $recordCount): ar
             usleep(10000); // 10ms
             $publish->markAsPublished(['processed' => true]);
             $processed++;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $publish->markAsDeferred($e->getMessage(), null, 'unknown');
             $errors++;
         }

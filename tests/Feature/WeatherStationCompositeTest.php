@@ -650,7 +650,7 @@ describe('weather station complex dependency scenarios', function () {
 
         // Bulk update all sensors
         TestAnemometer::where('weather_station_id', $station->id)
-            ->update(['wind_speed' => \DB::raw('wind_speed * 1.5')]);
+            ->update(['wind_speed' => DB::raw('wind_speed * 1.5')]);
 
         runWeatherStationSync();
 

@@ -4,6 +4,7 @@ use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
 use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Models\Publisher;
+use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
 
 /**
@@ -51,7 +52,7 @@ function createCarWithHash(array $attributes = []): TestCar
     $car = createCar($attributes);
 
     // Run sync to create hash
-    app(\Ameax\LaravelChangeDetection\Services\BulkHashProcessor::class)
+    app(BulkHashProcessor::class)
         ->updateHashesForIds(TestCar::class, [$car->id]);
 
     return $car->fresh();
@@ -65,7 +66,7 @@ function createPublishForCar(TestCar $car, Publisher $publisher, array $attribut
     $hash = $car->getCurrentHash();
 
     if (! $hash) {
-        throw new \Exception('Car does not have a hash. Run sync first.');
+        throw new Exception('Car does not have a hash. Run sync first.');
     }
 
     $defaults = [

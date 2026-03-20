@@ -1,6 +1,7 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Models\Hash;
+use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
@@ -464,7 +465,7 @@ describe('weather station bulk operations', function () {
         runWeatherStationSync();
 
         // Check the actual count first to debug
-        $actualCount = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)->count();
+        $actualCount = Publish::where('publisher_id', $publisher->id)->count();
 
         // First sync creates the hash, which triggers a publish record
         expect($actualCount)->toBe(1);
@@ -475,7 +476,7 @@ describe('weather station bulk operations', function () {
         runWeatherStationSync();
 
         // Check if a new publish record was created
-        $newCount = \Ameax\LaravelChangeDetection\Models\Publish::where('publisher_id', $publisher->id)->count();
+        $newCount = Publish::where('publisher_id', $publisher->id)->count();
 
         // The behavior might be that only changes create publish records, not initial creation
         // Let's check if we get a publish record only on change

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Services;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
+use Illuminate\Database\Eloquent\Model;
 
 class CompositeHashCalculator
 {
@@ -24,7 +25,7 @@ class CompositeHashCalculator
     }
 
     /**
-     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
+     * @param  Hashable&Model  $model
      */
     public function calculate(Hashable $model): string
     {
@@ -44,7 +45,7 @@ class CompositeHashCalculator
     }
 
     /**
-     * @param  class-string<Hashable&\Illuminate\Database\Eloquent\Model>  $modelClass
+     * @param  class-string<Hashable&Model>  $modelClass
      * @param  array<int>  $modelIds
      * @return array<int, string>
      */

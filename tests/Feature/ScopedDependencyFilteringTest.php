@@ -317,7 +317,7 @@ describe('scope-aware dependency filtering', function () {
         $originalScope = TestWindvane::class;
         $windvaneWithScope = new class extends TestWindvane
         {
-            public function getHashableScope(): ?\Closure
+            public function getHashableScope(): ?Closure
             {
                 return function ($query) {
                     $query->where('accuracy', '>=', 90);
@@ -372,7 +372,7 @@ describe('scope-aware dependency filtering', function () {
         {
             protected $table = 'test_anemometers';
 
-            public function getHashableScope(): ?\Closure
+            public function getHashableScope(): ?Closure
             {
                 return function ($query) {
                     // Only high-wind anemometers are in scope

@@ -2,7 +2,6 @@
 
 use Ameax\LaravelChangeDetection\Enums\PublishErrorTypeEnum;
 use Ameax\LaravelChangeDetection\Enums\PublishStatusEnum;
-use Ameax\LaravelChangeDetection\Models\Hash;
 use Ameax\LaravelChangeDetection\Models\Publish;
 use Ameax\LaravelChangeDetection\Tests\Models\TestCar;
 use Illuminate\Database\Eloquent\Relations\Relation;

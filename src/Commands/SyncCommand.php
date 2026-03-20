@@ -13,6 +13,7 @@ use Ameax\LaravelChangeDetection\Services\ChangeDetector;
 use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
 
@@ -87,9 +88,9 @@ class SyncCommand extends Command
     /**
      * Get target models either from options or auto-discovery.
      *
-     * @return \Illuminate\Support\Collection<int, class-string>
+     * @return Collection<int, class-string>
      */
-    private function getTargetModels(): \Illuminate\Support\Collection
+    private function getTargetModels(): Collection
     {
         $specifiedModels = $this->option('models');
 
@@ -112,9 +113,9 @@ class SyncCommand extends Command
     /**
      * Detect changes across all models.
      *
-     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  Collection<int, class-string>  $models
      */
-    private function detectChanges(\Illuminate\Support\Collection $models): void
+    private function detectChanges(Collection $models): void
     {
         $this->info('📊 Detecting changes...');
 
@@ -125,7 +126,7 @@ class SyncCommand extends Command
             $modelName = class_basename($modelClass);
             $this->line("  Checking {$modelName}...");
 
-            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            /** @var class-string<Model&Hashable> $modelClass */
             $changedCount = $limit
                 ? $detector->countChangedModels($modelClass, (int) $limit)
                 : $detector->countChangedModels($modelClass);
@@ -152,9 +153,9 @@ class SyncCommand extends Command
     /**
      * Clean up orphaned hashes.
      *
-     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  Collection<int, class-string>  $models
      */
-    private function cleanupOrphans(\Illuminate\Support\Collection $models): void
+    private function cleanupOrphans(Collection $models): void
     {
         $this->info('🧹 Cleaning up orphaned hashes...');
 
@@ -163,7 +164,7 @@ class SyncCommand extends Command
         $action = $isPurge ? 'purged' : 'cleaned';
 
         foreach ($models as $modelClass) {
-            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            /** @var class-string<Model&Hashable> $modelClass */
             $modelName = class_basename($modelClass);
 
             if ($isPurge) {
@@ -192,9 +193,9 @@ class SyncCommand extends Command
     /**
      * Update changed hashes.
      *
-     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  Collection<int, class-string>  $models
      */
-    private function updateHashes(\Illuminate\Support\Collection $models): void
+    private function updateHashes(Collection $models): void
     {
         $this->info('✅ Updating changed hashes...');
 
@@ -207,7 +208,7 @@ class SyncCommand extends Command
             if ($this->modelStats[$modelClass]['changes_detected'] > 0) {
                 $this->line("  Processing {$modelName}...");
 
-                /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+                /** @var class-string<Model&Hashable> $modelClass */
                 $updated = $limit
                     ? $processor->processChangedModels($modelClass, (int) $limit)
                     : $processor->processChangedModels($modelClass);
@@ -221,7 +222,7 @@ class SyncCommand extends Command
             }
 
             // Always check for pending dependencies (even for models with no changes)
-            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            /** @var class-string<Model&Hashable> $modelClass */
             $pendingDeps = $limit
                 ? $processor->buildPendingDependencies($modelClass, (int) $limit)
                 : $processor->buildPendingDependencies($modelClass);
@@ -238,9 +239,9 @@ class SyncCommand extends Command
     /**
      * Process soft-deleted models by marking their hashes as deleted.
      *
-     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  Collection<int, class-string>  $models
      */
-    private function processSoftDeletes(\Illuminate\Support\Collection $models): void
+    private function processSoftDeletes(Collection $models): void
     {
         $this->info('🗑️ Processing soft-deleted models...');
 
@@ -250,7 +251,7 @@ class SyncCommand extends Command
         foreach ($models as $modelClass) {
             $modelName = class_basename($modelClass);
 
-            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            /** @var class-string<Model&Hashable> $modelClass */
             $processed = $processor->softDeleteHashesForDeletedModels($modelClass);
 
             if ($processed > 0) {
@@ -290,9 +291,9 @@ class SyncCommand extends Command
     /**
      * Sync publish records for all models.
      *
-     * @param  \Illuminate\Support\Collection<int, class-string>  $models
+     * @param  Collection<int, class-string>  $models
      */
-    private function syncPublishRecords(\Illuminate\Support\Collection $models): void
+    private function syncPublishRecords(Collection $models): void
     {
         $this->info('📤 Syncing publish records...');
 
@@ -304,7 +305,7 @@ class SyncCommand extends Command
             $modelName = class_basename($modelClass);
             $this->line("  Processing {$modelName}...");
 
-            /** @var class-string<\Illuminate\Database\Eloquent\Model&\Ameax\LaravelChangeDetection\Contracts\Hashable> $modelClass */
+            /** @var class-string<Model&Hashable> $modelClass */
             $result = $publishProcessor->syncAllPublishRecords($modelClass);
 
             if ($result['created'] > 0 || $result['updated'] > 0) {
@@ -397,9 +398,9 @@ class SyncCommand extends Command
     /**
      * Auto-discover all hashable models in the application.
      *
-     * @return \Illuminate\Support\Collection<int, class-string>
+     * @return Collection<int, class-string>
      */
-    private function discoverHashableModels(): \Illuminate\Support\Collection
+    private function discoverHashableModels(): Collection
     {
         $models = collect();
 
@@ -415,7 +416,7 @@ class SyncCommand extends Command
     /**
      * Discover models from Publisher records.
      */
-    private function discoverModelsFromPublishers(\Illuminate\Support\Collection &$models): void
+    private function discoverModelsFromPublishers(Collection &$models): void
     {
         $publishers = Publisher::active()->get();
 
@@ -436,7 +437,7 @@ class SyncCommand extends Command
     /**
      * Discover models from app/Models directory.
      */
-    private function discoverModelsFromAppPath(\Illuminate\Support\Collection &$models): void
+    private function discoverModelsFromAppPath(Collection &$models): void
     {
         $appPath = app_path('Models');
 

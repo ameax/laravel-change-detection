@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -145,7 +146,7 @@ class TruncateCommand extends Command
      * @param  array<string>  $tables
      * @return array<string, int>
      */
-    private function getRecordCounts(\Illuminate\Database\Connection $db, array $tables): array
+    private function getRecordCounts(Connection $db, array $tables): array
     {
         $counts = [];
         $connection = config('change-detection.database_connection');

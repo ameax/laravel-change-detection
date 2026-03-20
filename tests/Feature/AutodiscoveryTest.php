@@ -1,6 +1,8 @@
 <?php
 
 use Ameax\LaravelChangeDetection\Helpers\ModelDiscoveryHelper;
+use Ameax\LaravelChangeDetection\Models\Hash;
+use Ameax\LaravelChangeDetection\Models\HashDependent;
 use Ameax\LaravelChangeDetection\Models\Publisher;
 use Ameax\LaravelChangeDetection\Tests\Models\TestAnemometer;
 use Ameax\LaravelChangeDetection\Tests\Models\TestWeatherStation;
@@ -69,12 +71,12 @@ it('runs autodiscovery sync and processes all models', function () {
     test()->artisan('change-detection:sync')->assertExitCode(0);
 
     // Check that all models have hashes
-    $stationHash = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', 'test_weather_station')
+    $stationHash = Hash::where('hashable_type', 'test_weather_station')
         ->where('hashable_id', $station->id)
         ->first();
     expect($stationHash)->not->toBeNull();
 
-    $anemometerHash = \Ameax\LaravelChangeDetection\Models\Hash::where('hashable_type', 'test_anemometer')
+    $anemometerHash = Hash::where('hashable_type', 'test_anemometer')
         ->where('hashable_id', $anemometer->id)
         ->first();
     expect($anemometerHash)->not->toBeNull();
@@ -83,7 +85,7 @@ it('runs autodiscovery sync and processes all models', function () {
     expect($stationHash->has_dependencies_built)->toBeTrue();
 
     // Check that hash_dependent records exist
-    $dependents = \Ameax\LaravelChangeDetection\Models\HashDependent::where('dependent_model_type', 'test_weather_station')
+    $dependents = HashDependent::where('dependent_model_type', 'test_weather_station')
         ->where('dependent_model_id', $station->id)
         ->get();
     expect($dependents)->toHaveCount(1); // One anemometer dependency

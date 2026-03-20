@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Ameax\LaravelChangeDetection\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -16,12 +18,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $attribute_hash
  * @property string|null $composite_hash
  * @property bool $has_dependencies_built
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Model $hashable
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Ameax\LaravelChangeDetection\Models\Publish> $publishes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Ameax\LaravelChangeDetection\Models\HashDependent> $dependents
+ * @property Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Model $hashable
+ * @property-read Collection<int, Publish> $publishes
+ * @property-read Collection<int, HashDependent> $dependents
  */
 class Hash extends Model
 {
@@ -51,7 +53,7 @@ class Hash extends Model
     }
 
     /**
-     * @return MorphTo<\Illuminate\Database\Eloquent\Model, $this>
+     * @return MorphTo<Model, $this>
      */
     public function hashable(): MorphTo
     {

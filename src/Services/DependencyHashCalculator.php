@@ -6,6 +6,7 @@ namespace Ameax\LaravelChangeDetection\Services;
 
 use Ameax\LaravelChangeDetection\Contracts\Hashable;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class DependencyHashCalculator
@@ -21,7 +22,7 @@ class DependencyHashCalculator
     }
 
     /**
-     * @param  Hashable&\Illuminate\Database\Eloquent\Model  $model
+     * @param  Hashable&Model  $model
      */
     public function calculate(Hashable $model): ?string
     {

@@ -6,6 +6,14 @@ use Ameax\LaravelChangeDetection\Commands\ProcessPublishesCommand;
 use Ameax\LaravelChangeDetection\Commands\PurgeDeletedHashesCommand;
 use Ameax\LaravelChangeDetection\Commands\SyncCommand;
 use Ameax\LaravelChangeDetection\Commands\TruncateCommand;
+use Ameax\LaravelChangeDetection\Services\BulkHashProcessor;
+use Ameax\LaravelChangeDetection\Services\ChangeDetector;
+use Ameax\LaravelChangeDetection\Services\CompositeHashCalculator;
+use Ameax\LaravelChangeDetection\Services\CrossDatabaseQueryBuilder;
+use Ameax\LaravelChangeDetection\Services\DependencyHashCalculator;
+use Ameax\LaravelChangeDetection\Services\HashPurger;
+use Ameax\LaravelChangeDetection\Services\MySQLHashCalculator;
+use Ameax\LaravelChangeDetection\Services\OrphanedHashDetector;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -30,13 +38,13 @@ class LaravelChangeDetectionServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CrossDatabaseQueryBuilder::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\MySQLHashCalculator::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\DependencyHashCalculator::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\CompositeHashCalculator::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\ChangeDetector::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\BulkHashProcessor::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\OrphanedHashDetector::class);
-        $this->app->singleton(\Ameax\LaravelChangeDetection\Services\HashPurger::class);
+        $this->app->singleton(CrossDatabaseQueryBuilder::class);
+        $this->app->singleton(MySQLHashCalculator::class);
+        $this->app->singleton(DependencyHashCalculator::class);
+        $this->app->singleton(CompositeHashCalculator::class);
+        $this->app->singleton(ChangeDetector::class);
+        $this->app->singleton(BulkHashProcessor::class);
+        $this->app->singleton(OrphanedHashDetector::class);
+        $this->app->singleton(HashPurger::class);
     }
 }
