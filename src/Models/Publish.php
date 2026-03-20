@@ -276,10 +276,9 @@ class Publish extends Model
             return false;
         }
 
-        // Increment attempts and mark as dispatched
+        // Mark as dispatched (attempts are tracked by markAsDeferred/markAsFailed)
         $this->update([
             'status' => PublishStatusEnum::DISPATCHED,
-            'attempts' => $this->attempts + 1,
         ]);
 
         try {

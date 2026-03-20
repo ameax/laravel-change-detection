@@ -176,11 +176,8 @@ class BulkPublishProcessor
                 WHERE p.publisher_id = ?
                   AND h.hashable_type = ?
                   AND h.deleted_at IS NULL
-                  AND (
-                      (p.status = ? AND p.published_hash != h.composite_hash)
-                      OR
-                      p.status = ?
-                  )
+                  AND p.status = ?
+                  AND p.published_hash != h.composite_hash
             ";
 
             $bindings = [
@@ -189,7 +186,6 @@ class BulkPublishProcessor
                 $publisher->id,
                 $morphClass,
                 PublishStatusEnum::PUBLISHED->value,
-                PublishStatusEnum::FAILED->value,
             ];
 
             $updated += $this->connection->update($sql, $bindings);
@@ -270,11 +266,8 @@ class BulkPublishProcessor
             WHERE p.publisher_id = ?
               AND h.hashable_type = ?
               AND h.deleted_at IS NULL
-              AND (
-                  (p.status = ? AND p.published_hash != h.composite_hash)
-                  OR
-                  p.status = ?
-              )
+              AND p.status = ?
+              AND p.published_hash != h.composite_hash
         ";
 
         return $this->connection->update($sql, [
@@ -282,7 +275,6 @@ class BulkPublishProcessor
             $publisher->id,
             $morphClass,
             PublishStatusEnum::PUBLISHED->value,
-            PublishStatusEnum::FAILED->value,
         ]);
     }
 

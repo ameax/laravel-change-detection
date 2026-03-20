@@ -108,18 +108,17 @@ describe('car concurrent publishing', function () {
         // Run sync
         syncCars();
 
-        // Verify failed publish1 was reset due to hash change
+        // Verify failed publish1 remains failed (terminal state, no auto-reset)
         $publish1->refresh();
-        expect($publish1->status)->toBe(PublishStatusEnum::PENDING);
-        expect($publish1->attempts)->toBe(0);
-        expect($publish1->last_error)->toBeNull();
-        expect($publish1->error_type)->toBeNull();
-        expect($publish1->failed_at)->toBeNull();
+        expect($publish1->status)->toBe(PublishStatusEnum::FAILED);
+        expect($publish1->attempts)->toBe(3);
+        expect($publish1->last_error)->toBe('Connection timeout');
+        expect($publish1->error_type)->toBe(PublishErrorTypeEnum::INFRASTRUCTURE);
 
-        // Verify failed publish2 was also reset (bulk operations reset all failures)
+        // Verify failed publish2 also remains failed (terminal state)
         $publish2->refresh();
-        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
-        expect($publish2->attempts)->toBe(0);
+        expect($publish2->status)->toBe(PublishStatusEnum::FAILED);
+        expect($publish2->attempts)->toBe(1);
 
         // Update car2 now
         $car2->update(['price' => 230000]);
@@ -127,10 +126,10 @@ describe('car concurrent publishing', function () {
         // Run sync again
         syncCars();
 
-        // Publish2 remains reset from earlier
+        // Publish2 remains failed (terminal state, not reset by sync)
         $publish2->refresh();
-        expect($publish2->status)->toBe(PublishStatusEnum::PENDING);
-        expect($publish2->attempts)->toBe(0);
+        expect($publish2->status)->toBe(PublishStatusEnum::FAILED);
+        expect($publish2->attempts)->toBe(1);
     });
 
     it('can identify stale pending publishes', function () {

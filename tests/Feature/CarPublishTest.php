@@ -254,10 +254,10 @@ describe('car publishing', function () {
         expect($apiPublish->attempts)->toBe(0);
         expect($apiPublish->hash_id)->toBe($hash->id); // Still same hash record
 
-        // Failed record should reset to pending with attempts reset
-        expect($backupPublish->status)->toBe(PublishStatusEnum::PENDING);
-        expect($backupPublish->attempts)->toBe(0);
-        expect($backupPublish->last_error)->toBeNull();
+        // Failed record should remain failed (terminal state) even after hash change
+        expect($backupPublish->status)->toBe(PublishStatusEnum::FAILED);
+        expect($backupPublish->attempts)->toBe(3);
+        expect($backupPublish->last_error)->toBe('Connection timeout');
 
         // Pending record should remain pending
         expect($analyticsPublish->status)->toBe(PublishStatusEnum::PENDING);
@@ -802,7 +802,7 @@ describe('car publishing', function () {
         expect($publish1->attempts)->toBe(0);
     });
 
-    it('handles failed publishes and resets them', function () {
+    it('keeps failed publishes in terminal state', function () {
         $car = createCar(['model' => 'McLaren P1', 'price' => 1500000]);
         $publisher = createCarPublisher([
             'retry_attempts' => 3,
@@ -826,33 +826,23 @@ describe('car publishing', function () {
             'next_try' => now()->addSeconds(60),
         ]);
 
-        // Run sync - currently all failed records are reset regardless of next_try
+        // Run sync - failed records should NOT be reset (terminal state)
         syncCars();
 
         $publish->refresh();
-        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
-        expect($publish->attempts)->toBe(0);
-        expect($publish->last_error)->toBeNull();
+        expect($publish->status)->toBe(PublishStatusEnum::FAILED);
+        expect($publish->attempts)->toBe(1);
+        expect($publish->last_error)->toBe('Connection timeout');
 
-        // Simulate failure again
-        $publish->update([
-            'status' => PublishStatusEnum::FAILED,
-            'attempts' => 2,
-            'last_error' => 'Server error',
-            'last_response_code' => 500,
-            'error_type' => PublishErrorTypeEnum::INFRASTRUCTURE,
-        ]);
-
-        // Car changes while in failed state
+        // Even when car changes, failed record stays failed
         $car->update(['price' => 1600000]);
 
-        // Run sync - failed records are always reset
         syncCars();
 
         $publish->refresh();
-        expect($publish->status)->toBe(PublishStatusEnum::PENDING);
-        expect($publish->attempts)->toBe(0);
-        expect($publish->last_error)->toBeNull();
+        expect($publish->status)->toBe(PublishStatusEnum::FAILED);
+        expect($publish->attempts)->toBe(1);
+        expect($publish->last_error)->toBe('Connection timeout');
     });
 
     it('can identify stale pending publishes', function () {

@@ -303,10 +303,9 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
             return ['status' => 'failed', 'error_type' => 'data'];
         }
 
-        // Increment attempts and mark as dispatched
+        // Mark as dispatched (attempts are tracked by markAsDeferred/markAsFailed)
         $publishRecord->update([
             'status' => 'dispatched',
-            'attempts' => $publishRecord->attempts + 1,
         ]);
 
         try {
@@ -365,9 +364,9 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
                 // Extract response code if available
                 $responseCode = $this->extractResponseCode($e);
 
-                $publishRecord->markAsDeferred($e->getMessage(), $responseCode, $errorType);
-
                 if ($errorHandling === 'stop_job') {
+                    $publishRecord->markAsDeferred($e->getMessage(), $responseCode, $errorType);
+
                     return [
                         'status' => 'stop_job',
                         'reason' => $e->getMessage(),
@@ -378,6 +377,8 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
                     return ['status' => 'failed', 'error_type' => $errorType];
                 }
+
+                $publishRecord->markAsDeferred($e->getMessage(), $responseCode, $errorType);
 
                 return ['status' => 'deferred', 'error_type' => $errorType];
             } else {

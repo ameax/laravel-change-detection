@@ -103,10 +103,10 @@ describe('car publisher status', function () {
         expect($apiPublish->attempts)->toBe(0);
         expect($apiPublish->hash_id)->toBe($hash->id); // Still same hash record
 
-        // Failed record should reset to pending with attempts reset
-        expect($backupPublish->status)->toBe(PublishStatusEnum::PENDING);
-        expect($backupPublish->attempts)->toBe(0);
-        expect($backupPublish->last_error)->toBeNull();
+        // Failed record should remain failed (terminal state) even after hash change
+        expect($backupPublish->status)->toBe(PublishStatusEnum::FAILED);
+        expect($backupPublish->attempts)->toBe(3);
+        expect($backupPublish->last_error)->toBe('Connection timeout');
 
         // Pending record should remain pending
         expect($analyticsPublish->status)->toBe(PublishStatusEnum::PENDING);
