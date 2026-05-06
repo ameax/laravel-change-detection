@@ -21,10 +21,12 @@ class SyncHashesJob implements ShouldBeUnique, ShouldQueue
 
     public int $maxExceptions = 3;
 
+    public int $timeout;
+
     public function __construct()
     {
         $this->onQueue(config('change-detection.queues.detect_changes', 'default'));
-        $this->timeout = config('change-detection.sync_job_timeout', 3600);
+        $this->timeout = (int) config('change-detection.sync_job_timeout', 3600);
     }
 
     /**
