@@ -11,3 +11,6 @@ parameters:
         -
             message: '#Trait Ameax\\LaravelChangeDetection\\Traits\\InteractsWithHashes is used zero times and is not analysed#'
             path: src/Traits/InteractsWithHashes.php
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: config/change-detection.php

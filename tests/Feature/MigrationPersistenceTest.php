@@ -15,9 +15,9 @@ it('keeps database tables after tests', function () {
 
     // Test tables
     expect($tableNames)->toContain('test_models');
-    expect($tableNames)->toContain('test_users');
-    expect($tableNames)->toContain('test_posts');
-    expect($tableNames)->toContain('test_comments');
+    expect($tableNames)->toContain('test_cars');
+    expect($tableNames)->toContain('test_animals');
+    expect($tableNames)->toContain('test_weather_stations');
 });
 
 it('can query data from previous test runs when MIGRATED=1', function () {

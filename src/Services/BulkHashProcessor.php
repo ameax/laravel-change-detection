@@ -121,36 +121,33 @@ class BulkHashProcessor
         $hashesTable = config('change-detection.tables.hashes', 'hashes');
         $hashDependentsTable = config('change-detection.tables.hash_dependents', 'hash_dependents');
 
-        // Use a single bulk UPDATE query that calculates composite hashes entirely in MySQL
-        // This replaces the previous N+1 approach that loaded each model individually
-        $dependencyHashSubquery = "
-            (SELECT MD5(GROUP_CONCAT(
-                IFNULL(dh.composite_hash, dh.attribute_hash)
-                ORDER BY hd.id, dh.hashable_type, dh.hashable_id
-                SEPARATOR '|'
-            ))
-            FROM `{$hashDependentsTable}` hd
-            INNER JOIN `{$hashesTable}` dh
-                ON dh.id = hd.hash_id
-                AND dh.deleted_at IS NULL
-            WHERE hd.dependent_model_type = h.hashable_type
-              AND hd.dependent_model_id = h.hashable_id)
-        ";
-
+        // Use a JOIN with a derived table to avoid MySQL error 1093
+        // ("You can't specify target table for update in FROM clause")
+        // The derived table materializes the dependency hashes first, then we join to update.
+        // LEFT JOIN in derived table ensures rows are produced even when all deps are soft-deleted,
+        // so the parent's composite_hash correctly resets to attribute_hash.
         $sql = "
             UPDATE `{$hashesTable}` h
+            INNER JOIN (
+                SELECT hd.dependent_model_type, hd.dependent_model_id,
+                       MD5(GROUP_CONCAT(
+                           IFNULL(dh.composite_hash, dh.attribute_hash)
+                           ORDER BY hd.id, dh.hashable_type, dh.hashable_id
+                           SEPARATOR '|'
+                       )) as dependency_hash
+                FROM `{$hashDependentsTable}` hd
+                LEFT JOIN `{$hashesTable}` dh
+                    ON dh.id = hd.hash_id
+                    AND dh.deleted_at IS NULL
+                GROUP BY hd.dependent_model_type, hd.dependent_model_id
+            ) deps ON deps.dependent_model_type = h.hashable_type
+                  AND deps.dependent_model_id = h.hashable_id
             SET h.composite_hash = CASE
-                WHEN {$dependencyHashSubquery} IS NULL THEN h.attribute_hash
-                ELSE MD5(CONCAT(h.attribute_hash, '|', {$dependencyHashSubquery}))
+                WHEN deps.dependency_hash IS NULL THEN h.attribute_hash
+                ELSE MD5(CONCAT(h.attribute_hash, '|', deps.dependency_hash))
             END,
             h.updated_at = ?
             WHERE h.deleted_at IS NULL
-              AND EXISTS (
-                SELECT 1
-                FROM `{$hashDependentsTable}` hd
-                WHERE hd.dependent_model_type = h.hashable_type
-                  AND hd.dependent_model_id = h.hashable_id
-              )
         ";
 
         $now = now()->utc()->toDateTimeString();

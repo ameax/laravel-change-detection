@@ -22,6 +22,8 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
 
     public int $maxExceptions = 3;
 
+    public int $timeout;
+
     private const DEFAULT_BATCH_SIZE = 100;
 
     private const DEFAULT_DELAY_MS = 50;
@@ -29,7 +31,7 @@ class BulkPublishJob implements ShouldBeUnique, ShouldQueue
     public function __construct()
     {
         $this->onQueue(config('change-detection.queues.publish', 'default'));
-        $this->timeout = config('change-detection.job_timeout', 1800);
+        $this->timeout = (int) config('change-detection.job_timeout', 1800);
     }
 
     /**
